@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+
+
 class FSUConfig(BaseModel):
     language: str = "uk"
     length: int = 100
