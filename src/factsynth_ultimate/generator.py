@@ -40,7 +40,8 @@ def _infer_valence(text: str) -> str:
     if any(k in t for k in ["команд","спільнот","зв’яз","віднос"]): return "зв’язок"
     return "досягнення"
 
-def generate_insight(inp: FSUInput, cfg: FSUConfig = FSUConfig()) -> str:
+def generate_insight(inp: FSUInput, cfg: FSUConfig | None = None) -> str:
+    cfg = cfg or FSUConfig()
     L = inp.length or cfg.length
     v = inp.valence if inp.valence in VALENCE else _infer_valence(inp.intent)
     motive = inp.motive or "конкретизація і перевірка корисності"
@@ -81,6 +82,10 @@ def generate_insight(inp: FSUInput, cfg: FSUConfig = FSUConfig()) -> str:
                     forbid_lists=cfg.forbid_lists,
                     forbid_emojis=cfg.forbid_emojis)
     text = fit_length(text, L)
+    if not text.startswith(cfg.start_phrase):
+        prefix = cfg.start_phrase.rstrip("…")
+        if text.startswith(prefix):
+            text = cfg.start_phrase + text[len(prefix):]
     assert count_words(text) == L, f"length mismatch: {count_words(text)} != {L}"
     assert text.startswith(cfg.start_phrase), "must start with start_phrase"
     assert "?" not in text
