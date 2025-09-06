@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>FactSynth Ultimate — GLRTPM</title>
+<style>
+body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto;background:#0b1020;color:#e8ecf7}
+.container{max-width:980px;margin:0 auto;padding:24px}
+.card{background:rgba(17,24,39,.55);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;backdrop-filter:blur(10px)}
+input,textarea{width:100%;border-radius:10px;border:1px solid #2b3553;background:#0b1226;color:#e8ecf7;padding:12px}
+label{font-size:12px;color:#9fb0d6;text-transform:uppercase;letter-spacing:.12em}
+button{background:#2563eb;border:none;color:white;padding:10px 14px;border-radius:12px;cursor:pointer}
+.row{display:flex;gap:12px;flex-wrap:wrap}.col{flex:1 1 260px}.result{white-space:pre-wrap;border:1px solid #2b3553;padding:12px;border-radius:12px;background:#0b1226}
+</style></head>
+<body><div class="container">
+<h1>FactSynth Ultimate — GLRTPM</h1>
+<div class="card">
+  <div class="row">
+    <div class="col"><label>API</label><input id="api" value="http://127.0.0.1:8000"/></div>
+    <div class="col"><label>X-API-Key</label><input id="key" value="change-me"/></div>
+  </div>
+  <label>Title</label><input id="title" value="ГЛРТ-ПСУПМ: рольове поле"/>
+  <label>Thesis</label><textarea id="thesis" rows="3">Пост-суб'єктність у взаємодії з багаторольовими LLM-агентами.</textarea>
+  <label>Roles (JSON)</label>
+  <textarea id="roles" rows="6">[
+  {"name":"Раціоналіст","goal":"Валідація логіки","style":"академічний","heuristics":["CoT","контраргументи"]},
+  {"name":"Критик","goal":"Фальсифікація","style":"сократівський","heuristics":["ReAct","червоні прапори"]},
+  {"name":"Естет","goal":"Метафора","style":"алегоричний","heuristics":["аналогії"]},
+  {"name":"Інтегратор","goal":"Синтез","style":"системний","heuristics":["узгодження термінів"]},
+  {"name":"Спостерігач","goal":"Етика/епістеміка","style":"нейтральний","heuristics":["ризики","прозорість"]}
+]</textarea>
+  <div style="margin-top:12px"><button id="run">Run</button></div>
+  <div style="margin-top:12px" class="result" id="out"></div>
+</div>
+</div>
+<script>
+async function post(path, body){
+  const api=document.getElementById('api').value.trim();
+  const key=document.getElementById('key').value.trim();
+  const r=await fetch(api+path,{method:'POST',headers:{'content-type':'application/json','x-api-key':key},body:JSON.stringify(body)});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return await r.json();
+}
+document.getElementById('run').onclick=async()=>{
+  const out=document.getElementById('out'); out.textContent='...';
+  try{
+    const title=document.getElementById('title').value;
+    const thesis=document.getElementById('thesis').value;
+    const roles=JSON.parse(document.getElementById('roles').value);
+    const data=await post('/v1/glrtpm/run',{title,thesis,roles,rounds:2});
+    out.innerHTML = "<h3>Метрики</h3><pre>"+JSON.stringify(data.metrics,null,2)+"</pre><h3>Markdown</h3><pre>"+data.markdown+"</pre>";
+  }catch(e){ out.textContent='Помилка: '+e.message; }
+};
+</script>
+</body></html>
