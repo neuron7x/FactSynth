@@ -23,6 +23,13 @@ curl -H 'x-api-key: change-me' -H 'content-type: application/json' \
 кожного поля та значення за замовчуванням, тож ви можете змінювати їх перед
 викликом `generate_insight` чи зверненням до API.
 
+### Formatting helpers
+
+The module [`formatting`](src/factsynth_ultimate/formatting.py) provides small
+utilities for cleaning free-form text.  Use `sanitize()` to strip headings,
+lists or emojis, `ensure_period()` to finalise sentences and `fit_length()` to
+pad or trim a fragment to an exact word count.
+
 ## Bootstrap повного продукту
 
 ```bash
