@@ -12,7 +12,7 @@ def _load_app():
             pass
     return None
 
-def test_health_endpoints_no_5xx():
+def test_metrics_if_present():
     app=_load_app()
     if app is None: pytest.skip("No ASGI app found.")
     try:
@@ -20,8 +20,9 @@ def test_health_endpoints_no_5xx():
     except Exception:
         pytest.skip("fastapi missing")
     c=TestClient(app)
-    for p in ("/health","/healthz","/api/health"):
-        r=c.get(p)
-        if r.status_code < 500:
-            return
-    pytest.fail("ASGI app returns 5xx on health endpoints")
+    r=c.get("/metrics")
+    if r.status_code == 404:
+        pytest.skip("metrics endpoint absent")
+    assert r.status_code < 500
+    assert isinstance(r.text, str)
+    assert len(r.text) > 0

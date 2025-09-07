@@ -1,0 +1,45 @@
+openapi: 3.0.3
+info:
+  title: FactSynth API
+  description: Formal contract for public endpoints.
+  version: ""
+servers:
+  - url: http://localhost:8000
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      responses:
+        '200': { description: OK }
+        '204': { description: No Content }
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        '200': { description: Text exposition format }
+  /v1/generate:
+    post:
+      summary: Generate structured output
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt: { type: string }
+                max_tokens: { type: integer, minimum: 1 }
+              required: [prompt]
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  output: { type: string }
+        '400': { description: Bad request }
+        '429': { description: Rate limited }
+        '500': { description: Server error }
+components: {}

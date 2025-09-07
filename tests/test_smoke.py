@@ -1,18 +1,12 @@
-import importlib, sys, pathlib
+import importlib, pytest
 
-CANDIDATES = [
-    "factsynth_ultimate",
-    "app",
-    "factsynth",
-]
+CANDIDATES = ["factsynth_ultimate","app","factsynth"]
 
-def test_can_import_any_package():
-    for name in CANDIDATES:
+def test_can_import_primary():
+    for n in CANDIDATES:
         try:
-            importlib.import_module(name)
+            importlib.import_module(n)
             return
         except Exception:
-            continue
-    # If nothing imports, skip rather than fail hard
-    import pytest
-    pytest.skip("No primary package found among candidates: " + ", ".join(CANDIDATES))
+            pass
+    pytest.skip("No primary package found.")

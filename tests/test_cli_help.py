@@ -1,21 +1,17 @@
-import importlib, subprocess, sys, shutil, os, pytest
+import subprocess, sys, pytest
 
-def _has_console_script(name):
-    return shutil.which(name) is not None
+CMDS = [
+    [sys.executable, "-m", "factsynth_ultimate", "--help"],
+    [sys.executable, "-m", "factsynth", "--help"],
+    ["factsynth","--help"],["factsynth-ultimate","--help"],
+]
 
 def test_cli_help():
-    # Try 'python -m factsynth_ultimate' first, then console scripts
-    cmds = [
-        [sys.executable, "-m", "factsynth_ultimate", "--help"],
-        [sys.executable, "-m", "factsynth", "--help"],
-        ["factsynth", "--help"],
-        ["factsynth-ultimate", "--help"],
-    ]
-    for cmd in cmds:
+    for c in CMDS:
         try:
-            proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
-            if proc.returncode == 0:
+            r = subprocess.run(c, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
+            if r.returncode == 0:
                 return
         except Exception:
-            continue
-    pytest.skip("CLI not found or --help failed")
+            pass
+    pytest.skip("CLI not available.")
