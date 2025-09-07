@@ -73,4 +73,4 @@ async def verror(_: Request, exc: ValidationError):
 
 def run():
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=S.API_HOST, port=S.API_PORT)
