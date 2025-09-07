@@ -1,0 +1,12 @@
+{
+  "info": { "name": "FactSynth Ultimate Pro 1.0.1", "_postman_id": "factsynth-pro-collection", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "item": [
+    { "name": "Health", "request": { "method": "GET", "url": "{{base}}/v1/healthz" } },
+    { "name": "Version", "request": { "method": "GET", "url": "{{base}}/v1/version" } },
+    { "name": "Intent Reflector", "request": { "method": "POST", "header": [{ "key": "x-api-key", "value": "{{api_key}}" }], "body": { "mode": "raw", "raw": "{\"intent\":\"Summarize Q4 plan\",\"length\":48}" }, "url": "{{base}}/v1/intent_reflector" } },
+    { "name": "Score", "request": { "method": "POST", "header": [{ "key": "x-api-key", "value": "{{api_key}}" }], "body": { "mode": "raw", "raw": "{\"text\":\"Hello doc\",\"targets\":[\"hello\",\"doc\"]}" }, "url": "{{base}}/v1/score" } },
+    { "name": "Batch Score", "request": { "method": "POST", "header": [{ "key": "x-api-key", "value": "{{api_key}}" }], "body": { "mode": "raw", "raw": "{\"items\":[{\"text\":\"a\"},{\"text\":\"hello doc\",\"targets\":[\"doc\"]}]}" }, "url": "{{base}}/v1/score/batch" } },
+    { "name": "Stream (SSE)", "request": { "method": "POST", "header": [{ "key": "x-api-key", "value": "{{api_key}}" }], "body": { "mode": "raw", "raw": "{\"text\":\"stream me\"}" }, "url": "{{base}}/v1/stream" } }
+  ],
+  "variable": [{ "key": "base", "value": "http://127.0.0.1:8000" }, { "key": "api_key", "value": "change-me" }]
+}
