@@ -1,42 +1,68 @@
-name: Pages
-
+name: Pages (Coverage + OpenAPI + Demo)
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
+  push: { branches: [ main ] }
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency: { group: "pages", cancel-in-progress: true }
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-      - name: Install dependencies
-        run: pip install -e .[dev]
-      - name: Run tests
-        run: pytest
-      - name: Prepare site directories
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install
+        run: |
+          python -m pip install -U pip
+          pip install -e .[test] || pip install -e .
+      - name: Run tests with coverage
+        env: { PYTHONPATH: src }
+        run: |
+          pytest -q --maxfail=1 --disable-warnings --cov=src/factsynth_ultimate --cov-report=xml:coverage.xml
+          test -f coverage.xml || (echo "coverage.xml not found" && exit 1)
+      - name: Prepare site dirs
         run: mkdir -p site site/badges site/openapi
-      - name: Copy OpenAPI spec
-        run: cp openapi/openapi.yaml site/openapi/openapi.yaml
       - name: Generate coverage badge
-        run: python tools/make_badge.py coverage.xml site/badges/coverage.svg
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: site
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/deploy-pages@v2
-        id: deployment
+        run: |
+          python tools/make_badge.py --xml coverage.xml --out site/badges/coverage.svg || python - <<'PY'
+import xml.etree.ElementTree as ET, pathlib
+rate = float(ET.parse("coverage.xml").getroot().attrib.get("line-rate","0"))*100
+svg=f'<svg xmlns="http://www.w3.org/2000/svg" width="150" height="20"><rect width="80" height="20" fill="#555"/><rect x="80" width="70" height="20" fill="#97CA00"/><g fill="#fff" font-family="DejaVu Sans,Verdana,sans-serif" font-size="11"><text x="40" y="14" text-anchor="middle">coverage</text><text x="115" y="14" text-anchor="middle">{rate:.1f}%</text></g></svg>'
+p=pathlib.Path("site/badges"); p.mkdir(parents=True, exist_ok=True); (p/"coverage.svg").write_text(svg)
+PY
+      - name: Publish OpenAPI + Demo
+        run: |
+          if [ -f openapi/openapi.yaml ]; then cp openapi/openapi.yaml site/openapi/openapi.yaml; fi
+          cat > site/openapi.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8"/>
+          <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+          <title>FactSynth API</title></head><body><redoc spec-url="./openapi/openapi.yaml"></redoc></body></html>
+          HTML
+          cat > site/index.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+          <title>FactSynth — Live Demo</title></head><body>
+          <h1>FactSynth — Live Demo</h1><p>API: <code id="apiBase"></code></p>
+          <textarea id="prompt" rows="6" cols="80">hello world</textarea><br/>
+          <input id="max" type="number" value="5" min="1"/><button id="run">Generate</button>
+          <pre id="out"></pre><p>Coverage: <img src="./badges/coverage.svg"/></p><p><a href="./openapi.html">OpenAPI Docs</a></p>
+          <script>
+          function q(n){return new URLSearchParams(location.search).get(n)}
+          const API = q('api') || (location.origin.includes('github.io') ? '' : location.origin);
+          document.getElementById('apiBase').textContent = API || '(set ?api=https://host)';
+          document.getElementById('run').onclick = async ()=>{
+            const prompt=document.getElementById('prompt').value; const max=parseInt(document.getElementById('max').value||'5',10);
+            const out=document.getElementById('out'); out.textContent='...';
+            try{
+              const r=await fetch((API||'')+'/v1/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,max_tokens:max})});
+              const j=await r.json().catch(async()=>({raw:await r.text()})); out.textContent=JSON.stringify(j,null,2);
+            }catch(e){ out.textContent='Request failed: '+e; }
+          };
+          </script></body></html>
+          HTML
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: "./site" }
+      - uses: actions/deploy-pages@v4
