@@ -18,8 +18,10 @@ jobs:
         run: pip install -e .[dev]
       - name: Run tests
         run: pytest
-      - name: Create badges directory
-        run: mkdir -p site/badges
+      - name: Prepare site directories
+        run: mkdir -p site site/badges site/openapi
+      - name: Copy OpenAPI spec
+        run: cp openapi/openapi.yaml site/openapi/openapi.yaml
       - name: Generate coverage badge
         run: python tools/make_badge.py coverage.xml site/badges/coverage.svg
       - name: Upload artifact
