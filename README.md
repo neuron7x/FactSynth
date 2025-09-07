@@ -16,6 +16,12 @@ curl -H 'x-api-key: change-me' -H 'content-type: application/json' \
 # UI: відкрий ui/index.html (Insight) або ui/roleplay.html (GLRTPM)
 ```
 
+## Змінні середовища
+
+- `API_KEY` — ключ для авторизації (дефолт `change-me`)
+- `API_HOST` — хост для запуску API (дефолт `0.0.0.0`)
+- `API_PORT` — порт API (дефолт `8000`)
+
 ## Docker
 ```bash
 docker build -t factsynth-ultimate:2.0 .
