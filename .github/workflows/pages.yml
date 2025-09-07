@@ -1,0 +1,52 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev] pyyaml openapi-spec-validator
+      - name: Run tests and generate coverage
+        run: pytest --cov --cov-report=xml
+      - name: Create coverage badge
+        run: python tools/make_badge.py --xml coverage.xml --out badges/coverage.svg
+      - name: Bundle OpenAPI spec
+        run: |
+          mkdir -p public
+          cp openapi/openapi.yaml public/openapi.yaml
+      - name: Build demo site
+        run: |
+          cp -r ui/* public/
+          cp -r badges public/
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: public
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v2
