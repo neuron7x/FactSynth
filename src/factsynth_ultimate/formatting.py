@@ -1,12 +1,23 @@
 from __future__ import annotations
 
+"""String-cleaning helpers used across FactSynth Ultimate.
+
+The functions below normalise text, strip unwanted formatting and enforce exact
+word counts.  They are intentionally lightweight so they can be re-used by the
+API, CLI and orchestration pipeline without pulling in heavy dependencies.
+"""
+
 import regex as re
 
 from .tokenization import normalize, tokenize
 
+# Basic emoji range covering the Misc Symbols & Pictographs block.
 EMOJI_RANGE = (0x1F300, 0x1FAFF)
+# Markdown-style headings (``#``, ``===`` or ``---``) at line start.
 HEAD_PAT = re.compile(r"^\s*(#+|={3,}|-{3,})", re.M)
+# Bulleted or numbered list markers.
 LIST_PAT = re.compile(r"^\s*([\-*•·]|\d+\.)\s+", re.M)
+# Any run of whitespace that should collapse to a single space.
 SPACE_PAT = re.compile(r"\s+")
 
 
@@ -24,6 +35,9 @@ def has_emoji(s: str) -> bool:
         Handles empty strings and only detects emojis whose code points are between
         0x1F300 and 0x1FAFF. Newly introduced emojis outside this range will be
         ignored.
+
+    Example:
+        ``has_emoji("hi 🙂")`` → ``True``
     """
     return any(EMOJI_RANGE[0] <= ord(ch) <= EMOJI_RANGE[1] for ch in s)
 
@@ -52,6 +66,9 @@ def sanitize(
         - Whitespace is normalized to single spaces and trimmed.
         - Removal of headings or lists may yield an empty string.
         - Only emojis recognized by :func:`has_emoji` are removed; others remain.
+
+    Example:
+        ``sanitize("# Title\n1. item?")`` → ``"Title item."``
     """
     t = normalize(text)
     if forbid_questions:
@@ -80,6 +97,9 @@ def ensure_period(text: str) -> str:
     Edge cases:
         If the input ends with other punctuation (e.g., ``!`` or ``?``), an extra
         period is appended.
+
+    Example:
+        ``ensure_period("done")`` → ``"done."``
     """
     t = text.rstrip()
     return t if t.endswith((".", "…")) else (t + ".")
@@ -104,6 +124,9 @@ def fit_length(text: str, target: int) -> str:
         - When shorter, the phrase "Дію послідовно i зважено." is cycled to pad
           the sentence.
         - A ``target`` of zero produces just a period.
+
+    Example:
+        ``fit_length("слово", 3)`` → ``"слово Дію послідовно."``
     """
     words = tokenize(text)
     if len(words) == target:
