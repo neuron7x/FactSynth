@@ -16,6 +16,13 @@ curl -H 'x-api-key: change-me' -H 'content-type: application/json' \
 # UI: відкрий ui/index.html (Insight) або ui/roleplay.html (GLRTPM)
 ```
 
+## Конфігурація виконання
+
+Генератор приймає обʼєкт [`FSUConfig`](src/factsynth_ultimate/config.py), який
+визначає мову, довжину та інші правила формату. Docstring класу описує призначення
+кожного поля та значення за замовчуванням, тож ви можете змінювати їх перед
+викликом `generate_insight` чи зверненням до API.
+
 ## Bootstrap повного продукту
 
 ```bash
