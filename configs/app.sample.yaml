@@ -1,7 +1,3 @@
-server:
-  host: 0.0.0.0
-  port: 8000
-rate_limit:
-  rps: 5
-logging:
-  level: INFO
+server: { host: 0.0.0.0, port: 8000 }
+logging: { level: INFO }
+rate_limit: { rps: 10 }

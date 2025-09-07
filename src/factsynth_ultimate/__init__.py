@@ -1,2 +1,2 @@
-from .generator import generate_insight, FSUInput, FSUConfig
-__all__=['generate_insight','FSUInput','FSUConfig']
+__all__ = ["__version__"]
+__version__ = "0.0.0"
