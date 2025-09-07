@@ -1,10 +1,31 @@
 import json, typer, yaml, os
+from . import __version__
 from .generator import FSUInput, FSUConfig, generate_insight
 from .metrics import j_index
 from .orchestrator.roles import RoleConfig
 from .orchestrator.pipeline import ProjectSpec, Orchestrator
 
 app = typer.Typer(help="FactSynth Ultimate CLI")
+
+
+def _version_callback(value: bool):
+    if value:
+        typer.echo(__version__)
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        None,
+        "--version",
+        "-v",
+        help="Show version and exit",
+        callback=_version_callback,
+        is_eager=True,
+    ),
+):
+    return
 
 @app.command()
 def insight(intent: str, length: int = 100):
