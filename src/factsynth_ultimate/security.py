@@ -1,12 +1,21 @@
 from time import time
+import asyncio
+from collections import deque
 from fastapi import Header, HTTPException
+
 try:
     import jwt
 except Exception:
     jwt = None
+
 from .settings import Settings
+
 S = Settings()
-_BUCKET = {}
+
+# rate limiting state
+_BUCKET: dict[str, tuple[int, int]] = {}
+_BUCKET_QUEUE: deque[tuple[int, str]] = deque()
+_LOCK = asyncio.Lock()
 
 async def api_key_auth(x_api_key: str | None = Header(None), authorization: str | None = Header(None)):
     if S.API_KEY and x_api_key == S.API_KEY:
@@ -26,10 +35,21 @@ async def rate_limiter(x_api_key: str | None = Header(None)):
     key = x_api_key or "anon"
     cap, window = S.RATE_MAX_REQ, S.RATE_WINDOW_SEC
     now = int(time())
-    tok, ts = _BUCKET.get(key, (cap, now))
-    if now > ts:
-        delta = now - ts
-        tok = min(cap, tok + (cap * delta // window)); ts = now
-    if tok <= 0:
-        raise HTTPException(status_code=429, detail="rate_limited")
-    _BUCKET[key] = (tok - 1, ts)
+    async with _LOCK:
+        # purge expired keys
+        expiry = now - window
+        while _BUCKET_QUEUE and _BUCKET_QUEUE[0][0] <= expiry:
+            ts_old, k_old = _BUCKET_QUEUE.popleft()
+            entry = _BUCKET.get(k_old)
+            if entry and entry[1] <= expiry and entry[1] == ts_old:
+                _BUCKET.pop(k_old, None)
+
+        tok, ts = _BUCKET.get(key, (cap, now))
+        if now > ts:
+            delta = now - ts
+            tok = min(cap, tok + (cap * delta // window))
+            ts = now
+        if tok <= 0:
+            raise HTTPException(status_code=429, detail="rate_limited")
+        _BUCKET[key] = (tok - 1, ts)
+        _BUCKET_QUEUE.append((ts, key))
