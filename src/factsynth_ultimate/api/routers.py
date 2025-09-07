@@ -2,7 +2,13 @@ from __future__ import annotations
 import json, time
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
-from ..schemas.models import IntentReq
+from ..schemas.models import (
+    IntentReq,
+    ScoreRequest,
+    ScoreResponse,
+    StreamRequest,
+    GLRTPMRequest,
+)
 from ..services.runtime import reflect_intent, score_payload, glrtpm_run
 
 api_router = APIRouter()
@@ -11,14 +17,14 @@ api_router = APIRouter()
 def intent_reflector(req: IntentReq):
     return {"insight": reflect_intent(req.intent, req.length)}
 
-@api_router.post("/v1/score")
-def score(payload: dict):
-    return {"score": score_payload(payload)}
+@api_router.post("/v1/score", response_model=ScoreResponse)
+def score(req: ScoreRequest) -> ScoreResponse:
+    return ScoreResponse(score=score_payload(req.dict(exclude_none=True)))
 
 @api_router.post("/v1/stream")
-def stream(payload: dict = None):
-    payload = payload or {}
-    tokens = list(str(payload.get("text","")))[:50] or list("factsynth")
+def stream(req: StreamRequest | None = None):
+    payload = req.dict(exclude_none=True) if req else {}
+    tokens = list(str(payload.get("text", "")))[:50] or list("factsynth")
     def gen():
         yield "event: start\n" + "data: {}\n\n"
         # Simulate token streaming
@@ -31,5 +37,5 @@ def stream(payload: dict = None):
     return StreamingResponse(gen(), media_type="text/event-stream")
 
 @api_router.post("/v1/glrtpm/run")
-def glrtpm(payload: dict):
-    return glrtpm_run(payload or {})
+def glrtpm(req: GLRTPMRequest) -> dict:
+    return glrtpm_run(req.dict(exclude_none=True))
