@@ -16,6 +16,14 @@ curl -H 'x-api-key: change-me' -H 'content-type: application/json' \
 # UI: відкрий ui/index.html (Insight) або ui/roleplay.html (GLRTPM)
 ```
 
+## Bootstrap повного продукту
+
+```bash
+scripts/bootstrap_full_product.sh
+```
+
+Скрипт створює каркас: директрії `src/full_product`, `tests/full_product` та workflow `.github/workflows/ci.yml`.
+
 ## Змінні середовища
 
 - `API_KEY` — ключ для авторизації (дефолт `change-me`)
