@@ -10,6 +10,40 @@ components:
       type: apiKey
       in: header
       name: x-api-key
+  schemas:
+    IntentReq:
+      type: object
+      properties:
+        intent:
+          type: string
+        length:
+          type: integer
+          default: 100
+    ScoreRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        targets:
+          type: array
+          items:
+            type: string
+    ScoreResponse:
+      type: object
+      properties:
+        score:
+          type: number
+          format: float
+    StreamRequest:
+      type: object
+      properties:
+        text:
+          type: string
+    GLRTPMRequest:
+      type: object
+      properties:
+        text:
+          type: string
 paths:
   /v1/intent_reflector:
     post:
@@ -30,7 +64,8 @@ paths:
               schema:
                 type: object
                 properties:
-                  insight: { type: string }
+                  insight:
+                    type: string
   /v1/score:
     post:
       security:
@@ -38,14 +73,28 @@ paths:
       summary: Score content against rubric
       requestBody:
         required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreRequest'
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScoreResponse'
   /v1/stream:
     post:
       security:
         - ApiKeyAuth: []
       summary: Stream insights (SSE)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StreamRequest'
       responses:
         '200':
           description: OK
@@ -56,6 +105,12 @@ paths:
       security:
         - ApiKeyAuth: []
       summary: Run GLRTPM pipeline
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GLRTPMRequest'
       responses:
         '200':
           description: OK
@@ -71,10 +126,3 @@ paths:
       responses:
         '200':
           description: OK
-components:
-  schemas:
-    IntentReq:
-      type: object
-      properties:
-        intent: { type: string }
-        length: { type: integer, default: 100 }
