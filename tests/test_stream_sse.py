@@ -1,7 +1,10 @@
-from multiprocessing import Process
 import time
-import requests
+from http import HTTPStatus
+from multiprocessing import Process
+
+import httpx
 import uvicorn
+
 from factsynth_ultimate.app import create_app
 
 
@@ -14,9 +17,9 @@ def start_server(port: int) -> Process:
     proc.start()
     for _ in range(50):
         try:
-            requests.get(f"http://127.0.0.1:{port}/v1/healthz")
+            httpx.get(f"http://127.0.0.1:{port}/v1/healthz")
             break
-        except requests.ConnectionError:
+        except httpx.ConnectError:
             time.sleep(0.1)
     return proc
 
@@ -25,8 +28,12 @@ def test_stream_sse():
     port = 8003
     proc = start_server(port)
     url = f"http://127.0.0.1:{port}/v1/stream"
-    r = requests.post(url, headers={"x-api-key": "change-me"}, json={"text": "abc"}, stream=True)
-    body = b"".join(r.iter_lines())
-    proc.terminate(); proc.join()
-    assert r.status_code == 200
+    with httpx.stream(
+        "POST", url, headers={"x-api-key": "change-me"}, json={"text": "abc"}
+    ) as r:
+        body = b"".join(r.iter_bytes())
+        status = r.status_code
+    proc.terminate()
+    proc.join()
+    assert status == HTTPStatus.OK
     assert b"event: start" in body and b"event: end" in body

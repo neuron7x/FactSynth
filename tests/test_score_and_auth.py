@@ -1,7 +1,10 @@
-from multiprocessing import Process
 import time
-import requests
+from http import HTTPStatus
+from multiprocessing import Process
+
+import httpx
 import uvicorn
+
 from factsynth_ultimate.app import create_app
 
 
@@ -14,9 +17,9 @@ def start_server(port: int) -> Process:
     proc.start()
     for _ in range(50):
         try:
-            requests.get(f"http://127.0.0.1:{port}/v1/healthz")
+            httpx.get(f"http://127.0.0.1:{port}/v1/healthz")
             break
-        except requests.ConnectionError:
+        except httpx.ConnectError:
             time.sleep(0.1)
     return proc
 
@@ -25,17 +28,26 @@ def test_auth_required():
     port = 8001
     proc = start_server(port)
     url = f"http://127.0.0.1:{port}/v1/score"
-    assert requests.post(url, json={"text": "x"}).status_code == 401
-    assert requests.post(url, headers={"x-api-key": "change-me"}, json={"text": "x"}).status_code == 200
-    proc.terminate(); proc.join()
+    assert httpx.post(url, json={"text": "x"}).status_code == HTTPStatus.UNAUTHORIZED
+    assert (
+        httpx.post(url, headers={"x-api-key": "change-me"}, json={"text": "x"}).status_code
+        == HTTPStatus.OK
+    )
+    proc.terminate()
+    proc.join()
 
 
 def test_score_values():
     port = 8002
     proc = start_server(port)
     url = f"http://127.0.0.1:{port}/v1/score"
-    r = requests.post(url, headers={"x-api-key": "change-me"}, json={"text": "hello world", "targets": ["hello", "x"]})
-    proc.terminate(); proc.join()
-    assert r.status_code == 200
+    r = httpx.post(
+        url,
+        headers={"x-api-key": "change-me"},
+        json={"text": "hello world", "targets": ["hello", "x"]},
+    )
+    proc.terminate()
+    proc.join()
+    assert r.status_code == HTTPStatus.OK
     s = r.json()["score"]
     assert 0.0 <= s <= 1.0
