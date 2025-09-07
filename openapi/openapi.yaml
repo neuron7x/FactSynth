@@ -16,6 +16,7 @@ components:
       properties:
         intent:
           type: string
+          example: "Напиши короткий вірш"
         length:
           type: integer
           default: 100
