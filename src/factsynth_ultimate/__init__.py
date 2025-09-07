@@ -1,5 +1,5 @@
-from .generator import generate_insight, FSUInput, FSUConfig
+from __future__ import annotations
 
-__version__ = "2.0.0"
+__all__ = ["__version__"]
 
-__all__ = ["generate_insight", "FSUInput", "FSUConfig", "__version__"]
+__version__ = "1.0.0"

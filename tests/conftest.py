@@ -1,5 +1,2 @@
-import pydantic
-
-# Provide a minimal stub for BaseSettings to avoid requiring pydantic-settings.
-# This is sufficient for tests which only rely on attribute defaults.
-pydantic.BaseSettings = object  # type: ignore
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
