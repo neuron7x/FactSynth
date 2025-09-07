@@ -1,45 +1,80 @@
 openapi: 3.0.3
 info:
-  title: FactSynth API
-  description: Formal contract for public endpoints.
-  version: ""
+  title: FactSynth Ultimate API
+  version: "1.0.0"
 servers:
   - url: http://localhost:8000
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
 paths:
-  /healthz:
-    get:
-      summary: Liveness probe
-      responses:
-        '200': { description: OK }
-        '204': { description: No Content }
-  /metrics:
-    get:
-      summary: Prometheus metrics
-      responses:
-        '200': { description: Text exposition format }
-  /v1/generate:
+  /v1/intent_reflector:
     post:
-      summary: Generate structured output
+      security:
+        - ApiKeyAuth: []
+      summary: Reflect user intent into structured insight
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                prompt: { type: string }
-                max_tokens: { type: integer, minimum: 1 }
-              required: [prompt]
+              $ref: '#/components/schemas/IntentReq'
       responses:
         '200':
-          description: Success
+          description: OK
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  output: { type: string }
-        '400': { description: Bad request }
-        '429': { description: Rate limited }
-        '500': { description: Server error }
-components: {}
+                  insight: { type: string }
+  /v1/score:
+    post:
+      security:
+        - ApiKeyAuth: []
+      summary: Score content against rubric
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: OK
+  /v1/stream:
+    post:
+      security:
+        - ApiKeyAuth: []
+      summary: Stream insights (SSE)
+      responses:
+        '200':
+          description: OK
+          content:
+            text/event-stream: {}
+  /v1/glrtpm/run:
+    post:
+      security:
+        - ApiKeyAuth: []
+      summary: Run GLRTPM pipeline
+      responses:
+        '200':
+          description: OK
+  /v1/healthz:
+    get:
+      summary: Health probe
+      responses:
+        '200':
+          description: OK
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    IntentReq:
+      type: object
+      properties:
+        intent: { type: string }
+        length: { type: integer, default: 100 }
