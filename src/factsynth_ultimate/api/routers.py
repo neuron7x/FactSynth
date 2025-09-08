@@ -45,16 +45,16 @@ def score_batch(batch: ScoreBatchReq, request: Request, background_tasks: Backgr
     return out
 
 @api.post('/v1/stream')
-def stream(req: ScoreReq):
+async def stream(req: ScoreReq):
     tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
-    async def gen():
+    async def event_stream():
         yield 'event: start\n'+'data: {}\n\n'
         for i, t in enumerate(tokens, 1):
             await asyncio.sleep(0.002)
             SSE_TOKENS.inc()
             yield 'event: token\n'+'data: '+json.dumps({'t':t,'n':i})+'\n\n'
         yield 'event: end\n'+'data: {}\n\n'
-    return StreamingResponse(gen(), media_type='text/event-stream')
+    return StreamingResponse(event_stream(), media_type='text/event-stream')
 
 @api.websocket("/ws/stream")
 async def ws_stream(ws: WebSocket):
