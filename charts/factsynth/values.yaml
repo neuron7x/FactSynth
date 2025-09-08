@@ -1,8 +1,9 @@
+---
 replicaCount: 2
 
 image:
-  repository: ghcr.io/OWNER/factsynth
-  tag: "latest"
+  repository: ghcr.io/neuron7x/factsynth
+  tag: ""        # порожнє: фактичний tag бере шаблон з .Chart.AppVersion
   pullPolicy: IfNotPresent
 
 service:
