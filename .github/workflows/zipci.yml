@@ -1,0 +1,199 @@
+name: ZIPCI: Intake → Validate → Gate
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'incoming/*.zip'
+      - 'incoming/**/*.zip'
+concurrency:
+  group: zipci-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  intake:
+    name: zipci/intake
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Locate newest ZIP
+        id: findzip
+        shell: bash
+        run: |
+          set -e
+          FILE=$(ls -1t incoming/*.zip 2>/dev/null | head -n1 || true)
+          [ -z "$FILE" ] && { echo "No ZIP found"; exit 1; }
+          echo "file=$FILE" >> $GITHUB_OUTPUT
+          echo "ZIP=$FILE"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with: { python-version: '3.x' }
+
+      - name: Sanitize ZIP
+        run: |
+          python .github/scripts/zipci_sanitize.py "${{ steps.findzip.outputs.file }}"
+
+      - name: Load config
+        id: cfg
+        uses: mikefarah/yq@v4
+        with:
+          cmd: yq -r '.staging_dir // ".zipci_staging"' .zipci.yml
+      - name: Prepare staging
+        id: stage
+        shell: bash
+        run: |
+          ST="${{ steps.cfg.outputs.result }}"
+          echo "staging=$ST" >> $GITHUB_OUTPUT
+          rm -rf "$ST" && mkdir -p "$ST"
+          unzip -qq "${{ steps.findzip.outputs.file }}" -d "$ST"
+
+      - name: Sync from staging
+        run: bash .github/scripts/zipci_sync.sh "${{ steps.stage.outputs.staging }}"
+
+      - name: Commit to temp branch
+        shell: bash
+        run: |
+          set -e
+          TEMP="zipci/${{ github.run_id }}"
+          git checkout -b "$TEMP"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes"; exit 0
+          fi
+          git -c user.name="zip-ci-bot" -c user.email="actions@github.com" commit -m "ZIP-sync: ${{ steps.findzip.outputs.file }} (run ${{ github.run_id }})"
+          git push -u origin "$TEMP"
+
+      - name: Create PR
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ github.token }}
+          title: "ZIP Sync → main (#${{ github.run_id }})"
+          body: "Auto PR from `${{ steps.findzip.outputs.file }}`. Auto-merge on green."
+          base: main
+          head: "zipci/${{ github.run_id }}"
+          labels: auto-merge, zipci
+
+      - name: Enable PR automerge
+        if: steps.cpr.outputs.pull-request-number != ''
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ github.token }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: squash
+
+  validate:
+    name: zipci/validate
+    needs: [intake]
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.status.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: "zipci/${{ github.run_id }}"
+          fetch-depth: 0
+
+      - name: Setup toolchains
+        uses: actions/setup-python@v5
+        with: { python-version: '3.x' }
+      - uses: actions/setup-node@v4
+        with: { node-version: 'lts/*', cache: 'npm' }
+      - uses: actions/setup-go@v5
+        with: { go-version: 'stable' }
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Load commands
+        id: cmds
+        uses: mikefarah/yq@v4
+        with:
+          cmd: |
+            echo "::group::zipci.yml"
+            cat .zipci.yml || true
+            echo "::endgroup::"
+            echo validate=$(yq -r '.validate // ""' .zipci.yml) >> $GITHUB_OUTPUT
+            echo test=$(yq -r '.test // ""' .zipci.yml) >> $GITHUB_OUTPUT
+
+      - name: Validate
+        continue-on-error: false
+        run: |
+          if [ -n "${{ steps.cmds.outputs.validate }}" ]; then
+            bash -lc "${{ steps.cmds.outputs.validate }}" | tee validate.log
+          else
+            echo "No validate command" | tee validate.log
+          fi
+
+      - name: Tests
+        run: |
+          if [ -n "${{ steps.cmds.outputs.test }}" ]; then
+            bash -lc "${{ steps.cmds.outputs.test }}" | tee test.log
+          else
+            echo "No tests defined" | tee test.log
+          fi
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zipci-logs-${{ github.run_id }}
+          path: |
+            validate.log
+            test.log
+
+      - name: Mark status
+        id: status
+        run: |
+          echo "result=success" >> $GITHUB_OUTPUT
+        if: ${{ success() }}
+
+  gate:
+    name: zipci/gate
+    needs: [validate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine result
+        id: res
+        run: |
+          echo "status=${{ needs.validate.result }}" >> $GITHUB_OUTPUT
+
+      - name: Tag backup on main (pre-merge)
+        if: needs.validate.result == 'success'
+        shell: bash
+        run: |
+          git init -q
+          git remote add origin "https://github.com/${{ github.repository }}"
+          git fetch origin main --tags -q
+          PREV=$(git rev-parse origin/main)
+          TAG="backup/$(date -u +%Y%m%d-%H%M%S)-${PREV:0:8}"
+          git tag "$TAG" "origin/main"
+          git push origin "$TAG"
+
+      - name: GREEN summary
+        if: needs.validate.result == 'success'
+        run: |
+          echo "✅ GREEN — will auto-merge via PR automerge."
+
+      - name: Prepare Issue body
+        if: needs.validate.result != 'success'
+        shell: bash
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          PR_BRANCH="zipci/${{ github.run_id }}"
+          ZIP_NAME="$(basename "${{ github.event.head_commit.message || 'ZIP' }}")"
+          sed -e "s|\${{ RUN_URL }}|$RUN_URL|g" \
+              -e "s|\${{ PR_BRANCH }}|$PR_BRANCH|g" \
+              -e "s|\${{ ZIP_NAME }}|$ZIP_NAME|g" .github/ISSUE_TEMPLATE/ci_failure.md > ISSUE_BODY.md
+
+      - name: Open failure Issue
+        if: needs.validate.result != 'success'
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "CI Failure: ${{ github.run_id }}"
+          content-filepath: ISSUE_BODY.md
+          labels: bug, zipci

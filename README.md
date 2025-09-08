@@ -51,7 +51,21 @@ export API_KEY=change-me        # use secret file or Vault in prod
 uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000
 ```
 
-Health:
+## Конфігурація виконання
+
+Генератор приймає обʼєкт [`FSUConfig`](src/factsynth_ultimate/config.py), який
+визначає мову, довжину та інші правила формату. Docstring класу описує призначення
+кожного поля та значення за замовчуванням, тож ви можете змінювати їх перед
+викликом `generate_insight` чи зверненням до API.
+
+### Formatting helpers
+
+The module [`formatting`](src/factsynth_ultimate/formatting.py) provides small
+utilities for cleaning free-form text.  Use `sanitize()` to strip headings,
+lists or emojis, `ensure_period()` to finalise sentences and `fit_length()` to
+pad or trim a fragment to an exact word count.
+
+## Bootstrap повного продукту
 
 ```bash
 curl -s http://127.0.0.1:8000/v1/healthz
