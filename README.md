@@ -1,4 +1,5 @@
 # FactSynth Ultimate Pro — 1.0.3 (2025-09-07)
+[![OpenAPI docs](https://img.shields.io/badge/docs-openapi-blue)](https://neuron7x.github.io/FactSynth/openapi/)
 
 Secure, observable **FastAPI** service for intent reflection, scoring, extractive generation, streaming (SSE/WebSocket), and a toy GLRTPM pipeline.
 
@@ -261,6 +262,7 @@ docker run -e API_KEY=change-me -p 8000:8000 factsynth:1.0.3
 
 ## Postman & OpenAPI
 
+* Docs: [OpenAPI documentation](https://neuron7x.github.io/FactSynth/openapi/)
 * OpenAPI: `openapi/openapi.yaml`
 * Postman: `openapi/postman/FactSynth.postman_collection.json`
 
