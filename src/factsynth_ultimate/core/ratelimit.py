@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
+from typing import Deque, DefaultDict
 from contextlib import suppress
 from time import monotonic
 
@@ -33,7 +34,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.key_header = key_header
         self.bucket_ttl = bucket_ttl
         self.cleanup_interval = cleanup_interval
-        self.buckets = defaultdict(deque)
+        self.buckets: DefaultDict[str, Deque[float]] = defaultdict(deque)
         self._next_cleanup = monotonic() + cleanup_interval
 
     def _key(self, request: Request) -> str:
