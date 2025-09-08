@@ -24,6 +24,9 @@ dev = [
 ]
 ops = [
     "prometheus-client",
+    "opentelemetry-instrumentation-fastapi",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp",
 ]
 isr = [
     "jax",

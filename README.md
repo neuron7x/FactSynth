@@ -204,7 +204,9 @@ All errors use `application/problem+json`:
 * `factsynth_sse_tokens_total`
 * `factsynth_generation_seconds_bucket`
 
-Grafana example dashboard: `grafana/dashboards/factsynth-overview.json`
+Grafana dashboard: [factsynth-overview.json](grafana/dashboards/factsynth-overview.json) [![Grafana](https://img.shields.io/badge/Grafana-dashboard-orange)](grafana/dashboards/factsynth-overview.json)
+
+Helm chart automatically bundles any `grafana/dashboards/*.json` files into a ConfigMap consumed by Grafana.
 
 **Logs**
 

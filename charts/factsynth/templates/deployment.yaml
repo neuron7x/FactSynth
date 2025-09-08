@@ -24,6 +24,10 @@ spec:
               value: "{{ .Values.env.ENV }}"
             - name: RATE_LIMIT_PER_MIN
               value: "{{ .Values.env.RATE_LIMIT_PER_MIN | quote }}"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "{{ .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT }}"
+            - name: OTEL_SERVICE_NAME
+              value: "{{ .Values.env.OTEL_SERVICE_NAME }}"
           readinessProbe:
             httpGet:
               path: /v1/healthz

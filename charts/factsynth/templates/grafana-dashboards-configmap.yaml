@@ -1,0 +1,14 @@
+{{- $files := .Files.Glob "dashboards/*.json" }}
+{{- if $files }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  labels:
+    grafana_dashboard: "1"
+data:
+{{- range $path, $file := $files }}
+  {{ base $path }}: |-
+{{ $file | indent 4 }}
+{{- end }}
+{{- end }}
