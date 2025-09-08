@@ -1,4 +1,8 @@
 
+import pytest
+
+pytest.importorskip("numpy")
+
 from factsynth_ultimate.akpshi.metrics import rmse, fcr, pfi
 def test_metrics():
     assert round(rmse([0,1],[0,1]),6)==0.0

@@ -23,6 +23,13 @@ dev = [
 ops = [
     "prometheus-client",
 ]
+isr = [
+    "jax",
+    "diffrax",
+]
+numpy = [
+    "numpy",
+]
 
 [project.scripts]
 fsu-api = "factsynth_ultimate.app:create_app"
