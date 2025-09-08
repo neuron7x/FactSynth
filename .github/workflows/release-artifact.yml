@@ -44,16 +44,11 @@ jobs:
 
       - name: Read version from pyproject
         id: getver
+        # yamllint disable rule:line-length
         run: |
-          python - <<'PY' > version.txt
-          import tomllib, sys
-          with open('pyproject.toml','rb') as f:
-              data = tomllib.loads(f.read().decode())
-          v = data['project']['version']
-          assert isinstance(v,str) and len(v)>0
-          print(v)
-          PY
+          python -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])" > version.txt
           echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
+        # yamllint enable rule:line-length
 
       - name: Generate SBOM (SPDX JSON)
         uses: anchore/sbom-action@v0
@@ -68,12 +63,12 @@ jobs:
           VERSION_FALLBACK: ${{ steps.getver.outputs.version }}
 
       - name: Docker build
-        env:
-          VERSION: ${{ steps.getver.outputs.version }}
+        # yamllint disable rule:line-length
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker build -t ghcr.io/${{ github.repository_owner }}/factsynth:${VERSION} .
-          docker push ghcr.io/${{ github.repository_owner }}/factsynth:${VERSION}
+          docker build -t ghcr.io/neuron7x/factsynth:${{ steps.getver.outputs.version }} .
+          docker push ghcr.io/neuron7x/factsynth:${{ steps.getver.outputs.version }}
+        # yamllint enable rule:line-length
 
       - name: Trivy scan (fs)
         uses: aquasecurity/trivy-action@0.24.0
