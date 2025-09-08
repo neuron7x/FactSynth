@@ -9,9 +9,13 @@ openapi_file = pathlib.Path(OPENAPI_PATH)
 if not openapi_file.exists():
     pytest.skip("OpenAPI spec not found; add openapi/openapi.yaml to enable contract tests", allow_module_level=True)
 
-schema = schemathesis.openapi.from_path(OPENAPI_PATH)
+schema = schemathesis.from_path(OPENAPI_PATH)
+schema.validate()
 if not list(schema.get_all_operations()):
-    pytest.skip("OpenAPI spec has no operations; contract tests skipped", allow_module_level=True)
+    pytest.skip(
+        "OpenAPI spec has no operations; contract tests skipped",
+        allow_module_level=True,
+    )
 
 @schema.parametrize()
 def test_api_conforms(case):
