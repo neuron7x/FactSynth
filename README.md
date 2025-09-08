@@ -137,6 +137,7 @@ curl -s http://127.0.0.1:8000/metrics
 
 ## Auth & Rate Limits
 
+* API key sources: `API_KEY_FILE` → Vault → `API_KEY` → default `change-me` (dev only)
 * Auth: `x-api-key: <your-secret>`
 * Default skip list (no auth): `/v1/healthz`, `/metrics`, `/v1/version`
 * Rate limit: `RATE_LIMIT_PER_MIN` (default **120**) per API key / client IP

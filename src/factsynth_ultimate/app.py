@@ -16,6 +16,7 @@ from .core.ratelimit import RateLimitMiddleware
 from .core.request_id import RequestIDMiddleware
 from .core.security_headers import SecurityHeadersMiddleware
 from .core.settings import load_settings
+from .core.secrets import read_api_key
 
 
 class _MetricsMiddleware(BaseHTTPMiddleware):
@@ -61,7 +62,7 @@ def create_app(
     app.add_middleware(BodySizeLimitMiddleware)
     app.add_middleware(
         APIKeyAuthMiddleware,
-        api_key="change-me",
+        api_key=read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY"),
         header_name=settings.auth_header_name,
         skip=tuple(settings.skip_auth_paths.split(",")),
     )
