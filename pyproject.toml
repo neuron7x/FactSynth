@@ -20,7 +20,7 @@ dev = [
     "pytest",
     "httpx",
     "uvicorn",
-    "schemathesis",
+    "schemathesis",  # API contract testing
 ]
 ops = [
     "prometheus-client",
