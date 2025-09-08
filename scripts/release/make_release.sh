@@ -7,12 +7,15 @@ cd "$repo_root"
 PYVER=$(python - <<'PY'
 import sys
 try:
-    import tomllib
-    data = tomllib.loads(open('pyproject.toml','rb').read())
-    print(data['project']['version'])
+ import tomllib
+ data = tomllib.loads(open('pyproject.toml','rb').read().decode())
+ print(data['project']['version'])
 except Exception:
-    import os
-    print(os.environ.get('VERSION_FALLBACK','0.0.0'))
+ import os
+ v = os.environ.get('VERSION_FALLBACK')
+ if not v:
+     raise SystemExit("VERSION required: cannot determine from pyproject.toml and no VERSION_FALLBACK provided")
+ print(v)
 PY
 )
 
@@ -47,7 +50,7 @@ chmod +x "$PKGDIR/quickstart/run.sh"
 
 # SBOM if syft is present
 if command -v syft >/dev/null 2>&1; then
-  syft packages . -o spdx-json > "${PKGDIR}/SBOM.spdx.json" || true
+syft packages . -o spdx-json > "${PKGDIR}/SBOM.spdx.json" || true
 fi
 
 # Checksums

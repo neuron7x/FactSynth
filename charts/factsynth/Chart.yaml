@@ -1,3 +1,4 @@
+---
 apiVersion: v2
 name: factsynth
 description: Helm chart for FactSynth service
