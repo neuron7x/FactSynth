@@ -15,6 +15,7 @@ class Settings:
     ratelimit_bucket_ttl: float = float(os.getenv("RATE_LIMIT_BUCKET_TTL", "300"))
     ratelimit_cleanup_interval: float = float(os.getenv("RATE_LIMIT_CLEANUP_INTERVAL", "60"))
     health_tcp_checks: str = os.getenv("HEALTH_TCP_CHECKS", "")
+    ip_allowlist: str = os.getenv("IP_ALLOWLIST", "")
 
 def load_settings() -> Settings:
     return Settings()
