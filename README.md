@@ -12,6 +12,7 @@ Secure, observable **FastAPI** service for intent reflection, scoring, extractiv
 * [Quickstart](#quickstart)
 * [Endpoints](#endpoints)
 * [Auth & Rate Limits](#auth--rate-limits)
+* [IP Allowlist](#ip-allowlist)
 * [Errors (Problem+JSON)](#errors-problemjson)
 * [Observability](#observability)
 * [Configuration](#configuration)
@@ -149,6 +150,18 @@ curl -s http://127.0.0.1:8000/metrics
 
 ---
 
+## IP Allowlist
+
+Restrict access by client IP. Set `IP_ALLOWLIST` to a comma-separated list of CIDRs:
+
+```bash
+export IP_ALLOWLIST="10.0.0.0/8,192.168.1.0/24"
+```
+
+Requests from other addresses receive `403 Forbidden`. Health (`/v1/healthz`) and metrics (`/metrics`) always bypass the check. Leaving the variable empty disables the allowlist.
+
+---
+
 ## Errors (Problem+JSON)
 
 All errors use `application/problem+json`:
@@ -181,9 +194,9 @@ Grafana example dashboard: `grafana/dashboards/factsynth-overview.json`
 
 * JSON lines with fields: `ts,lvl,msg,logger,request_id,path,method,status_code,latency_ms`
 
-**Tracing (optional)**
+**Tracing (OpenTelemetry)**
 
-* Install `.[otel]` extras and set OTEL envs; auto-instrumentation via FastAPI.
+Install with OTEL extras and configure standard env vars (for example `OTEL_EXPORTER_OTLP_ENDPOINT`). The app calls `try_enable_otel()` on startup and instruments FastAPI if dependencies are available.
 
 ---
 

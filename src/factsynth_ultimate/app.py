@@ -10,6 +10,7 @@ from .api.routers import api
 from .core.auth import APIKeyAuthMiddleware
 from .core.body_limit import BodySizeLimitMiddleware
 from .core.errors import install_handlers
+from .core.ip_allowlist import IPAllowlistMiddleware
 from .core.logging import setup_logging
 from .core.metrics import LATENCY, REQUESTS, metrics_bytes, metrics_content_type
 from .core.ratelimit import RateLimitMiddleware
@@ -17,6 +18,7 @@ from .core.request_id import RequestIDMiddleware
 from .core.security_headers import SecurityHeadersMiddleware
 from .core.settings import load_settings
 from .core.secrets import read_api_key
+from .core.tracing import try_enable_otel
 
 
 class _MetricsMiddleware(BaseHTTPMiddleware):
@@ -44,6 +46,7 @@ def create_app(
 
     app = FastAPI()
     install_handlers(app)
+    try_enable_otel(app)
 
     # core routes
     app.include_router(api)
@@ -59,6 +62,11 @@ def create_app(
     # middleware stack
     app.add_middleware(RequestIDMiddleware)
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.https_redirect)
+    if settings.ip_allowlist:
+        app.add_middleware(
+            IPAllowlistMiddleware,
+            cidrs=settings.ip_allowlist.split(","),
+        )
     app.add_middleware(BodySizeLimitMiddleware)
     app.add_middleware(
         APIKeyAuthMiddleware,
