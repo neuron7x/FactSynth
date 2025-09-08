@@ -33,7 +33,10 @@ class _MetricsMiddleware(BaseHTTPMiddleware):
         return response
 
 
-def create_app() -> FastAPI:
+def create_app(
+    bucket_ttl: int | None = None,
+    cleanup_interval: int | None = None,
+) -> FastAPI:
     """Application factory used by tests and ASGI server."""
     settings = load_settings()
     setup_logging()
@@ -66,8 +69,12 @@ def create_app() -> FastAPI:
         RateLimitMiddleware,
         per_minute=settings.ratelimit_per_minute,
         key_header=settings.auth_header_name,
-        bucket_ttl=settings.ratelimit_bucket_ttl,
-        cleanup_interval=settings.ratelimit_cleanup_interval,
+        bucket_ttl=bucket_ttl
+        if bucket_ttl is not None
+        else settings.ratelimit_bucket_ttl,
+        cleanup_interval=cleanup_interval
+        if cleanup_interval is not None
+        else settings.ratelimit_cleanup_interval,
     )
     app.add_middleware(_MetricsMiddleware)
 
