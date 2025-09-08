@@ -12,6 +12,7 @@ from .core.metrics import LATENCY, REQUESTS, metrics_bytes, metrics_content_type
 from .core.request_id import RequestIDMiddleware
 from .core.security_headers import SecurityHeadersMiddleware
 from .core.settings import load_settings
+from .core.ratelimit import RateLimitMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
@@ -34,8 +35,8 @@ class _MetricsMiddleware(BaseHTTPMiddleware):
 
 def create_app() -> FastAPI:
     """Application factory used by tests and ASGI server."""
-    setup_logging()
     settings = load_settings()
+    setup_logging()
 
     app = FastAPI()
     install_handlers(app)
@@ -60,6 +61,11 @@ def create_app() -> FastAPI:
         api_key="change-me",
         header_name=settings.auth_header_name,
         skip=tuple(settings.skip_auth_paths.split(",")),
+    )
+    app.add_middleware(
+        RateLimitMiddleware,
+        per_minute=settings.ratelimit_per_minute,
+        key_header=settings.auth_header_name,
     )
     app.add_middleware(_MetricsMiddleware)
 
