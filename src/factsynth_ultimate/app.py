@@ -69,8 +69,7 @@ def create_app(
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.https_redirect)
     if settings.ip_allowlist:
         app.add_middleware(
-            IPAllowlistMiddleware,
-            cidrs=settings.ip_allowlist,
+            IPAllowlistMiddleware, cidrs=settings.ip_allowlist
         )
     app.add_middleware(BodySizeLimitMiddleware)
     app.add_middleware(
