@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-import argparse, xml.etree.ElementTree as ET
+import argparse
+import xml.etree.ElementTree as ET
+
 
 def read_cov_percent(path):
     root = ET.parse(path).getroot()
@@ -9,19 +11,27 @@ def read_cov_percent(path):
     lc = root.attrib.get('lines-covered')
     if lv and lc:
         return 100.0 * (int(lc) / max(1, int(lv)))
-    total = 0; covered = 0
+    total = 0
+    covered = 0
     for ln in root.iter('line'):
         total += 1
         if ln.attrib.get('hits') not in (None, '0'):
             covered += 1
     return 100.0 * covered / max(1, total)
 
-def color(p):
-    if p >= 95: return "#4c1"
-    if p >= 90: return "#97CA00"
-    if p >= 80: return "#a4a61d"
-    if p >= 70: return "#dfb317"
-    if p >= 60: return "#fe7d37"
+THRESHOLDS: list[tuple[float, str]] = [
+    (95, "#4c1"),
+    (90, "#97CA00"),
+    (80, "#a4a61d"),
+    (70, "#dfb317"),
+    (60, "#fe7d37"),
+]
+
+
+def color(p: float) -> str:
+    for threshold, col in THRESHOLDS:
+        if p >= threshold:
+            return col
     return "#e05d44"
 
 SVG = '''<svg xmlns="http://www.w3.org/2000/svg" width="150" height="20" role="img" aria-label="coverage: {pct:.1f}%">

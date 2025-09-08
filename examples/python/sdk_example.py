@@ -1,5 +1,7 @@
 # Python SDK example (minimal, without generator)
-import os, requests
+import os
+
+import requests
 
 API = os.getenv("FACTSYNTH_API", "http://localhost:8000")
 

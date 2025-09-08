@@ -1,6 +1,8 @@
 from __future__ import annotations
-from starlette.middleware.base import BaseHTTPMiddleware
+
 from fastapi import Request
+from starlette.middleware.base import BaseHTTPMiddleware
+
 
 def _defaults(hsts: bool) -> dict[str, str]:
     base = {
