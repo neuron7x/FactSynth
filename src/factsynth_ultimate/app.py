@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import time
 from contextlib import suppress
 from typing import Awaitable, Callable
@@ -18,9 +17,9 @@ from .core.metrics import LATENCY, REQUESTS, metrics_bytes, metrics_content_type
 from .core.ratelimit import RateLimitMiddleware
 from .core.request_id import RequestIDMiddleware
 from .core.secrets import read_api_key
-from .core.tracing import try_enable_otel
 from .core.security_headers import SecurityHeadersMiddleware
 from .core.settings import load_settings
+from .core.tracing import try_enable_otel
 
 
 class _MetricsMiddleware(BaseHTTPMiddleware):
@@ -71,7 +70,7 @@ def create_app(
     if settings.ip_allowlist:
         app.add_middleware(
             IPAllowlistMiddleware,
-            cidrs=settings.ip_allowlist.split(","),
+            cidrs=settings.ip_allowlist,
         )
     app.add_middleware(BodySizeLimitMiddleware)
     app.add_middleware(

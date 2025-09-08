@@ -2,14 +2,16 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 try:
     import hvac  # type: ignore[import]
-    from hvac.exceptions import VaultError
 except ImportError:  # pragma: no cover - optional dependency
     hvac = None
 
+if TYPE_CHECKING or hvac is not None:
+    from hvac.exceptions import VaultError
+else:
     class VaultError(Exception):
         pass
 
