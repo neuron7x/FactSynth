@@ -1,7 +1,11 @@
 from __future__ import annotations
-import math, re, time, json, hashlib
+
+import math
+import re
+import time
 from collections import Counter
-from typing import Dict, Any, Iterable
+from typing import Any, Dict, Iterable
+
 from ..core.metrics import SCORING_TIME
 from ..schemas.requests import ScoreReq
 
@@ -25,10 +29,12 @@ def reflect_intent(intent: str, length: int) -> str:
     return intent[:max(0,length)]
 
 def _coverage(text: str, targets: Iterable[str]) -> float:
-    if not targets: return 0.0
+    if not targets:
+        return 0.0
     words = set(_WORD_RE.findall(text.lower()))
     toks = [t.lower() for t in targets if t]
-    if not toks: return 0.0
+    if not toks:
+        return 0.0
     found = sum(1 for t in toks if t in words)
     return found / len(toks)
 
