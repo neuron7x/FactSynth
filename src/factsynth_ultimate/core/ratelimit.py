@@ -8,6 +8,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from ..i18n import choose_language, translate
+
 from .metrics import REQUESTS
 
 
@@ -59,8 +61,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         while q and q[0] < window_start:
             q.popleft()
         if len(q) >= self.per_minute:
+            lang = choose_language(request)
+            title = translate(lang, "too_many_requests")
             resp = JSONResponse(
-                {"type": "about:blank", "title": "Too Many Requests", "status": 429},
+                {"type": "about:blank", "title": title, "status": 429},
                 status_code=429,
                 media_type="application/problem+json",
             )
