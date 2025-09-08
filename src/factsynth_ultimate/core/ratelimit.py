@@ -1,5 +1,5 @@
 from __future__ import annotations
-import time
+from time import monotonic
 from collections import defaultdict, deque
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -26,7 +26,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if path.startswith(("/v1/healthz","/metrics")):
             return await call_next(request)
         key = self._key(request)
-        now = time.time()
+        now = monotonic()
         window_start = now - 60.0
         q = self.buckets[key]
         while q and q[0] < window_start:
