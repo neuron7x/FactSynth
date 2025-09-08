@@ -1,17 +1,22 @@
 name: CI
 on:
-  push: { branches: [ main ] }
-  pull_request: { branches: [ main ] }
-permissions: { contents: read }
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
-      matrix: { python-version: [ "3.10", "3.11", "3.12" ] }
+      matrix:
+        python-version: [ "3.10", "3.11", "3.12" ]
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-        with: { python-version: ${{ matrix.python-version }} }
+        with:
+          python-version: ${{ matrix.python-version }}
       - uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
         with:
           path: ~/.cache/pip
@@ -21,7 +26,8 @@ jobs:
           python -m pip install -U pip
           pip install -e .[dev] || pip install -e .
       - name: Test
-        env: { PYTHONPATH: src }
+        env:
+          PYTHONPATH: src
         run: pytest -q --maxfail=1 --disable-warnings --cov=src/factsynth_ultimate --cov-report=xml:coverage.xml
       - name: Coverage check
         run: |
@@ -32,27 +38,39 @@ jobs:
           sys.exit(rate < 85)
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with: { name: coverage-xml-${{ matrix.python-version }}, path: coverage.xml }
+        with:
+          name: coverage-xml-${{ matrix.python-version }}
+          path: coverage.xml
 
   container:
     runs-on: ubuntu-latest
     needs: test
-    env: { IMAGE_NAME: factsynth:ci }
+    env:
+      IMAGE_NAME: factsynth:ci
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - name: Trivy filesystem scan
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
-        with: { scan-type: fs, scan-ref: . }
+        with:
+          scan-type: fs
+          scan-ref: .
       - name: Build image
         run: docker build -t ${{ env.IMAGE_NAME }} .
       - name: Trivy image scan
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
-        with: { scan-type: image, image-ref: ${{ env.IMAGE_NAME }} }
+        with:
+          scan-type: image
+          image-ref: ${{ env.IMAGE_NAME }}
       - name: Generate SBOM
         uses: anchore/sbom-action@da167eac915b4e86f08b264dbdbc867b61be6f0c # v0.20.5
-        with: { image: ${{ env.IMAGE_NAME }}, format: spdx-json, output-file: sbom.spdx.json }
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          format: spdx-json
+          output-file: sbom.spdx.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with: { name: sbom, path: sbom.spdx.json }
+        with:
+          name: sbom
+          path: sbom.spdx.json
       - uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
       - name: Sign image
         run: cosign sign --key "${{ secrets.COSIGN_KEY }}" ${{ env.IMAGE_NAME }}
@@ -63,7 +81,8 @@ jobs:
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-        with: { python-version: "3.12" }
+        with:
+          python-version: "3.12"
       - uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
         with:
           path: ~/.cache/pip
@@ -82,7 +101,8 @@ jobs:
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-        with: { python-version: "3.12" }
+        with:
+          python-version: "3.12"
       - uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4
         with:
           path: ~/.cache/pip
