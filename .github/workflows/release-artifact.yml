@@ -1,0 +1,106 @@
+---
+name: release-artifacts
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-test-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          pip install -e .[dev,ops] build schemathesis
+
+      - name: Run unit tests
+        run: pytest -q --maxfail=1
+
+      - name: Build sdists/wheels
+        run: python -m build
+
+      - name: Read version from pyproject
+        id: getver
+        run: |
+          python - <<'PY' > version.txt
+          import tomllib, sys
+          with open('pyproject.toml','rb') as f:
+              data = tomllib.loads(f.read().decode())
+          v = data['project']['version']
+          assert isinstance(v,str) and len(v)>0
+          print(v)
+          PY
+          echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Generate SBOM (SPDX JSON)
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          artifact-name: sbom.spdx.json
+          format: spdx-json
+
+      - name: Make canonical release ZIP
+        run: bash scripts/release/make_release.sh
+        env:
+          VERSION_FALLBACK: ${{ steps.getver.outputs.version }}
+
+      - name: Docker build
+        env:
+          VERSION: ${{ steps.getver.outputs.version }}
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker build -t ghcr.io/${{ github.repository_owner }}/factsynth:${VERSION} .
+          docker push ghcr.io/${{ github.repository_owner }}/factsynth:${VERSION}
+
+      - name: Trivy scan (fs)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: 'fs'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: factsynth-release
+          path: |
+            release/*.zip
+            release/SHA256SUMS
+            sbom.spdx.json
+            dist/*
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.zip
+            release/SHA256SUMS
+            sbom.spdx.json
+            dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
