@@ -20,9 +20,9 @@ logger=logging.getLogger(__name__)
 
 api=APIRouter()
 
-@api.get('/v1/version')
-def version():
-    return {'name':'factsynth-ultimate-pro','version': VERSION}
+@api.get("/v1/version")
+def version() -> dict[str, str]:
+    return {"name": "factsynth-ultimate-pro", "version": VERSION}
 
 @api.post('/v1/intent_reflector')
 def intent_reflector(req: IntentReq, request: Request):
