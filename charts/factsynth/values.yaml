@@ -13,6 +13,8 @@ service:
 env:
   ENV: "prod"
   RATE_LIMIT_PER_MIN: 120
+  OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  OTEL_SERVICE_NAME: ""
 
 secrets:
   name: factsynth-secret
@@ -25,6 +27,28 @@ ingress:
   tls: []
 
 resources: {}
+
+otelCollector:
+  enabled: false
+  image:
+    repository: otel/opentelemetry-collector
+    tag: latest
+  config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    processors:
+      batch: {}
+    exporters:
+      logging: {}
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [logging]
 
 hpa:
   enabled: false
