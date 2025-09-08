@@ -25,6 +25,13 @@ jobs:
           test -f coverage.xml || (echo "coverage.xml not found" && exit 1)
       - name: Prepare site dirs
         run: mkdir -p site site/badges site/openapi
+      - name: Copy OpenAPI spec
+        env: { TAG: ${{ github.ref_name }} }
+        run: |
+          if [ -f openapi/openapi.yaml ]; then
+            mkdir -p "site/openapi/${TAG}"
+            cp openapi/openapi.yaml "site/openapi/${TAG}/openapi.yaml"
+          fi
       - name: Generate coverage badge
         run: |
           python tools/make_badge.py --xml coverage.xml --out site/badges/coverage.svg || python - <<'PY'
@@ -34,34 +41,37 @@ svg=f'<svg xmlns="http://www.w3.org/2000/svg" width="150" height="20"><rect widt
 p=pathlib.Path("site/badges"); p.mkdir(parents=True, exist_ok=True); (p/"coverage.svg").write_text(svg)
 PY
       - name: Publish OpenAPI + Demo
+        env: { TAG: ${{ github.ref_name }} }
         run: |
-          if [ -f openapi/openapi.yaml ]; then cp openapi/openapi.yaml site/openapi/openapi.yaml; fi
-          cat > site/openapi.html <<'HTML'
-          <!doctype html><html><head><meta charset="utf-8"/>
-          <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
-          <title>FactSynth API</title></head><body><redoc spec-url="./openapi/openapi.yaml"></redoc></body></html>
-          HTML
+          if [ -f openapi/openapi.yaml ]; then
+            python tools/generate_openapi_index.py site/openapi
+            cat > "site/openapi/${TAG}/index.html" <<'HTML'
+<!doctype html><html><head><meta charset="utf-8"/>
+<script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+<title>FactSynth API</title></head><body><redoc spec-url="openapi.yaml"></redoc></body></html>
+HTML
+          fi
           cat > site/index.html <<'HTML'
-          <!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-          <title>FactSynth — Live Demo</title></head><body>
-          <h1>FactSynth — Live Demo</h1><p>API: <code id="apiBase"></code></p>
-          <textarea id="prompt" rows="6" cols="80">hello world</textarea><br/>
-          <input id="max" type="number" value="5" min="1"/><button id="run">Generate</button>
-          <pre id="out"></pre><p>Coverage: <img src="./badges/coverage.svg"/></p><p><a href="./openapi.html">OpenAPI Docs</a></p>
-          <script>
-          function q(n){return new URLSearchParams(location.search).get(n)}
-          const API = q('api') || (location.origin.includes('github.io') ? '' : location.origin);
-          document.getElementById('apiBase').textContent = API || '(set ?api=https://host)';
-          document.getElementById('run').onclick = async ()=>{
-            const prompt=document.getElementById('prompt').value; const max=parseInt(document.getElementById('max').value||'5',10);
-            const out=document.getElementById('out'); out.textContent='...';
-            try{
-              const r=await fetch((API||'')+'/v1/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,max_tokens:max})});
-              const j=await r.json().catch(async()=>({raw:await r.text()})); out.textContent=JSON.stringify(j,null,2);
-            }catch(e){ out.textContent='Request failed: '+e; }
-          };
-          </script></body></html>
-          HTML
+<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>FactSynth — Live Demo</title></head><body>
+<h1>FactSynth — Live Demo</h1><p>API: <code id="apiBase"></code></p>
+<textarea id="prompt" rows="6" cols="80">hello world</textarea><br/>
+<input id="max" type="number" value="5" min="1"/><button id="run">Generate</button>
+<pre id="out"></pre><p>Coverage: <img src="./badges/coverage.svg"/></p><p><a href="./openapi/index.html">OpenAPI Docs</a></p>
+<script>
+function q(n){return new URLSearchParams(location.search).get(n)}
+const API = q('api') || (location.origin.includes('github.io') ? '' : location.origin);
+document.getElementById('apiBase').textContent = API || '(set ?api=https://host)';
+document.getElementById('run').onclick = async ()=>{
+  const prompt=document.getElementById('prompt').value; const max=parseInt(document.getElementById('max').value||'5',10);
+  const out=document.getElementById('out'); out.textContent='...';
+  try{
+    const r=await fetch((API||'')+'/v1/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,max_tokens:max})});
+    const j=await r.json().catch(async()=>({raw:await r.text()})); out.textContent=JSON.stringify(j,null,2);
+  }catch(e){ out.textContent='Request failed: '+e; }
+};
+</script></body></html>
+HTML
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with: { path: "./site" }
