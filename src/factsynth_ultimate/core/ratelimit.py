@@ -3,11 +3,13 @@ from __future__ import annotations
 from collections import defaultdict, deque
 from contextlib import suppress
 from time import monotonic
+from typing import DefaultDict, Deque
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from .i18n import translate
 from .metrics import REQUESTS
 
 
@@ -31,7 +33,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.key_header = key_header
         self.bucket_ttl = bucket_ttl
         self.cleanup_interval = cleanup_interval
-        self.buckets = defaultdict(deque)
+        self.buckets: DefaultDict[str, Deque[float]] = defaultdict(deque)
         self._next_cleanup = monotonic() + cleanup_interval
 
     def _key(self, request: Request) -> str:
@@ -59,8 +61,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         while q and q[0] < window_start:
             q.popleft()
         if len(q) >= self.per_minute:
+            title = translate("Too Many Requests", request.headers.get("accept-language"))
             resp = JSONResponse(
-                {"type": "about:blank", "title": "Too Many Requests", "status": 429},
+                {"type": "about:blank", "title": title, "status": 429},
                 status_code=429,
                 media_type="application/problem+json",
             )
