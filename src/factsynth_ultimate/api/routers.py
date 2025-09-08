@@ -1,16 +1,25 @@
 from __future__ import annotations
-from fastapi import APIRouter, BackgroundTasks, Request, WebSocket, WebSocketDisconnect, Depends
-from fastapi.responses import StreamingResponse, HTMLResponse
-import json, asyncio, httpx
-from ..schemas.requests import IntentReq, ScoreReq, ScoreBatchReq, GLRTPMReq
-from ..services.runtime import reflect_intent, score_payload, tokenize_preview
-from ..core.metrics import SSE_TOKENS
+
+import asyncio
+import json
+from http import HTTPStatus
+
+import httpx
+from fastapi import APIRouter, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import StreamingResponse
+
+from factsynth_ultimate import VERSION
+
 from ..core.audit import audit_event
+from ..core.metrics import SSE_TOKENS
+from ..schemas.requests import IntentReq, ScoreBatchReq, ScoreReq
+from ..services.runtime import reflect_intent, score_payload, tokenize_preview
 
 api=APIRouter()
 
 @api.get('/v1/version')
-def version(): return {'name':'factsynth-ultimate-pro','version':'1.0.1'}
+def version():
+    return {'name':'factsynth-ultimate-pro','version': VERSION}
 
 @api.post('/v1/intent_reflector')
 def intent_reflector(req: IntentReq, request: Request):
@@ -49,11 +58,12 @@ def stream(req: ScoreReq):
 
 @api.websocket("/ws/stream")
 async def ws_stream(ws: WebSocket):
-    # простий auth: очікуємо x-api-key у headers
+    # simple auth: expect x-api-key in headers
     key = ws.headers.get("x-api-key")
     await ws.accept()
     if not key:
-        await ws.close(code=4401); return
+        await ws.close(code=4401)
+        return
     try:
         while True:
             data = await ws.receive_text()
@@ -69,10 +79,12 @@ async def _post_callback(url: str, data: dict, attempts: int = 3):
         for _ in range(attempts):
             try:
                 r = await client.post(url, json=data)
-                if r.status_code < 500: return
-            except Exception:
+                if r.status_code < HTTPStatus.INTERNAL_SERVER_ERROR:
+                    return
+            except Exception:  # noqa: BLE001
                 pass
-            await _sleep(delay); delay *= 2
+            await _sleep(delay)
+            delay *= 2
 
 async def _sleep(s: float):
     # виділено для тестів/патчу
