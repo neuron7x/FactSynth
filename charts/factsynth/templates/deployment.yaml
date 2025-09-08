@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: factsynth
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: factsynth
+  template:
+    metadata:
+      labels:
+        app: factsynth
+    spec:
+      containers:
+        - name: factsynth
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 8000
+          env:
+            - name: API_KEY
+              value: "{{ .Values.env.API_KEY }}"
+            - name: ENV
+              value: "{{ .Values.env.ENV }}"
+            - name: RATE_LIMIT_PER_MIN
+              value: "{{ .Values.env.RATE_LIMIT_PER_MIN | quote }}"
+          readinessProbe:
+            httpGet:
+              path: /v1/healthz
+              port: 8000
+          livenessProbe:
+            httpGet:
+              path: /v1/healthz
+              port: 8000
+          resources: {{- toYaml .Values.resources | nindent 12 }}
