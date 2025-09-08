@@ -21,6 +21,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         cleanup_interval: float = 60.0,
     ):
         super().__init__(app)
+        if per_minute <= 0:
+            raise ValueError("per_minute must be positive")
+        if bucket_ttl <= 0:
+            raise ValueError("bucket_ttl must be positive")
+        if cleanup_interval <= 0:
+            raise ValueError("cleanup_interval must be positive")
         self.per_minute = per_minute
         self.key_header = key_header
         self.bucket_ttl = bucket_ttl
@@ -53,13 +59,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         while q and q[0] < window_start:
             q.popleft()
         if len(q) >= self.per_minute:
-            with suppress(Exception):
-                REQUESTS.labels(request.method, path, "429").inc()
-            resp = JSONResponse({"type":"about:blank","title":"Too Many Requests","status":429}, status_code=429, media_type="application/problem+json")
+            resp = JSONResponse(
+                {"type": "about:blank", "title": "Too Many Requests", "status": 429},
+                status_code=429,
+                media_type="application/problem+json",
+            )
             resp.headers["Retry-After"] = "60"
             self._set_headers(resp, used=len(q))
+            with suppress(Exception):
+                REQUESTS.labels(request.method, path, "429").inc()
             return resp
         q.append(now)
         response = await call_next(request)
         self._set_headers(response, used=len(q))
+        with suppress(Exception):
+            REQUESTS.labels(request.method, path, str(response.status_code)).inc()
         return response
