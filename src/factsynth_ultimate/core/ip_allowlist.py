@@ -4,6 +4,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from ..i18n import choose_language, translate
+
 class IPAllowlistMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, cidrs: list[str] | None = None, skip: tuple[str, ...] = ("/v1/healthz","/metrics")):
         super().__init__(app)
@@ -17,4 +19,10 @@ class IPAllowlistMiddleware(BaseHTTPMiddleware):
         addr = ipaddress.ip_address(ip)
         if any(addr in n for n in self.networks):
             return await call_next(request)
-        return JSONResponse({"type":"about:blank","title":"Forbidden","status":403}, status_code=403, media_type="application/problem+json")
+        lang = choose_language(request)
+        title = translate(lang, "forbidden")
+        return JSONResponse(
+            {"type": "about:blank", "title": title, "status": 403},
+            status_code=403,
+            media_type="application/problem+json",
+        )
