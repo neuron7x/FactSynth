@@ -1,17 +1,32 @@
 from __future__ import annotations
-from time import monotonic
+
 from collections import defaultdict, deque
+from contextlib import suppress
+from time import monotonic
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+
 from .metrics import REQUESTS
 
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, per_minute: int = 120, key_header: str = "x-api-key"):
+    def __init__(
+        self,
+        app,
+        per_minute: int = 120,
+        key_header: str = "x-api-key",
+        bucket_ttl: float = 300.0,
+        cleanup_interval: float = 60.0,
+    ):
         super().__init__(app)
         self.per_minute = per_minute
         self.key_header = key_header
+        self.bucket_ttl = bucket_ttl
+        self.cleanup_interval = cleanup_interval
         self.buckets = defaultdict(deque)
+        self._next_cleanup = monotonic() + cleanup_interval
 
     def _key(self, request: Request) -> str:
         return request.headers.get(self.key_header) or (request.client.host if request.client else "anon")
@@ -23,17 +38,23 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        if path.startswith(("/v1/healthz","/metrics")):
+        if path.startswith(("/v1/healthz", "/metrics")):
             return await call_next(request)
         key = self._key(request)
         now = monotonic()
+        if now >= self._next_cleanup:
+            cutoff = now - self.bucket_ttl
+            for k, dq in list(self.buckets.items()):
+                if dq and dq[-1] < cutoff:
+                    del self.buckets[k]
+            self._next_cleanup = now + self.cleanup_interval
         window_start = now - 60.0
         q = self.buckets[key]
         while q and q[0] < window_start:
             q.popleft()
         if len(q) >= self.per_minute:
-            try: REQUESTS.labels(request.method, path, "429").inc()
-            except Exception: pass
+            with suppress(Exception):
+                REQUESTS.labels(request.method, path, "429").inc()
             resp = JSONResponse({"type":"about:blank","title":"Too Many Requests","status":429}, status_code=429, media_type="application/problem+json")
             resp.headers["Retry-After"] = "60"
             self._set_headers(resp, used=len(q))
@@ -41,7 +62,4 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         q.append(now)
         response = await call_next(request)
         self._set_headers(response, used=len(q))
-        # періодичне прибирання старих ключів
-        if len(self.buckets) > 10000 and not q:  # грубе обмеження
-            self.buckets.pop(key, None)
         return response
