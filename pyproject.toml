@@ -35,6 +35,3 @@ numpy = [
 [project.scripts]
 fsu-api = "factsynth_ultimate.app:create_app"
 
-[tool.poetry.dependencies]
-pydantic-settings = "*"
-
