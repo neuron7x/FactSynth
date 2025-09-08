@@ -1,38 +1,35 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
+from typing import Deque, DefaultDict
 from contextlib import suppress
 from time import monotonic
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 
-from ..i18n import choose_language, translate
 from .metrics import REQUESTS
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
-        app,
+        app: ASGIApp,
         per_minute: int = 120,
         key_header: str = "x-api-key",
         bucket_ttl: float = 300.0,
         cleanup_interval: float = 60.0,
-    ):
+    ) -> None:
         super().__init__(app)
-        if per_minute <= 0:
-            raise ValueError("per_minute must be positive")
-        if bucket_ttl <= 0:
-            raise ValueError("bucket_ttl must be positive")
-        if cleanup_interval <= 0:
-            raise ValueError("cleanup_interval must be positive")
+        if bucket_ttl <= 0 or cleanup_interval <= 0:
+            raise ValueError("bucket_ttl and cleanup_interval must be positive")
         self.per_minute = per_minute
         self.key_header = key_header
         self.bucket_ttl = bucket_ttl
         self.cleanup_interval = cleanup_interval
-        self.buckets = defaultdict(deque)
+        self.buckets: DefaultDict[str, Deque[float]] = defaultdict(deque)
         self._next_cleanup = monotonic() + cleanup_interval
 
     def _key(self, request: Request) -> str:
@@ -60,21 +57,27 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         while q and q[0] < window_start:
             q.popleft()
         if len(q) >= self.per_minute:
-            lang = choose_language(request)
-            title = translate(lang, "too_many_requests")
-            resp = JSONResponse(
-                {"type": "about:blank", "title": title, "status": 429},
-                status_code=429,
-                media_type="application/problem+json",
-            )
+            with suppress(Exception):
+                REQUESTS.labels(request.method, path, "429").inc()
+            resp = JSONResponse({"type":"about:blank","title":"Too Many Requests","status":429}, status_code=429, media_type="application/problem+json")
             resp.headers["Retry-After"] = "60"
             self._set_headers(resp, used=len(q))
             with suppress(Exception):
                 REQUESTS.labels(request.method, path, "429").inc()
             return resp
         q.append(now)
+        self._count += 1
+        if self._count % self.cleanup_every == 0:
+            self._cleanup(now)
         response = await call_next(request)
         self._set_headers(response, used=len(q))
-        with suppress(Exception):
-            REQUESTS.labels(request.method, path, str(response.status_code)).inc()
         return response
+
+    def _cleanup(self, now: float) -> None:
+        window_start = now - 60.0
+        expire_before = now - self.cleanup_minutes * 60.0
+        for key, q in list(self.buckets.items()):
+            while q and q[0] < window_start:
+                q.popleft()
+            if not q or q[-1] < expire_before:
+                self.buckets.pop(key, None)

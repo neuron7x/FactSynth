@@ -1,7 +1,7 @@
 name: Pages (Coverage + OpenAPI + Demo)
 on:
   push: { branches: [ main ] }
-  workflow_dispatch:
+  workflow_dispatch: {}
 permissions:
   contents: read
   pages: write
@@ -12,35 +12,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-
-      - name: Install deps
-        run: pip install -e '.[dev]'
-
-      - name: Run tests with coverage
+      - name: Install
         run: |
-          pytest -q --maxfail=1 --disable-warnings --cov --cov-report=xml:coverage.xml
+          python -m pip install -U pip
+          pip install -e .[dev] || pip install -e .
+      - name: Run tests with coverage
+        env: { PYTHONPATH: src }
+        run: |
+          pytest -q --maxfail=1 --disable-warnings --cov=src/factsynth_ultimate --cov-report=xml:coverage.xml
           test -f coverage.xml || (echo "coverage.xml not found" && exit 1)
-
-      - name: Prepare site structure
+      - name: Prepare site dirs
         run: mkdir -p site site/badges site/openapi
-
       - name: Generate coverage badge
         run: |
-          python tools/make_badge.py --xml coverage.xml --out site/badges/coverage.svg || {
-            python - <<'PY'
+          python tools/make_badge.py --xml coverage.xml --out site/badges/coverage.svg || python - <<'PY'
 import xml.etree.ElementTree as ET, pathlib
-p = pathlib.Path("coverage.xml")
-root = ET.parse(p).getroot()
-rate = float(root.attrib.get('line-rate', '0'))*100
+rate = float(ET.parse("coverage.xml").getroot().attrib.get("line-rate","0"))*100
 svg=f'<svg xmlns="http://www.w3.org/2000/svg" width="150" height="20"><rect width="80" height="20" fill="#555"/><rect x="80" width="70" height="20" fill="#97CA00"/><g fill="#fff" font-family="DejaVu Sans,Verdana,sans-serif" font-size="11"><text x="40" y="14" text-anchor="middle">coverage</text><text x="115" y="14" text-anchor="middle">{rate:.1f}%</text></g></svg>'
-pathlib.Path("site/badges").mkdir(parents=True, exist_ok=True)
-pathlib.Path("site/badges/coverage.svg").write_text(svg)
+p=pathlib.Path("site/badges"); p.mkdir(parents=True, exist_ok=True); (p/"coverage.svg").write_text(svg)
 PY
-          }
-
       - name: Publish OpenAPI + Demo
         run: |
           if [ -f openapi/openapi.yaml ]; then cp openapi/openapi.yaml site/openapi/openapi.yaml; fi
@@ -70,7 +62,6 @@ PY
           };
           </script></body></html>
           HTML
-
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: { path: "./site" }
