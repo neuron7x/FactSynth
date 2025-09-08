@@ -1,5 +1,8 @@
 from __future__ import annotations
-import logging, os
+
+import logging
+import os
+
 
 def setup_logging() -> None:
     level = os.getenv("LOG_LEVEL", "INFO").upper()

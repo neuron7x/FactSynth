@@ -9,7 +9,6 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from ..i18n import choose_language, translate
-
 from .metrics import REQUESTS
 
 

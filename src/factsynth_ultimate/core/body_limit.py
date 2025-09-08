@@ -1,9 +1,11 @@
 from __future__ import annotations
-from starlette.middleware.base import BaseHTTPMiddleware
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from ..i18n import choose_language, translate
+
 
 class BodySizeLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, max_bytes: int = 2_000_000):

@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 import ipaddress
-from starlette.middleware.base import BaseHTTPMiddleware
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from ..i18n import choose_language, translate
+
 
 class IPAllowlistMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, cidrs: list[str] | None = None, skip: tuple[str, ...] = ("/v1/healthz","/metrics")):

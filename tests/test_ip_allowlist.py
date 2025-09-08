@@ -1,12 +1,12 @@
-from http import HTTPStatus
 import os
+from http import HTTPStatus
+from importlib import reload
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
-from importlib import reload
+
 from factsynth_ultimate.app import create_app
 from factsynth_ultimate.core import settings as settings_module
-
 
 ALLOWED_BODY = {"text": "ok"}
 

@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
+
 from factsynth_ultimate.app import app
+
 
 def test_ws_stream_smoke():
     c = TestClient(app)
