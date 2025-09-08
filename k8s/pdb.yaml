@@ -1,6 +1,0 @@
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata: { name: fsu-api, namespace: factsynth }
-spec:
-  minAvailable: 1
-  selector: { matchLabels: { app: fsu-api } }

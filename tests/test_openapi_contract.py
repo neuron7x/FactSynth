@@ -1,5 +1,5 @@
 import os, pathlib, pytest
-import schemathesis
+from schemathesis import openapi
 
 BASE_URL = os.getenv("FACTSYNTH_BASE_URL", "http://127.0.0.1:8000")
 OPENAPI_PATH = os.getenv("FACTSYNTH_OPENAPI", "openapi/openapi.yaml")
@@ -9,7 +9,7 @@ openapi_file = pathlib.Path(OPENAPI_PATH)
 if not openapi_file.exists():
     pytest.skip("OpenAPI spec not found; add openapi/openapi.yaml to enable contract tests", allow_module_level=True)
 
-schema = schemathesis.from_path(OPENAPI_PATH)
+schema = openapi.from_path(OPENAPI_PATH)
 schema.validate()
 if not list(schema.get_all_operations()):
     pytest.skip(
