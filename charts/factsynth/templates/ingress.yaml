@@ -7,20 +7,16 @@ metadata:
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
-  {{- range .Values.ingress.hosts }}
-    - host: {{ .host }}
+    - host: {{ .Values.ingress.host }}
       http:
         paths:
-        {{- range .paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          - path: /
+            pathType: Prefix
             backend:
               service:
                 name: factsynth
                 port:
-                  number: {{ $.Values.service.port }}
-        {{- end }}
-  {{- end }}
+                  number: {{ .Values.service.port }}
   tls:
   {{- toYaml .Values.ingress.tls | nindent 4 }}
 {{- end }}

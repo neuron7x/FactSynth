@@ -257,6 +257,16 @@ docker build -t factsynth:1.0.3 .
 docker run -e API_KEY=change-me -p 8000:8000 factsynth:1.0.3
 ```
 
+## Helm
+
+```bash
+helm registry login ghcr.io -u <user> --password <token>
+helm upgrade --install factsynth oci://ghcr.io/<owner>/charts/factsynth \
+  --set secrets.apiKey=change-me \
+  --set ingress.enabled=true \
+  --set ingress.host=factsynth.local
+```
+
 ---
 
 ## Postman & OpenAPI

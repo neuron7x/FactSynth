@@ -11,18 +11,34 @@ service:
   port: 8000
 
 env:
-  API_KEY: "change-me"
   ENV: "prod"
   RATE_LIMIT_PER_MIN: 120
+
+secrets:
+  name: factsynth-secret
+  apiKey: "change-me"
 
 ingress:
   enabled: false
   className: ""
-  hosts:
-    - host: factsynth.local
-      paths:
-        - path: /
-          pathType: Prefix
+  host: factsynth.local
   tls: []
 
 resources: {}
+
+hpa:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 60
+
+networkPolicy:
+  enabled: false
+
+pdb:
+  enabled: false
+  minAvailable: 1
+
+namespace:
+  create: false
+  name: factsynth
