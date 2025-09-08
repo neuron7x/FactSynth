@@ -1,7 +1,7 @@
-# Python SDK example (minimal, without generator)
-import os
+"""Minimal Python SDK example."""
 
-import requests
+import os
+import requests  # type: ignore[import-untyped]
 
 API = os.getenv("FACTSYNTH_API", "http://localhost:8000")
 
