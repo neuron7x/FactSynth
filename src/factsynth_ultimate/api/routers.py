@@ -1,7 +1,7 @@
 from __future__ import annotations
 from fastapi import APIRouter, BackgroundTasks, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import StreamingResponse, HTMLResponse
-import json, time, httpx
+import json, asyncio, httpx
 from ..schemas.requests import IntentReq, ScoreReq, ScoreBatchReq, GLRTPMReq
 from ..services.runtime import reflect_intent, score_payload, tokenize_preview
 from ..core.metrics import SSE_TOKENS
@@ -38,10 +38,10 @@ def score_batch(batch: ScoreBatchReq, request: Request, background_tasks: Backgr
 @api.post('/v1/stream')
 def stream(req: ScoreReq):
     tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
-    def gen():
+    async def gen():
         yield 'event: start\n'+'data: {}\n\n'
         for i, t in enumerate(tokens, 1):
-            time.sleep(0.002)
+            await asyncio.sleep(0.002)
             SSE_TOKENS.inc()
             yield 'event: token\n'+'data: '+json.dumps({'t':t,'n':i})+'\n\n'
         yield 'event: end\n'+'data: {}\n\n'
@@ -76,4 +76,4 @@ async def _post_callback(url: str, data: dict, attempts: int = 3):
 
 async def _sleep(s: float):
     # виділено для тестів/патчу
-    time.sleep(s)
+    await asyncio.sleep(s)
