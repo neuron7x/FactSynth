@@ -63,18 +63,18 @@ def create_app(
         APIKeyAuthMiddleware,
         api_key="change-me",
         header_name=settings.auth_header_name,
-        skip=tuple(settings.skip_auth_paths.split(",")),
+        skip=tuple(settings.skip_auth_paths),
     )
     app.add_middleware(
         RateLimitMiddleware,
-        per_minute=settings.ratelimit_per_minute,
+        per_minute=settings.rate_limit_per_minute,
         key_header=settings.auth_header_name,
         bucket_ttl=bucket_ttl
         if bucket_ttl is not None
-        else settings.ratelimit_bucket_ttl,
+        else settings.rate_limit_bucket_ttl,
         cleanup_interval=cleanup_interval
         if cleanup_interval is not None
-        else settings.ratelimit_cleanup_interval,
+        else settings.rate_limit_cleanup_interval,
     )
     app.add_middleware(_MetricsMiddleware)
 
