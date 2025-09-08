@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
-from typing import Deque, DefaultDict
 from contextlib import suppress
 from time import monotonic
+from typing import DefaultDict, Deque
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
+from .i18n import translate
 from .metrics import REQUESTS
 
 
@@ -59,25 +60,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if len(q) >= self.per_minute:
             with suppress(Exception):
                 REQUESTS.labels(request.method, path, "429").inc()
-            resp = JSONResponse({"type":"about:blank","title":"Too Many Requests","status":429}, status_code=429, media_type="application/problem+json")
+            resp = JSONResponse(
+                {
+                    "type": "about:blank",
+                    "title": translate("Too Many Requests", request.headers.get("accept-language")),
+                    "status": 429,
+                },
+                status_code=429,
+                media_type="application/problem+json",
+            )
             resp.headers["Retry-After"] = "60"
             self._set_headers(resp, used=len(q))
-            with suppress(Exception):
-                REQUESTS.labels(request.method, path, "429").inc()
             return resp
         q.append(now)
-        self._count += 1
-        if self._count % self.cleanup_every == 0:
-            self._cleanup(now)
         response = await call_next(request)
         self._set_headers(response, used=len(q))
         return response
-
-    def _cleanup(self, now: float) -> None:
-        window_start = now - 60.0
-        expire_before = now - self.cleanup_minutes * 60.0
-        for key, q in list(self.buckets.items()):
-            while q and q[0] < window_start:
-                q.popleft()
-            if not q or q[-1] < expire_before:
-                self.buckets.pop(key, None)
