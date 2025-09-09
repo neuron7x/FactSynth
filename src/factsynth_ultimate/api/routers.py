@@ -6,58 +6,84 @@ import logging
 from http import HTTPStatus
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import StreamingResponse
 
 from factsynth_ultimate import VERSION
 
 from ..core.audit import audit_event
+from ..core.auth import get_jwt_claims
 from ..core.metrics import SSE_TOKENS
 from ..schemas.requests import IntentReq, ScoreBatchReq, ScoreReq
 from ..services.runtime import reflect_intent, score_payload, tokenize_preview
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-api=APIRouter()
+api = APIRouter()
+
 
 @api.get("/v1/version")
 def version() -> dict[str, str]:
     return {"name": "factsynth-ultimate-pro", "version": VERSION}
 
-@api.post('/v1/intent_reflector')
-def intent_reflector(req: IntentReq, request: Request):
-    audit_event("intent_reflector", request.client.host if request.client else "unknown")
-    return {'insight': reflect_intent(req.intent, req.length)}
 
-@api.post('/v1/score')
-def score(req: ScoreReq, request: Request, background_tasks: BackgroundTasks):
+@api.post("/v1/intent_reflector")
+def intent_reflector(req: IntentReq, request: Request, _claims: dict = Depends(get_jwt_claims)):
+    audit_event("intent_reflector", request.client.host if request.client else "unknown")
+    return {"insight": reflect_intent(req.intent, req.length)}
+
+
+@api.post("/v1/score")
+def score(
+    req: ScoreReq,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    _claims: dict = Depends(get_jwt_claims),
+):
     audit_event("score", request.client.host if request.client else "unknown")
-    result = {'score': score_payload(req.model_dump())}
+    result = {"score": score_payload(req.model_dump())}
     if req.callback_url:
         background_tasks.add_task(_post_callback, req.callback_url, result)
     return result
 
-@api.post('/v1/score/batch')
-def score_batch(batch: ScoreBatchReq, request: Request, background_tasks: BackgroundTasks):
+
+@api.post("/v1/score/batch")
+def score_batch(
+    batch: ScoreBatchReq,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    _claims: dict = Depends(get_jwt_claims),
+):
     audit_event("score_batch", request.client.host if request.client else "unknown")
-    items = batch.items[:batch.limit]
-    results = [{'score': score_payload(it.model_dump())} for it in items]
-    out = {'results': results, 'count': len(results)}
+    items = batch.items[: batch.limit]
+    results = [{"score": score_payload(it.model_dump())} for it in items]
+    out = {"results": results, "count": len(results)}
     if batch.callback_url:
         background_tasks.add_task(_post_callback, batch.callback_url, out)
     return out
 
-@api.post('/v1/stream')
-async def stream(req: ScoreReq):
+
+@api.post("/v1/stream")
+async def stream(req: ScoreReq, _claims: dict = Depends(get_jwt_claims)):
     tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
+
     async def event_stream():
-        yield 'event: start\n'+'data: {}\n\n'
+        yield "event: start\n" + "data: {}\n\n"
         for i, t in enumerate(tokens, 1):
             await asyncio.sleep(0.002)
             SSE_TOKENS.inc()
-            yield 'event: token\n'+'data: '+json.dumps({'t':t,'n':i})+'\n\n'
-        yield 'event: end\n'+'data: {}\n\n'
-    return StreamingResponse(event_stream(), media_type='text/event-stream')
+            yield "event: token\n" + "data: " + json.dumps({"t": t, "n": i}) + "\n\n"
+        yield "event: end\n" + "data: {}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
 
 @api.websocket("/ws/stream")
 async def ws_stream(ws: WebSocket):
@@ -85,6 +111,7 @@ async def ws_stream(ws: WebSocket):
     except WebSocketDisconnect:
         return
 
+
 async def _post_callback(
     url: str,
     data: dict,
@@ -109,6 +136,7 @@ async def _post_callback(
                 delay = min(delay * 2, max_delay)
     if last_err is not None:
         logger.error("Callback failed after %d attempts: %s", attempts, last_err)
+
 
 async def _sleep(s: float):
     # виділено для тестів/патчу

@@ -69,23 +69,22 @@ def create_app(
     app.add_middleware(RequestIDMiddleware)
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.https_redirect)
     if settings.ip_allowlist:
-        app.add_middleware(
-            IPAllowlistMiddleware, cidrs=settings.ip_allowlist
-        )
+        app.add_middleware(IPAllowlistMiddleware, cidrs=settings.ip_allowlist)
     app.add_middleware(BodySizeLimitMiddleware)
     app.add_middleware(
         APIKeyAuthMiddleware,
         api_key=read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY"),
         header_name=settings.auth_header_name,
         skip=tuple(settings.skip_auth_paths),
+        jwks_url=settings.oidc_jwks_url,
+        audience=settings.oidc_audience,
+        issuer=settings.oidc_issuer,
     )
     app.add_middleware(
         RateLimitMiddleware,
         per_minute=settings.rate_limit_per_minute,
         key_header=settings.auth_header_name,
-        bucket_ttl=bucket_ttl
-        if bucket_ttl is not None
-        else settings.rate_limit_bucket_ttl,
+        bucket_ttl=bucket_ttl if bucket_ttl is not None else settings.rate_limit_bucket_ttl,
         cleanup_interval=cleanup_interval
         if cleanup_interval is not None
         else settings.rate_limit_cleanup_interval,

@@ -30,7 +30,7 @@ Secure, observable **FastAPI** service for intent reflection, scoring, extractiv
 
 ## Features
 
-* **API-key auth** via `x-api-key` header (skips `/v1/healthz`, `/metrics`, `/v1/version`).
+* **Auth** via `x-api-key` header or JWT/OIDC Bearer token (skips `/v1/healthz`, `/metrics`, `/v1/version`).
 * **Rate limiting** (default 120 req/min) with `X-RateLimit-*` headers.
 * **SSE & WebSocket streaming** for token-like updates.
 * **Extractive generation**: `title`, `summary`, `keywords` from input text.
@@ -156,7 +156,8 @@ curl -s http://127.0.0.1:8000/metrics
 ## Auth & Rate Limits
 
 * API key sources: `API_KEY_FILE` → Vault → `API_KEY` → default `change-me` (dev only)
-* Auth: `x-api-key: <your-secret>`
+* Auth: `x-api-key: <your-secret>` or `Authorization: Bearer <JWT>`
+  * JWT validation uses `OIDC_JWKS_URL`, `OIDC_AUDIENCE` and `OIDC_ISSUER`.
 * Default skip list (no auth): `/v1/healthz`, `/metrics`, `/v1/version`
 * Rate limit: `RATE_LIMIT_PER_MIN` (default **120**) per API key / client IP
 * Response headers:
@@ -225,6 +226,7 @@ Environment variables (examples):
 * `API_KEY` or **file** via `API_KEY_FILE`
 * `AUTH_HEADER_NAME` (default `x-api-key`)
 * `SKIP_AUTH_PATHS` (CSV; default `/v1/healthz,/metrics,/v1/version`)
+* `OIDC_JWKS_URL`, `OIDC_AUDIENCE`, `OIDC_ISSUER` for JWT auth
 * `CORS_ALLOW_ORIGINS` (CSV; default `*` in dev)
 * `HTTPS_REDIRECT` = `1` to force HTTPS
 * `TRUSTED_HOSTS` (CSV; prod only)
@@ -303,7 +305,6 @@ pytest -q --cov=src --cov-report=term-missing
 
 * Pluggable scoring backends (LLM/semantic coverage)
 * Rich Web UI (admin + live metrics)
-* JWT/OIDC alternative auth
 * Distributed cache (Redis) for heavy pipelines
 
 ---

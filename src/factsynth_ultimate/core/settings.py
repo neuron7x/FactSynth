@@ -17,12 +17,17 @@ class Settings(BaseSettings):
     skip_auth_paths: list[str] = Field(
         default_factory=lambda: ["/v1/healthz", "/metrics"], env="SKIP_AUTH_PATHS"
     )
+    oidc_jwks_url: str | None = Field(default=None, env="OIDC_JWKS_URL")
+    oidc_audience: str | None = Field(default=None, env="OIDC_AUDIENCE")
+    oidc_issuer: str | None = Field(default=None, env="OIDC_ISSUER")
     rate_limit_per_minute: int = Field(default=120, env="RATE_LIMIT_PER_MINUTE")
     rate_limit_bucket_ttl: float = Field(default=300.0, env="RATE_LIMIT_BUCKET_TTL")
     rate_limit_cleanup_interval: float = Field(default=60.0, env="RATE_LIMIT_CLEANUP_INTERVAL")
     health_tcp_checks: list[str] = Field(default_factory=list, env="HEALTH_TCP_CHECKS")
 
-    @field_validator("cors_allow_origins", "skip_auth_paths", "health_tcp_checks", "ip_allowlist", mode="before")
+    @field_validator(
+        "cors_allow_origins", "skip_auth_paths", "health_tcp_checks", "ip_allowlist", mode="before"
+    )
     @classmethod
     def _split_csv(cls, value: str | list[str]) -> list[str]:
         if isinstance(value, str):
@@ -34,4 +39,3 @@ class Settings(BaseSettings):
 
 def load_settings() -> Settings:
     return Settings()
-
