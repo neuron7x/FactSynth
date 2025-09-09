@@ -1,9 +1,11 @@
 
+import json
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Callable
+from typing import Any, Callable, Dict, List
 
-from .roles import Rationalist, Critic, Aesthete, Integrator, Observer
-from .metrics import compute_coherence, cluster_density, role_contribution
+from .metrics import cluster_density, compute_coherence, role_contribution
+from .roles import Aesthete, Critic, Integrator, Observer, Rationalist
+
 
 @dataclass
 class GLRTPMConfig:
@@ -20,7 +22,13 @@ class GLRTPMPipeline:
                 [Rationalist().respond(t), Aesthete().respond(t)]
             ),
             "P": lambda t, res: (
-                f"[Meta-Projection] Nodes: {{'thesis': '{t[:64]}...', 'counter': '{res.get('R', '')[:64]}...'}}"
+                "[Meta-Projection] Nodes: "
+                + json.dumps(
+                    {
+                        "thesis": f"{t[:64]}...",
+                        "counter": f"{res.get('R', '')[:64]}...",
+                    }
+                )
             ),
             "Omega": lambda t, _: Integrator().respond(t)
             + " | "
