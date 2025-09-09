@@ -151,6 +151,24 @@ curl -s -H 'x-api-key: change-me' \
 curl -s http://127.0.0.1:8000/metrics
 ```
 
+### Custom Scoring Backends
+
+`factsynth_ultimate.backends` exposes a pluggable scoring interface.  To add
+your own backend:
+
+```python
+from factsynth_ultimate.backends import ScoreBackend, register_backend, get_backend
+
+class MyBackend(ScoreBackend):
+    def score(self, req):
+        return 0.42
+
+register_backend("my", MyBackend)
+backend = get_backend("my")
+```
+
+The same hook can be used for LLM- or semantic-coverage scoring implementations.
+
 ---
 
 ## Auth & Rate Limits
