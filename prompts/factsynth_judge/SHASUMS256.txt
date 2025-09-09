@@ -3,7 +3,7 @@
 4c0572c77add21012db1e9aa5b2cecf33e4b3263bb77a6c41844b908457c4a3a  ./FEW_SHOTS/date_offset_trap.md
 f462cee90fab5efad3b42f7ac915bd762ca1b1c929f089c1b1cf60a633ae3a8e  ./FEW_SHOTS/entity_swap.md
 453a2b09cbf63ec7bbf803f50404b5bcbe271eba3c7d6d9de336c4ac550ca7ed  ./FEW_SHOTS/numeric_rounding_trap.md
-73a4777aeda892c2ebd49a864ed443f9ce339ed1ed54d0f9d962abfe5c4499d6  ./GOLDEN_12_TESTSET.json
+a309bf651ad7cdb5693b12207257101b7c71e3e9effefa4dc5091ae50b529c50  ./GOLDEN_12_TESTSET.json
 b7f1e1dccdd7d09c62bb13493dfdd1f7fe20d8927aa784a63d79d52eca2fa45b  ./README.md
 cbb93fd8e0bfe85179c93e380d94f06d60398f7f06fb06e015110f8811738c06  ./SCHEMAS/output_contract.schema.json
 a8da334f99b7dcb1861a483da6deb59c6c2e312c48b092200a856cc48a7c35dc  ./SYSTEM_PROMPT.md
@@ -18,4 +18,4 @@ c9058cb4519c380112f0669060d5895d51b4462d28f331ae120d20812a2cd45f  ./scripts/chec
 39b8efd8e94b103a068d6051c923cf952cb77664d7376fbc6c6a553905c22b18  ./scripts/quickstart.sh
 6eca88bdc8cfb2c3a38ae8f5ca0e2fea08c1b47bcc38cee0508eac982ff4d149  ./scripts/validate.sh
 69e3c89382ff311da8da369711c46927434854438fec690e53b06f29d7aef61f  ./tests/__pycache__/test_bundle.cpython-312-pytest-8.4.1.pyc
-44044c91e1dd0a38ec8a304b794bca9256f98bd865d7192f3f6f09b42df1b47d  ./tests/test_bundle.py
+201e74b3bdc2cb5cabed3b9d897c1a7a41a124ebd81c591fa502f3b49eb3451e  ./tests/test_bundle.py
