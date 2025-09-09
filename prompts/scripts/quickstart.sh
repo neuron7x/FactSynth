@@ -29,8 +29,12 @@ curl -fsS -H "${HDR_AUTH[@]}" -H 'content-type: application/json' \
 
 echo "-- validate schemas"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-"${DIR}/scripts/validate.sh" /tmp/generate.json "${DIR}/SCHEMAS/generate.output.schema.json"
-"${DIR}/scripts/validate.sh" /tmp/score.json "${DIR}/SCHEMAS/score.output.schema.json"
+if command -v ajv >/dev/null; then
+  "${DIR}/scripts/validate.sh" /tmp/generate.json "${DIR}/SCHEMAS/generate.output.schema.json"
+  "${DIR}/scripts/validate.sh" /tmp/score.json "${DIR}/SCHEMAS/score.output.schema.json"
+else
+  echo "Warning: ajv-cli not found, skipping schema validation." >&2
+fi
 
 echo "-- compute checksums"
 "${DIR}/scripts/checksums.sh" "${DIR}"

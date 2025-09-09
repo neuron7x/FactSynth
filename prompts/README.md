@@ -9,6 +9,8 @@ cd prompts/scripts
 ./quickstart.sh
 ```
 
+Перед запуском переконайтесь, що встановлено Node.js та утиліта `ajv` з пакета `ajv-cli` (`npm i -g ajv-cli`).
+
 Скрипт:
 
 1. Підкаже встановити `FACTSYNTH_API_KEY`.
@@ -29,6 +31,7 @@ cd prompts/scripts
 
 * Цільова модель: **GPT-5 Thinking** або новіша reasoning-модель.
 * Ключ API: `FACTSYNTH_API_KEY` (передається як `x-api-key`).
+* Node.js 18+ і утиліта `ajv` з пакета `ajv-cli` для валідації схем.
 * Відповіді сервера перевіряються локально за JSON-схемами.
 
 ## Ліцензія
