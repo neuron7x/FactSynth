@@ -19,7 +19,7 @@ jobs:
       - name: Build release artifacts
         run: bash scripts/build_release.sh
       - name: Upload release assets
-        uses: softprops/action-gh-release@26994186c0ac3ef5cae75ac16aa32e8153525f77 # v1
+        uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2
         with:
           files: |
             release/dist/*
