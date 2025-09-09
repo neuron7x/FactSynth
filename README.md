@@ -40,6 +40,7 @@ Secure, observable **FastAPI** service for intent reflection, scoring, extractiv
 * **Problem+JSON** structured errors.
 * **Prometheus metrics** + **JSON logs**; optional OpenTelemetry.
 * **HSTS/CSP** security headers; body size limit; optional IP allowlist.
+* Optional Redis caching for pipeline results.
 
 ---
 
@@ -47,7 +48,7 @@ Secure, observable **FastAPI** service for intent reflection, scoring, extractiv
 
 ```bash
 python -m venv .venv && . .venv/bin/activate
-pip install -U pip && pip install -e .[dev,ops]
+pip install -U pip && pip install -e .[dev,ops,cache]
 export API_KEY=change-me        # use secret file or Vault in prod
 uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000
 ```
@@ -232,6 +233,10 @@ Environment variables (examples):
 * `MAX_BODY_BYTES` (default `2000000`)
 * `RATE_LIMIT_PER_MIN` (default `120`)
 * `HEALTH_TCP_CHECKS` (CSV like `127.0.0.1:5432,[::1]:6379`)
+* `REDIS_URL` to enable caching (e.g. `redis://localhost:6379/0`)
+* `CACHE_TTL` (default `300`) cache expiration in seconds
+
+Caching falls back to an in-memory store if `REDIS_URL` is unset.
 
 Vault support (optional): set `VAULT_ADDR`, `VAULT_TOKEN`, `VAULT_PATH` (reads `API_KEY`).
 

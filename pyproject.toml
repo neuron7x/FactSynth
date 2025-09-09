@@ -32,6 +32,9 @@ isr = [
 numpy = [
     "numpy",
 ]
+cache = [
+    "redis>=5.0",
+]
 
 [project.scripts]
 fsu-api = "factsynth_ultimate.app:create_app"

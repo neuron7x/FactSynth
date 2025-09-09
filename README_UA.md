@@ -36,6 +36,7 @@
 * **Структуровані помилки** у форматі Problem+JSON.
 * **Метрики Prometheus** + **JSON-логи**; за бажанням OpenTelemetry.
 * **HSTS/CSP** заголовки безпеки; обмеження розміру тіла; необов'язковий список дозволених IP.
+* Необов'язкове кешування в Redis для результатів конвеєра.
 
 ---
 
@@ -43,7 +44,7 @@
 
 ```bash
 python -m venv .venv && . .venv/bin/activate
-pip install -U pip && pip install -e .[dev,ops]
+pip install -U pip && pip install -e .[dev,ops,cache]
 export API_KEY=change-me        # у продакшені використайте секрет або Vault
 uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000
 ```
@@ -143,7 +144,10 @@ curl -s -H 'x-api-key: change-me' \
 
 ## Конфігурація
 
-Змінні середовища: `API_KEY`, `RATE_LIMIT_PER_MINUTE`, `BODY_MAX_BYTES`, `IP_ALLOWLIST`, тощо.
+Змінні середовища: `API_KEY`, `RATE_LIMIT_PER_MINUTE`, `BODY_MAX_BYTES`, `IP_ALLOWLIST`,
+`REDIS_URL` (вмикає кеш) та `CACHE_TTL` (за замовчуванням 300 с), тощо.
+
+Якщо `REDIS_URL` не встановлено, використовується простий кеш у пам'яті.
 
 ---
 

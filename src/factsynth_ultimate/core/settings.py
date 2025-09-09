@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     rate_limit_bucket_ttl: float = Field(default=300.0, env="RATE_LIMIT_BUCKET_TTL")
     rate_limit_cleanup_interval: float = Field(default=60.0, env="RATE_LIMIT_CLEANUP_INTERVAL")
     health_tcp_checks: list[str] = Field(default_factory=list, env="HEALTH_TCP_CHECKS")
+    redis_url: str | None = Field(default=None, env="REDIS_URL")
+    cache_ttl: int = Field(default=300, env="CACHE_TTL")
 
     @field_validator("cors_allow_origins", "skip_auth_paths", "health_tcp_checks", "ip_allowlist", mode="before")
     @classmethod
