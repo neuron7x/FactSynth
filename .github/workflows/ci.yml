@@ -83,7 +83,6 @@ jobs:
 
   ruff:
     runs-on: ubuntu-latest
-    fail-on-error: true
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - uses: ./.github/actions/setup-python-deps
@@ -95,7 +94,6 @@ jobs:
 
   mypy:
     runs-on: ubuntu-latest
-    fail-on-error: true
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - uses: ./.github/actions/setup-python-deps
