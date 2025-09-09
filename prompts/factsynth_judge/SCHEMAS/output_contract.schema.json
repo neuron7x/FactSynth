@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FactSynth Judge Output",
+  "type": "object",
+  "required": [
+    "CLAIMS",
+    "EVIDENCE",
+    "VERDICT",
+    "NORMALIZATION",
+    "CONFLICTS",
+    "HYPOTHESIS",
+    "EVIDENCE_GAP",
+    "METRICS"
+  ],
+  "properties": {
+    "CLAIMS": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text", "type", "normalized"],
+        "properties": {
+          "text": {"type": "string"},
+          "type": {"type": "string", "enum": ["fact", "number", "date", "definition", "attribution"]},
+          "normalized": {
+            "type": "object",
+            "required": ["entities", "numbers", "dates"],
+            "properties": {
+              "entities": {"type": "array", "items": {"type": "string"}},
+              "numbers": {"type": "array"},
+              "dates": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        }
+      }
+    },
+    "EVIDENCE": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim_index", "support", "rationale", "spans", "confidence"],
+        "properties": {
+          "claim_index": {"type": "integer"},
+          "support": {"type": "string", "enum": ["supports", "refutes", "insufficient"]},
+          "rationale": {"type": "string"},
+          "spans": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["source", "lines"],
+              "properties": {
+                "source": {"type": "string"},
+                "lines": {"type": "string"}
+              }
+            }
+          },
+          "confidence": {"type": "string", "enum": ["certain", "likely", "possible", "unknown"]}
+        }
+      }
+    },
+    "VERDICT": {"type": "string", "enum": ["supported", "partially_supported", "refuted", "not_provable"]},
+    "NORMALIZATION": {"type": "string"},
+    "CONFLICTS": {"oneOf": [{"type": "string"}, {"type": "array"}]},
+    "HYPOTHESIS": {"type": "string"},
+    "EVIDENCE_GAP": {"type": "array", "items": {"type": "string"}},
+    "METRICS": {
+      "type": "object",
+      "required": [
+        "latency_ms",
+        "claims_total",
+        "claims_supported",
+        "claims_refuted",
+        "claims_gap",
+        "calibration_hint"
+      ],
+      "properties": {
+        "latency_ms": {"type": "number"},
+        "claims_total": {"type": "integer"},
+        "claims_supported": {"type": "integer"},
+        "claims_refuted": {"type": "integer"},
+        "claims_gap": {"type": "integer"},
+        "calibration_hint": {"type": "string"}
+      }
+    }
+  }
+}
