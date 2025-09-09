@@ -61,11 +61,13 @@ def gamma_spectrum(y: jnp.ndarray, idx: int = 5, fs: Optional[float]=None, ts: O
         if ts is None:
             raise ValueError("Provide fs or ts to infer sampling rate")
         fs = estimate_fs(ts)
-    spec = jnp.abs(jnp.fft.fft(sig))
+    sig = sig - jnp.mean(sig)
+    sig = jnp.diff(sig)
+    spec = jnp.abs(jnp.fft.rfft(sig))
     return spec
 
 def dominant_freq(spec: jnp.ndarray, fs: float) -> float:
-    n = spec.shape[0]
-    freqs = jnp.fft.fftfreq(n, d=1.0/fs)
-    idx = int(jnp.argmax(spec))
-    return float(jnp.abs(freqs[idx]))
+    n = (spec.shape[0] - 1) * 2
+    freqs = jnp.fft.rfftfreq(n, d=1.0/fs)
+    idx = int(jnp.argmax(spec[1:] * freqs[1:]) + 1)
+    return float(freqs[idx])
