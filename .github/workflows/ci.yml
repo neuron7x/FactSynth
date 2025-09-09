@@ -54,6 +54,9 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
       - name: Build image
         run: docker build -t ${{ env.IMAGE_NAME }} .
       - name: Trivy image scan
@@ -61,6 +64,9 @@ jobs:
         with:
           scan-type: image
           image-ref: ${{ env.IMAGE_NAME }}
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
       - name: Generate SBOM
         uses: anchore/sbom-action@da167eac915b4e86f08b264dbdbc867b61be6f0c # v0.20.5
         with:
