@@ -1,0 +1,14 @@
+[
+  "Classification: Decide supported/refuted on a single factual claim with clear span.",
+  "Extraction: Normalize units (miles\u2194km) and verify numeric claim.",
+  "Transformation: Compute year difference from two dates in context.",
+  "Multi-step Reasoning: Join two non-adjacent spans to validate a conditional.",
+  "Coding: Given pseudo-CSV in context, verify 'sum(column)=X'.",
+  "Debugging: Context includes off-by-one example; model must correct it.",
+  "Planning: Identify the minimal 2 follow-up facts needed (`EVIDENCE_GAP`).",
+  "Long-form Writing: Provide rationale but keep `VERDICT` schema strict.",
+  "Summarization: Ensure summary does not introduce new facts (audit check).",
+  "Translation/Localization: Verify date formats \"05/07/2021\" with locale hint.",
+  "Data/Math: Percentage change computed from base and new value in context.",
+  "Tool-Use & Safety/Refusal: Context lacks evidence; must return `NOT_PROVABLE`."
+]

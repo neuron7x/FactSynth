@@ -1,0 +1,1 @@
+Given a test JSON array, enforce: single-claim questions; remove ambiguous pronouns; introduce exactly one controlled trap per item; ensure context includes a decisive span. Return revised JSON and a diff summary.
