@@ -4,6 +4,8 @@ from .sim import (
     estimate_fs,
     gamma_spectrum,
     simulate_isr,
+    MIN_DOM_FREQ,
+    MAX_DOM_FREQ,
 )
 
 __all__ = [
@@ -12,4 +14,6 @@ __all__ = [
     "estimate_fs",
     "gamma_spectrum",
     "simulate_isr",
+    "MIN_DOM_FREQ",
+    "MAX_DOM_FREQ",
 ]

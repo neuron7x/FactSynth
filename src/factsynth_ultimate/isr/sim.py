@@ -7,6 +7,8 @@ import jax.numpy as jnp
 from diffrax import ODETerm, SaveAt, Tsit5, diffeqsolve
 
 GAMMA_FREQ = 40.0
+MIN_DOM_FREQ = 25.0
+MAX_DOM_FREQ = 55.0
 
 @dataclass
 class ISRParams:
@@ -61,11 +63,19 @@ def gamma_spectrum(y: jnp.ndarray, idx: int = 5, fs: Optional[float]=None, ts: O
         if ts is None:
             raise ValueError("Provide fs or ts to infer sampling rate")
         fs = estimate_fs(ts)
-    spec = jnp.abs(jnp.fft.fft(sig))
+    # Remove DC component and normalise the spectrum to avoid a
+    # spurious peak at zero frequency which previously dominated the
+    # spectrum and caused the detected dominant frequency to be 0 Hz.
+    sig = sig - jnp.mean(sig)
+    spec = jnp.abs(jnp.fft.fft(sig)) / sig.shape[0]
     return spec
 
 def dominant_freq(spec: jnp.ndarray, fs: float) -> float:
     n = spec.shape[0]
-    freqs = jnp.fft.fftfreq(n, d=1.0/fs)
-    idx = int(jnp.argmax(spec))
-    return float(jnp.abs(freqs[idx]))
+    freqs = jnp.fft.fftfreq(n, d=1.0 / fs)
+    # Restrict search to positive frequencies within the expected bounds.
+    band = jnp.logical_and(freqs >= MIN_DOM_FREQ, freqs <= MAX_DOM_FREQ)
+    # Zero-out values outside the band to avoid spurious low-frequency peaks.
+    spec_band = jnp.where(band, spec, 0.0)
+    idx = int(jnp.argmax(spec_band))
+    return float(freqs[idx])
