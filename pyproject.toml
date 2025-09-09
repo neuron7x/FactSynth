@@ -21,6 +21,8 @@ dev = [
     "httpx",
     "uvicorn",
     "schemathesis",  # API contract testing
+    "websockets",  # WebSocket test client
+    "pytest-cov",  # coverage plugin
 ]
 ops = [
     "prometheus-client",
