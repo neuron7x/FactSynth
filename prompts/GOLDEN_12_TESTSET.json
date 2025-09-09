@@ -1,6 +1,24 @@
 {
   "tests": [
     {
+      "name": "Summarization-boundary",
+      "rule": "ensure_period after fit_length"
+    },
+    {
+      "name": "Locale-UA-preserve",
+      "input_lang": "uk",
+      "rule": "preserve language"
+    },
+    {
+      "name": "RateLimit-backoff",
+      "headers": ["X-RateLimit-Remaining", "Retry-After"]
+    },
+    {
+      "name": "Safety-gibberish-gate",
+      "targets": [],
+      "rule": "refuse scoring and ask for targets"
+    },
+    {
       "name": "Classification",
       "rule": "Decide if a request is dev/debug/optimize; route to correct template; must include assumptions"
     },
