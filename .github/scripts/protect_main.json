@@ -2,8 +2,9 @@
   "required_status_checks": {
     "strict": true,
     "contexts": [
-      "CI / Lint/Types/Tests (py3.11)",
-      "CI / Lint/Types/Tests (py3.12)",
+      "CI / Quality (ruff/mypy)",
+      "CI / PyTest (smoke) (3.11)",
+      "CI / PyTest (smoke) (3.12)",
       "Pages (OpenAPI) / deploy",
       "ZipCI / zip"
     ]

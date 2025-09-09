@@ -22,7 +22,7 @@ jobs:
           pip install -U ruff mypy
       - name: Ruff
         run: ruff check . --output-format=github
-        continue-on-error: true
+        continue-on-error: false
       - name: MyPy
         run: mypy --install-types --non-interactive || true
         continue-on-error: true
