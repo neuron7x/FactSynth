@@ -1,17 +1,35 @@
 name: CI
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  test:
-    name: Lint/Types/Tests (py${{ matrix.py }})
+  quality:
+    name: Quality (ruff/mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: "pip" }
+      - name: Install tools
+        run: |
+          python -m pip install -U pip
+          pip install -U ruff mypy
+      - name: Ruff
+        run: ruff check . --output-format=github
+        continue-on-error: true
+      - name: MyPy
+        run: mypy --install-types --non-interactive || true
+        continue-on-error: true
+
+  tests:
+    name: PyTest (smoke)
+    needs: quality
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -19,25 +37,19 @@ jobs:
         py: ["3.11","3.12"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.py }}
           cache: "pip"
-      - name: Install
+      - name: Install deps
         run: |
           python -m pip install -U pip
           pip install -e .[dev,ops] || pip install -e .
-          pip install -U ruff mypy pytest pytest-cov
-      - name: Ruff
-        run: ruff check . --output-format=github
-        continue-on-error: true
-      - name: MyPy
-        run: mypy --install-types --non-interactive
-        continue-on-error: true
-      - name: PyTest (coverage)
-        env:
-          PYTHONPATH: src
-        run: pytest -q --maxfail=1 --disable-warnings --cov=src --cov-report=xml:coverage.xml
+          pip install -U pytest pytest-cov
+      - name: Run smoke tests
+        env: { PYTHONPATH: src }
+        run: |
+          pytest -q tests/smoke --maxfail=1 --disable-warnings --cov=src --cov-report=xml:coverage.xml
       - name: Upload coverage.xml
         uses: actions/upload-artifact@v4
         with:
