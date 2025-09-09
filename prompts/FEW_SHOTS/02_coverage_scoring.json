@@ -7,7 +7,7 @@
     }
   },
   "expect": {
-    "covered":[{"target":"SDK v3"},{"target":"OIDC"}],
+    "covered":[{"target":"SDK v3","score":0.95},{"target":"OIDC","score":0.9}],
     "missing":["Helm chart","Prometheus metrics"]
   }
 }
