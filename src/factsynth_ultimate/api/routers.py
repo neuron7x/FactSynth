@@ -61,11 +61,20 @@ async def stream(req: ScoreReq):
 
 @api.websocket("/ws/stream")
 async def ws_stream(ws: WebSocket):
+    """Stream tokenization results over WebSocket.
+
+    The client establishes a WebSocket connection and the server accepts the
+    handshake. After accepting, the server performs a simple authentication
+    check looking for an ``x-api-key`` header. If the key is missing, the
+    connection is closed with code ``4401`` and reason ``"Unauthorized"``.
+    Otherwise, incoming text messages are tokenized and each token is emitted
+    back to the client as JSON messages.
+    """
     # simple auth: expect x-api-key in headers
     key = ws.headers.get("x-api-key")
     await ws.accept()
     if not key:
-        await ws.close(code=4401)
+        await ws.close(code=4401, reason="Unauthorized")
         return
     try:
         while True:
