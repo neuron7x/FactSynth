@@ -1,18 +1,21 @@
 {
-  "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "$id":"https://factsynth.example/schemas/generate.output.schema.json",
-  "type":"object",
-  "properties":{
-    "title":{"type":"string","maxLength":160},
-    "summary":{"type":"string","maxLength":3000},
-    "keywords":{"type":"array","items":{"type":"string"}},
-    "score":{
-      "type":"object",
-      "properties":{"coverage":{"type":"number"},"entropy":{"type":"number"}},
-      "required":["coverage"]
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://factsynth.example/schemas/generate.output.schema.json",
+  "type": "object",
+  "properties": {
+    "title": { "type": "string", "maxLength": 160 },
+    "summary": { "type": "string", "maxLength": 3000 },
+    "keywords": { "type": "array", "items": { "type": "string" } },
+    "score": {
+      "type": "object",
+      "properties": {
+        "coverage": { "type": "number" },
+        "entropy": { "type": "number" }
+      },
+      "required": ["coverage"]
     },
-    "meta":{"$ref":"meta.schema.json"}
+    "meta": { "$ref": "meta.schema.json" }
   },
-  "required":["title","summary","keywords","meta"],
-  "additionalProperties":false
+  "required": ["title", "summary", "keywords", "meta"],
+  "additionalProperties": false
 }
