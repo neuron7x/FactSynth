@@ -1,6 +1,8 @@
 
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
+import json
+
 from .roles import Rationalist, Critic, Aesthete, Integrator, Observer
 from .metrics import compute_coherence, cluster_density, role_contribution
 
@@ -14,7 +16,10 @@ class GLRTPMPipeline:
     def run(self, thesis: str) -> Dict[str, Any]:
         r = Critic().respond(thesis)
         i = " | ".join([Rationalist().respond(thesis), Aesthete().respond(thesis)])
-        p = f"[Meta-Projection] Nodes: {{'thesis': '{thesis[:64]}...', 'counter': '{r[:64]}...'}}"
+        p = "[Meta-Projection] Nodes: " + json.dumps({
+            "thesis": f"{thesis[:64]}...",
+            "counter": f"{r[:64]}..."
+        })
         omega = Integrator().respond(thesis) + " | " + Observer().respond(thesis)
         metrics = {
             "coherence": compute_coherence(thesis, r, i, p, omega),
