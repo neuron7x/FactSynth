@@ -1,0 +1,11 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://factsynth.example/schemas/intent_reflector.output.schema.json",
+  "type":"object",
+  "properties":{
+    "intent":{"type":"string","maxLength":64},
+    "meta":{"$ref":"meta.schema.json"}
+  },
+  "required":["intent","meta"],
+  "additionalProperties":false
+}

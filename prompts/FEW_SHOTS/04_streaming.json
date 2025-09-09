@@ -1,0 +1,6 @@
+{
+  "call": {"route":"/v1/stream","body":{"text":"Long article..."}},
+  "expect_first":"{\"t\":\"token\",\"v\":\"",
+  "expect_last":"{\"end\":true",
+  "notes":"Accumulate tokens; finalize with counts and meta."
+}

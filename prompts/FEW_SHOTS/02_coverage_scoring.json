@@ -1,0 +1,13 @@
+{
+  "call": {
+    "route": "/v1/score",
+    "body": {
+      "text": "Our 2026 roadmap covers SDK v3, Redis cache, OIDC.",
+      "targets": ["SDK v3","OIDC","Helm chart","Prometheus metrics"]
+    }
+  },
+  "expect": {
+    "covered":[{"target":"SDK v3"},{"target":"OIDC"}],
+    "missing":["Helm chart","Prometheus metrics"]
+  }
+}
