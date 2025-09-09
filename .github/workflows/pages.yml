@@ -30,7 +30,7 @@ jobs:
             echo "<!doctype html><title>No OpenAPI</title><p>No openapi/openapi.yaml</p>" > site/index.html
           fi
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: site
 
