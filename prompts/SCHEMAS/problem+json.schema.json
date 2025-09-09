@@ -1,14 +1,14 @@
 {
-  "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "$id":"https://factsynth.example/schemas/problem+json.schema.json",
-  "type":"object",
-  "properties":{
-    "type":{"type":"string","format":"uri"},
-    "title":{"type":"string"},
-    "status":{"type":"integer"},
-    "detail":{"type":"string"},
-    "trace_id":{"type":"string"}
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://factsynth.example/schemas/problem+json.schema.json",
+  "type": "object",
+  "properties": {
+    "type": { "type": "string", "format": "uri" },
+    "title": { "type": "string" },
+    "status": { "type": "integer" },
+    "detail": { "type": "string" },
+    "trace_id": { "type": "string" }
   },
-  "required":["title","status"],
-  "additionalProperties":true
+  "required": ["title", "status"],
+  "additionalProperties": true
 }

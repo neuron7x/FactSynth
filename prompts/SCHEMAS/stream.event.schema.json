@@ -1,25 +1,25 @@
 {
-  "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "$id":"https://factsynth.example/schemas/stream.event.schema.json",
-  "oneOf":[
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://factsynth.example/schemas/stream.event.schema.json",
+  "oneOf": [
     {
-      "type":"object",
-      "properties":{
-        "t":{"const":"token"},
-        "v":{"type":"string"},
-        "ts":{"type":"string","format":"date-time"},
-        "meta":{"$ref":"meta.schema.json"}
+      "type": "object",
+      "properties": {
+        "t": { "const": "token" },
+        "v": { "type": "string" },
+        "ts": { "type": "string", "format": "date-time" },
+        "meta": { "$ref": "meta.schema.json" }
       },
-      "required":["t","v"]
+      "required": ["t", "v"]
     },
     {
-      "type":"object",
-      "properties":{
-        "end":{"const":true},
-        "tokens":{"type":"number"},
-        "meta":{"$ref":"meta.schema.json"}
+      "type": "object",
+      "properties": {
+        "end": { "const": true },
+        "tokens": { "type": "number" },
+        "meta": { "$ref": "meta.schema.json" }
       },
-      "required":["end"]
+      "required": ["end"]
     }
   ]
 }

@@ -8,13 +8,24 @@ on:
     paths:
       - 'prompts/**'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: prompts-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm install -g ajv-cli prettier
+          cache: 'npm'
+      - run: npx --yes ajv-cli@5.0.0 --version
+      - run: npx --yes prettier@3.3.3 --version
       - run: make -C prompts lint validate
