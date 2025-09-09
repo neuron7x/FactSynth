@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+# ruff: noqa: I001
 """Sanitize ZIP files for CI usage."""
 
 import sys
 import zipfile
+
 from pathlib import PurePosixPath
 
 ZIP_UNIX_SYSTEM = 3
