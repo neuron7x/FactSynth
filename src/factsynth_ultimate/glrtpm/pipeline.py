@@ -1,6 +1,7 @@
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable
+
 from .roles import Rationalist, Critic, Aesthete, Integrator, Observer
 from .metrics import compute_coherence, cluster_density, role_contribution
 
@@ -12,13 +13,30 @@ class GLRTPMConfig:
 class GLRTPMPipeline:
     config: GLRTPMConfig = field(default_factory=GLRTPMConfig)
     def run(self, thesis: str) -> Dict[str, Any]:
-        r = Critic().respond(thesis)
-        i = " | ".join([Rationalist().respond(thesis), Aesthete().respond(thesis)])
-        p = f"[Meta-Projection] Nodes: {{'thesis': '{thesis[:64]}...', 'counter': '{r[:64]}...'}}"
-        omega = Integrator().respond(thesis) + " | " + Observer().respond(thesis)
-        metrics = {
-            "coherence": compute_coherence(thesis, r, i, p, omega),
-            "density": cluster_density([thesis, r, i, p, omega]),
-            "roles": role_contribution({"R": r, "I": i, "P": p, "Omega": omega})
+        """Execute the configured GLRTPM steps for the given thesis."""
+        handlers: Dict[str, Callable[[str, Dict[str, str]], str]] = {
+            "R": lambda t, _: Critic().respond(t),
+            "I": lambda t, _: " | ".join(
+                [Rationalist().respond(t), Aesthete().respond(t)]
+            ),
+            "P": lambda t, res: (
+                f"[Meta-Projection] Nodes: {{'thesis': '{t[:64]}...', 'counter': '{res.get('R', '')[:64]}...'}}"
+            ),
+            "Omega": lambda t, _: Integrator().respond(t)
+            + " | "
+            + Observer().respond(t),
         }
-        return {"R": r, "I": i, "P": p, "Omega": omega, "metrics": metrics}
+
+        results: Dict[str, str] = {}
+        for step in self.config.steps:
+            handler = handlers.get(step)
+            if handler:
+                results[step] = handler(thesis, results)
+
+        metrics = {
+            "coherence": compute_coherence(thesis, *results.values()),
+            "density": cluster_density([thesis, *results.values()]),
+            "roles": role_contribution(results),
+        }
+
+        return {**results, "metrics": metrics}
