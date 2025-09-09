@@ -1,0 +1,7 @@
+extends: ["spectral:oas", "spectral:asyncapi"]
+rules:
+  operation-tags: off
+  tag-description: warn
+  oas3-valid-schema-example: warn
+  operation-operationId-unique: error
+  oas3-unused-component: warn
