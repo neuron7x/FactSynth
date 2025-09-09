@@ -283,10 +283,12 @@ helm upgrade --install factsynth oci://ghcr.io/<owner>/charts/factsynth \
 Before running tests, install the development dependencies:
 
 ```bash
-pip install -e .[dev]
+pip install -e .[dev,isr,numpy]
 pytest -q
 pytest -q --cov=src --cov-report=term-missing
 ```
+
+The `isr` extra pulls in JAX, while `numpy` ensures numerical tests run.
 
 ---
 
