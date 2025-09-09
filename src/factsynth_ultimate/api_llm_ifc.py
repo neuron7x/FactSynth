@@ -1,7 +1,9 @@
 
+from typing import Dict, List
+
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from typing import List, Dict
+
 from .llm_ifc.arbitrator import Candidate, choose
 
 router = APIRouter(prefix="/v1/llmifc", tags=["llm-ifc"])

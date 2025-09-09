@@ -1,11 +1,11 @@
-from __future__ import annotations
-
 """String-cleaning helpers used across FactSynth Ultimate.
 
 The functions below normalise text, strip unwanted formatting and enforce exact
 word counts.  They are intentionally lightweight so they can be re-used by the
 API, CLI and orchestration pipeline without pulling in heavy dependencies.
 """
+
+from __future__ import annotations
 
 import regex as re
 

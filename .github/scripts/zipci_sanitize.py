@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
-import sys, zipfile, os
+"""Sanitize ZIP files for CI usage."""
+
+import sys
+import zipfile
 from pathlib import PurePosixPath
+
+ZIP_UNIX_SYSTEM = 3
+SYMLINK_MODE = 0o120000
 
 zf = zipfile.ZipFile(sys.argv[1])
 bad = []
@@ -10,8 +16,8 @@ for i in zf.infolist():
     if name.startswith("/") or ".." in p.parts:
         bad.append(name)
     # symlink detection via unix attrs
-    is_unix = (i.create_system == 3)
-    if is_unix and ((i.external_attr >> 16) & 0o170000) == 0o120000:
+    is_unix = i.create_system == ZIP_UNIX_SYSTEM
+    if is_unix and ((i.external_attr >> 16) & 0o170000) == SYMLINK_MODE:
         bad.append(name + " (symlink)")
     if name.startswith(".git/") or "/.git/" in name or name == ".git":
         bad.append(name + " (.git forbidden)")

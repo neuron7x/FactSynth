@@ -4,7 +4,6 @@ from typing import Annotated, List, Optional
 
 from pydantic import BaseModel, Field
 
-
 StrippedNonEmpty = Annotated[str, Field(strip_whitespace=True, min_length=1)]
 NonNegativeStr = Annotated[str, Field(strip_whitespace=True, min_length=0)]
 LimitedInt = Annotated[int, Field(ge=1, le=1000)]

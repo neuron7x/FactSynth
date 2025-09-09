@@ -1,5 +1,7 @@
 
 from factsynth_ultimate.llm_ifc.arbitrator import Candidate, choose
+
+
 def test_arbitration():
     c = [Candidate("A",0.6,0.6,"a"), Candidate("B",0.9,0.4,"b")]
     out = choose(c,0.5,0.5)

@@ -1,8 +1,9 @@
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional
-from .akpshi.metrics import rmse, fcr, pfi
+
+from .akpshi.metrics import fcr, pfi, rmse
 
 router = APIRouter(prefix="/v1/akpshi", tags=["akp-shi"])
 

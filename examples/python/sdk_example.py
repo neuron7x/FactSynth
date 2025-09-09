@@ -1,6 +1,7 @@
 """Minimal Python SDK example."""
 
 import os
+
 import requests  # type: ignore[import-untyped]
 
 API = os.getenv("FACTSYNTH_API", "http://localhost:8000")

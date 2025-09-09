@@ -1,0 +1,96 @@
+name: Spec Verify
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+  security-events: write
+
+env:
+  API_KEY: ci-key
+  BASE_URL: http://127.0.0.1:8000
+
+jobs:
+  up:
+    name: Run API & Verify Spec
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Try pull GHCR image
+        id: pull
+        run: |
+          set -e
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
+          docker pull ghcr.io/${GITHUB_REPOSITORY_OWNER}/factsynth:latest && echo "mode=pull" >> $GITHUB_OUTPUT || echo "mode=build" >> $GITHUB_OUTPUT
+
+      - name: Build local image (fallback)
+        if: steps.pull.outputs.mode == 'build'
+        run: docker build -t factsynth:local .
+
+      - name: Run container
+        run: |
+          IMG="${{ steps.pull.outputs.mode == 'pull' && format('ghcr.io/{0}/factsynth:latest', steps.pull.outputs.owner) || 'factsynth:local' }}"
+          docker run -d --rm --name factsynth -e API_KEY="${API_KEY}" -p 8000:8000 "$IMG"
+          for i in $(seq 1 60); do
+            curl -fsS "$BASE_URL/v1/healthz" && exit 0 || sleep 2
+          done
+          echo "API did not become healthy" >&2
+          docker logs factsynth || true
+          exit 1
+
+      - name: Setup Node (for Spectral)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Lint OpenAPI with Spectral (if exists)
+        run: |
+          FILE=""
+          for p in openapi/openapi.yaml openapi/openapi.yml openapi.yaml openapi.yml; do
+            [ -f "$p" ] && FILE="$p" && break
+          done
+          if [ -n "$FILE" ]; then
+            npx --yes @stoplight/spectral-cli@6.11.1 lint "$FILE"
+          else
+            echo "No OpenAPI spec found, skipping spectral."
+          fi
+
+      - name: Setup Python for tests
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install test deps
+        run: |
+          python -m pip install -U pip
+          pip install pytest requests openapi-spec-validator schemathesis
+
+      - name: Contract test with Schemathesis (if spec exists)
+        run: |
+          FILE=""
+          for p in openapi/openapi.yaml openapi/openapi.yml openapi.yaml openapi.yml; do
+            [ -f "$p" ] && FILE="$p" && break
+          done
+          if [ -n "$FILE" ]; then
+            schemathesis run "$FILE" --base-url="$BASE_URL" -H "x-api-key: ${API_KEY}" \
+              --checks all --hypothesis-suppress-health-check=too_slow,filter_too_much \
+              --hypothesis-deadline=500 --max-examples=25
+          else
+            echo "No OpenAPI spec found, skipping schemathesis."
+          fi
+
+      - name: Runtime pytest spec checks
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
+          API_KEY:  ${{ env.API_KEY }}
+        run: pytest -q tests/spec --maxfail=1 --disable-warnings
+
+      - name: Teardown
+        if: always()
+        run: docker rm -f factsynth || true
