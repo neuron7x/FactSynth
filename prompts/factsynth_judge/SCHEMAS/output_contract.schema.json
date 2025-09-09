@@ -59,7 +59,7 @@
     },
     "VERDICT": {"type": "string", "enum": ["supported", "partially_supported", "refuted", "not_provable"]},
     "NORMALIZATION": {"type": "string"},
-    "CONFLICTS": {"oneOf": [{"type": "string"}, {"type": "array"}]},
+    "CONFLICTS": {"type": "array", "items": {"type": "string"}},
     "HYPOTHESIS": {"type": "string"},
     "EVIDENCE_GAP": {"type": "array", "items": {"type": "string"}},
     "METRICS": {
@@ -81,5 +81,6 @@
         "calibration_hint": {"type": "string"}
       }
     }
-  }
+  },
+  "additionalProperties": false
 }
