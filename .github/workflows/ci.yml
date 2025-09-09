@@ -27,7 +27,7 @@ jobs:
         run: mypy --install-types --non-interactive || true
         continue-on-error: true
 
-  tests:
+  tests-smoke:
     name: PyTest (smoke)
     needs: quality
     runs-on: ubuntu-latest
@@ -45,11 +45,34 @@ jobs:
         run: |
           python -m pip install -U pip
           pip install -e .[dev,ops] || pip install -e .
-          pip install -U pytest pytest-cov
+          pip install -U pytest
       - name: Run smoke tests
         env: { PYTHONPATH: src }
+        run: pytest -q tests/smoke --disable-warnings
+
+  tests-full:
+    name: PyTest (full)
+    needs: quality
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        py: ["3.11","3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py }}
+          cache: "pip"
+      - name: Install deps
         run: |
-          pytest -q tests/smoke --maxfail=1 --disable-warnings --cov=src --cov-report=xml:coverage.xml
+          python -m pip install -U pip
+          pip install -e .[dev,ops] || pip install -e .
+          pip install -U pytest pytest-cov
+      - name: Run full tests
+        env: { PYTHONPATH: src }
+        run: pytest -q --disable-warnings --cov=src --cov-report=xml:coverage.xml
       - name: Upload coverage.xml
         uses: actions/upload-artifact@v4
         with:
