@@ -12,10 +12,10 @@
 ## Використання
 1. Розпакуй у корінь репозиторію.
 2. Налаштуй секрети (за потреби): `PYPI_API_TOKEN`, `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`.
-3. Запусти локально:  
+3. Встанови залежності та запусти тести:
    ```bash
    python -m pip install -U pip wheel build
-   pip install -e .[dev,test] || pip install -e . || pip install .
+   pip install -e .[dev]
    pytest --cov --cov-report=xml
    python tools/coverage_gate.py --xml coverage.xml --min 90
    ```

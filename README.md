@@ -280,7 +280,10 @@ helm upgrade --install factsynth oci://ghcr.io/<owner>/charts/factsynth \
 
 ## Testing
 
+Before running tests, install the development dependencies:
+
 ```bash
+pip install -e .[dev]
 pytest -q
 pytest -q --cov=src --cov-report=term-missing
 ```
