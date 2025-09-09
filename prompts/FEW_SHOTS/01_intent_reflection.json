@@ -1,5 +1,8 @@
 {
-  "call": {"route": "/v1/intent_reflector", "body": {"intent":"prep slides from Q4 ops plan","length":48}},
-  "expect": {"intent":"Summarize Q4 plan for slides"},
+  "call": {
+    "route": "/v1/intent_reflector",
+    "body": { "intent": "prep slides from Q4 ops plan", "length": 48 }
+  },
+  "expect": { "intent": "Summarize Q4 plan for slides" },
   "notes": "≤48 chars, no new entities"
 }

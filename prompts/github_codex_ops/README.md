@@ -13,15 +13,15 @@ cd prompts/github_codex_ops/scripts
 
 ## Contents
 
-* `SYSTEM_PROMPT.md` – locked system instructions.
-* `TASK_TEMPLATES/` – ready-to-run command templates.
-* `FEW_SHOTS/` – minimal examples.
-* `GOLDEN_12_TESTSET.json` – evaluation scenarios.
-* `SCHEMAS/` – JSON schema for output contract.
-* `scripts/` – quickstart, checksums, validation helpers.
-* `tests/` – sanity tests for bundle integrity.
-* `VERSION` – bundle version.
-* `CHANGELOG.md`, `DEPLOYMENT_NOTES.md`, `USAGE_CHECKLIST.md` – ops docs.
+- `SYSTEM_PROMPT.md` – locked system instructions.
+- `TASK_TEMPLATES/` – ready-to-run command templates.
+- `FEW_SHOTS/` – minimal examples.
+- `GOLDEN_12_TESTSET.json` – evaluation scenarios.
+- `SCHEMAS/` – JSON schema for output contract.
+- `scripts/` – quickstart, checksums, validation helpers.
+- `tests/` – sanity tests for bundle integrity.
+- `VERSION` – bundle version.
+- `CHANGELOG.md`, `DEPLOYMENT_NOTES.md`, `USAGE_CHECKLIST.md` – ops docs.
 
 ## License
 

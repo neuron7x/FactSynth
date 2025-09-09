@@ -1,14 +1,74 @@
 [
-  {"id":1,"context":"","question":"Classification: Decide supported/refuted on a single factual claim with clear span.","expected":""},
-  {"id":2,"context":"","question":"Extraction: Normalize units (miles\u2194km) and verify numeric claim.","expected":""},
-  {"id":3,"context":"","question":"Transformation: Compute year difference from two dates in context.","expected":""},
-  {"id":4,"context":"","question":"Multi-step Reasoning: Join two non-adjacent spans to validate a conditional.","expected":""},
-  {"id":5,"context":"","question":"Coding: Given pseudo-CSV in context, verify 'sum(column)=X'.","expected":""},
-  {"id":6,"context":"","question":"Debugging: Context includes off-by-one example; model must correct it.","expected":""},
-  {"id":7,"context":"","question":"Planning: Identify the minimal 2 follow-up facts needed (`EVIDENCE_GAP`).","expected":""},
-  {"id":8,"context":"","question":"Long-form Writing: Provide rationale but keep `VERDICT` schema strict.","expected":""},
-  {"id":9,"context":"","question":"Summarization: Ensure summary does not introduce new facts (audit check).","expected":""},
-  {"id":10,"context":"","question":"Translation/Localization: Verify date formats \"05/07/2021\" with locale hint.","expected":""},
-  {"id":11,"context":"","question":"Data/Math: Percentage change computed from base and new value in context.","expected":""},
-  {"id":12,"context":"","question":"Tool-Use & Safety/Refusal: Context lacks evidence; must return `NOT_PROVABLE`.","expected":""}
+  {
+    "id": 1,
+    "context": "",
+    "question": "Classification: Decide supported/refuted on a single factual claim with clear span.",
+    "expected": ""
+  },
+  {
+    "id": 2,
+    "context": "",
+    "question": "Extraction: Normalize units (miles\u2194km) and verify numeric claim.",
+    "expected": ""
+  },
+  {
+    "id": 3,
+    "context": "",
+    "question": "Transformation: Compute year difference from two dates in context.",
+    "expected": ""
+  },
+  {
+    "id": 4,
+    "context": "",
+    "question": "Multi-step Reasoning: Join two non-adjacent spans to validate a conditional.",
+    "expected": ""
+  },
+  {
+    "id": 5,
+    "context": "",
+    "question": "Coding: Given pseudo-CSV in context, verify 'sum(column)=X'.",
+    "expected": ""
+  },
+  {
+    "id": 6,
+    "context": "",
+    "question": "Debugging: Context includes off-by-one example; model must correct it.",
+    "expected": ""
+  },
+  {
+    "id": 7,
+    "context": "",
+    "question": "Planning: Identify the minimal 2 follow-up facts needed (`EVIDENCE_GAP`).",
+    "expected": ""
+  },
+  {
+    "id": 8,
+    "context": "",
+    "question": "Long-form Writing: Provide rationale but keep `VERDICT` schema strict.",
+    "expected": ""
+  },
+  {
+    "id": 9,
+    "context": "",
+    "question": "Summarization: Ensure summary does not introduce new facts (audit check).",
+    "expected": ""
+  },
+  {
+    "id": 10,
+    "context": "",
+    "question": "Translation/Localization: Verify date formats \"05/07/2021\" with locale hint.",
+    "expected": ""
+  },
+  {
+    "id": 11,
+    "context": "",
+    "question": "Data/Math: Percentage change computed from base and new value in context.",
+    "expected": ""
+  },
+  {
+    "id": 12,
+    "context": "",
+    "question": "Tool-Use & Safety/Refusal: Context lacks evidence; must return `NOT_PROVABLE`.",
+    "expected": ""
+  }
 ]
