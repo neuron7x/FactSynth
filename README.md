@@ -279,11 +279,31 @@ helm upgrade --install factsynth oci://ghcr.io/<owner>/charts/factsynth \
 ---
 
 ## Testing
+### Test Setup
 
-Before running tests, install the development dependencies:
+The test suite requires the following packages:
+
+* `pytest`
+* `pytest-cov`
+* `httpx`
+* `uvicorn`
+* `schemathesis`
+* `websockets`
+* `jax`
+* `diffrax`
+* `numpy`
+
+Install them via extras or the helper script:
 
 ```bash
-pip install -e .[dev]
+pip install -e .[dev,isr,numpy]
+# or
+./scripts/setup-tests.sh
+```
+
+### Running Tests
+
+```bash
 pytest -q
 pytest -q --cov=src --cov-report=term-missing
 ```
