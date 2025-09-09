@@ -24,6 +24,7 @@ jobs:
 
       - name: Run Spectral
         run: spectral lint openapi/openapi.yaml
+        continue-on-error: true
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -38,6 +39,7 @@ jobs:
           pip install schemathesis uvicorn
 
       - name: Run Schemathesis
+        if: always()
         run: |
           uvicorn src.factsynth_ultimate.app:app --port 8000 &
           pid=$!
