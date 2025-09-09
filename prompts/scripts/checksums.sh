@@ -17,7 +17,6 @@ cd "$ROOT"
 : > "$OUT"
 find . -type f \
   ! -name "SHASUMS256.txt" \
-  ! -path "./scripts/*" \
   -print0 | sort -z | while IFS= read -r -d '' f; do
   if [[ "$SHA_BIN" == "shasum" ]]; then
     shasum -a 256 "$f" >> "$OUT"
