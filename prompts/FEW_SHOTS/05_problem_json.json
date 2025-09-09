@@ -1,5 +1,0 @@
-{
-  "when":"invalid body",
-  "expect_problem_json": ["type","title","status","detail","trace_id"],
-  "user_msg":"Safe, minimal disclosure"
-}

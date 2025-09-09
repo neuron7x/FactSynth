@@ -1,19 +1,22 @@
 {
-  "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "$id":"https://factsynth.example/schemas/score.output.schema.json",
-  "type":"object",
-  "properties":{
-    "covered":{
-      "type":"array",
-      "items":{
-        "type":"object",
-        "properties":{"target":{"type":"string"},"score":{"type":"number"}},
-        "required":["target","score"]
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://factsynth.example/schemas/score.output.schema.json",
+  "type": "object",
+  "properties": {
+    "covered": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target": { "type": "string" },
+          "score": { "type": "number" }
+        },
+        "required": ["target", "score"]
       }
     },
-    "missing":{"type":"array","items":{"type":"string"}},
-    "meta":{"$ref":"meta.schema.json"}
+    "missing": { "type": "array", "items": { "type": "string" } },
+    "meta": { "$ref": "meta.schema.json" }
   },
-  "required":["covered","missing","meta"],
-  "additionalProperties":false
+  "required": ["covered", "missing", "meta"],
+  "additionalProperties": false
 }

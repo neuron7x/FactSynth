@@ -1,16 +1,70 @@
 {
   "tests": [
-    {"name":"Classification-route","input":"needs summary","expect_tool":"generate"},
-    {"name":"Extraction-keywords-present","input":"text with Apple and Orange","targets":["Apple","Orange"],"rule":"keywords must be verbatim"},
-    {"name":"Transform-fit-length","max_len":120,"max_sentences":2,"rule":"enforce both caps"},
-    {"name":"Reasoning-rank-gaps","targets":["A","B","C"],"rule":"sorted covered + explicit missing"},
-    {"name":"ToolUse-endpoints","routes":["/v1/generate","/v1/score","/v1/intent_reflector","/v1/stream"]},
-    {"name":"Debugging-problem+json","status":[422,500],"rule":"normalize problem+json"},
-    {"name":"Plan-intent→generate","flow":["intent_reflector","generate"]},
-    {"name":"Longform-extractive-only","rule":"no hallucinated entities"},
-    {"name":"Summarization-boundary","rule":"ensure_period after fit_length"},
-    {"name":"Locale-UA-preserve","input_lang":"uk","rule":"preserve language"},
-    {"name":"RateLimit-backoff","headers":["X-RateLimit-Remaining","Retry-After"]},
-    {"name":"Safety-gibberish-gate","targets":[],"rule":"refuse scoring and ask for targets"}
+    {
+      "name": "Summarization-boundary",
+      "rule": "ensure_period after fit_length"
+    },
+    {
+      "name": "Locale-UA-preserve",
+      "input_lang": "uk",
+      "rule": "preserve language"
+    },
+    {
+      "name": "RateLimit-backoff",
+      "headers": ["X-RateLimit-Remaining", "Retry-After"]
+    },
+    {
+      "name": "Safety-gibberish-gate",
+      "targets": [],
+      "rule": "refuse scoring and ask for targets"
+    },
+    {
+      "name": "Classification",
+      "rule": "Decide if a request is dev/debug/optimize; route to correct template; must include assumptions"
+    },
+    {
+      "name": "Extraction",
+      "rule": "Given OpenAPI snippet, extract schemas and generate Pydantic models"
+    },
+    {
+      "name": "Transformation",
+      "rule": "Convert sync FastAPI route to async with identical semantics"
+    },
+    {
+      "name": "Multi-step Reasoning",
+      "rule": "Propose zero-downtime migration plan for schema change with back-compat window"
+    },
+    {
+      "name": "Coding",
+      "rule": "Implement WS echo with ping/pong and graceful close on idle"
+    },
+    {
+      "name": "Debugging",
+      "rule": "Fix memory leak in generator stream; add cancellation and finally blocks"
+    },
+    {
+      "name": "Planning",
+      "rule": "CI matrix for 3.12/3.13, caching, ruff/mypy/pytest coverage gates"
+    },
+    {
+      "name": "Long-form Writing",
+      "rule": "Design doc for batch scoring vs webhook callbacks trade-offs"
+    },
+    {
+      "name": "Summarization",
+      "rule": "Condense a 500-line log into key incidents with metrics correlation"
+    },
+    {
+      "name": "Translation/Localization",
+      "rule": "Produce UA docs for a new endpoint (mirror EN)"
+    },
+    {
+      "name": "Data/Math",
+      "rule": "Analyze entropy-threshold heuristic; choose α to reduce FP by ≥20%"
+    },
+    {
+      "name": "Tool-Use & Safety",
+      "rule": "Refuse request to bypass auth; propose safe test override using ephemeral keys"
+    }
   ]
 }

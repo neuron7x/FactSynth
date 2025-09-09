@@ -1,8 +1,6 @@
-# Чекліст використання
+# Usage Checklist
 
-- [ ] Встановлено `FACTSYNTH_API_KEY` (секрети — не в git).
-- [ ] Сервер відповідає на `/v1/healthz` і `/v1/version`.
-- [ ] Валідовано відповіді за JSON-схемами (`scripts/validate.sh`).
-- [ ] Застосовано backoff на `429` згідно `Retry-After`.
-- [ ] Увімкнені метрики Prometheus і Grafana дашборд (за потреби).
-- [ ] Пройдено `GOLDEN_12_TESTSET.json`.
+- [ ] Paste SYSTEM into orchestrator.
+- [ ] Use templates (Create/Improve/Convert/Evaluate/Deploy).
+- [ ] Enforce output contract in PR bot (regex gates).
+- [ ] Track KPIs (lint/type/coverage/latency) in CI status.
