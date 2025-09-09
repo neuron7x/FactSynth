@@ -197,6 +197,14 @@ Covers classification, extraction, reasoning, coding, planning, long-form, summa
 4. Run the **Golden-12**; fix any failing thresholds.
 5. Monitor Prometheus metrics / logs; enable OTel if available. ([GitHub][1])
 
+**Batch scoring example**
+
+```bash
+curl -s -H 'x-api-key: $API_KEY' -H 'content-type: application/json' \
+  -d '{"items":[{"text":"a"},{"text":"hello doc","targets":["doc"]}]}' \
+  http://127.0.0.1:8000/v1/score/batch
+```
+
 **Rollback**
 
 * Revert to scoring-only path if `/v1/generate` misbehaves.
