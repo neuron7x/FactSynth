@@ -8,7 +8,7 @@
       "items":{
         "type":"object",
         "properties":{"target":{"type":"string"},"score":{"type":"number"}},
-        "required":["target"]
+        "required":["target","score"]
       }
     },
     "missing":{"type":"array","items":{"type":"string"}},
