@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Generate OpenAPI versions index."""
 from __future__ import annotations
+
 import sys
 from pathlib import Path
+
 
 def main(root: str) -> None:
     base = Path(root)
@@ -16,8 +18,11 @@ def main(root: str) -> None:
     )
     (base / "index.html").write_text(html)
 
+EXPECTED_ARGS = 2
+
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    if len(sys.argv) != EXPECTED_ARGS:
         print("Usage: generate_openapi_index.py <dir>")
         sys.exit(1)
     main(sys.argv[1])

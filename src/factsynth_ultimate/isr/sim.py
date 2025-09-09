@@ -1,11 +1,10 @@
-
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-import jax
 import jax.numpy as jnp
-from diffrax import diffeqsolve, ODETerm, SaveAt, Tsit5
+from diffrax import ODETerm, SaveAt, Tsit5, diffeqsolve
 
 GAMMA_FREQ = 40.0
 
