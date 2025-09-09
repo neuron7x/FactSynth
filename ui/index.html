@@ -1,58 +1,12 @@
 <!doctype html>
-<html lang="uk"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>FactSynth Ultimate — Insight</title>
-<style>
-body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto;background:#0b1020;color:#e8ecf7}
-.container{max-width:980px;margin:0 auto;padding:24px}
-.card{background:rgba(17,24,39,.55);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;backdrop-filter:blur(10px)}
-input,textarea{width:100%;border-radius:10px;border:1px solid #2b3553;background:#0b1226;color:#e8ecf7;padding:12px}
-label{font-size:12px;color:#9fb0d6;text-transform:uppercase;letter-spacing:.12em}
-button{background:#7c3aed;border:none;color:white;padding:10px 14px;border-radius:12px;cursor:pointer}
-.row{display:flex;gap:12px;flex-wrap:wrap}.col{flex:1 1 260px}.result{white-space:pre-wrap;border:1px solid #2b3553;padding:12px;border-radius:12px;background:#0b1226}
-.meter{height:10px;background:#0b1226;border-radius:999px;border:1px solid #2b3553;overflow:hidden}.bar{height:100%;background:#22c55e;width:0%}
-</style></head>
-<body><div class="container">
-<h1>FactSynth Ultimate — Insight</h1>
-<div class="card">
-  <div class="row">
-    <div class="col"><label>API</label><input id="api" value="http://127.0.0.1:8000"/></div>
-    <div class="col"><label>X-API-Key</label><input id="key" value="change-me"/></div>
-    <div class="col"><label>N слів</label><input id="len" type="number" min="50" max="200" value="100"/></div>
-  </div>
-  <label>Намір</label><textarea id="intent" rows="4" placeholder="Опиши намір..."></textarea>
-  <div style="margin-top:12px"><button id="gen">Згенерувати</button> <button id="score">Оцінити</button></div>
-  <div style="margin-top:12px" class="result" id="out"></div>
-  <div style="margin-top:12px">J-індекс
-    <div class="meter"><div class="bar" id="jbar"></div></div>
-  </div>
-</div>
-</div>
-<script>
-async function post(path, body){
-  const api=document.getElementById('api').value.trim();
-  const key=document.getElementById('key').value.trim();
-  const r=await fetch(api+path,{method:'POST',headers:{'content-type':'application/json','x-api-key':key},body:JSON.stringify(body)});
-  if(!r.ok) throw new Error('HTTP '+r.status);
-  return await r.json();
-}
-document.getElementById('gen').onclick=async()=>{
-  const out=document.getElementById('out'); out.textContent='...';
-  try{
-    const len=parseInt(document.getElementById('len').value,10)||100;
-    const intent=document.getElementById('intent').value;
-    const data=await post('/v1/intent_reflector',{intent,length:len});
-    out.textContent=data.text;
-  }catch(e){ out.textContent='Помилка: '+e.message; }
-};
-document.getElementById('score').onclick=async()=>{
-  const out=document.getElementById('out'); out.textContent='...';
-  try{
-    const len=parseInt(document.getElementById('len').value,10)||100;
-    const intent=document.getElementById('intent').value;
-    const data=await post('/v1/score',{intent,length:len});
-    out.textContent=data.text + "\n---\nJ="+data.J.toFixed(3)+" (F="+data.F.toFixed(2)+", R="+data.R.toFixed(2)+", D="+data.D.toFixed(2)+", A="+data.A.toFixed(2)+", N="+data.N.toFixed(2)+")";
-    document.getElementById('jbar').style.width = Math.min(100, Math.max(0, Math.round(data.J*100))) + '%';
-  }catch(e){ out.textContent='Помилка: '+e.message; }
-};
-</script>
-</body></html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FactSynth Dashboard</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

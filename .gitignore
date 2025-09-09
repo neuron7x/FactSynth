@@ -1,0 +1,6 @@
+# Ignore Node build artifacts
+ui/node_modules
+ui/dist
+
+# Logs
+*.log
