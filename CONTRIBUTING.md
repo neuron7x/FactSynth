@@ -5,6 +5,7 @@ PRs welcome. Follow ruff/mypy/pytest. Keep coverage≥90%.
 Install git hooks:
 
 ```bash
+pip install pre-commit
 pre-commit install
 ```
 
