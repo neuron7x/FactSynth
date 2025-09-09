@@ -2,6 +2,15 @@
 
 This bundle contains the system prompt, task templates, few-shot examples, Golden-12 test descriptions, schema, scripts, and tests for the FactSynth Judge agent.
 
+## Quickstart
+
+```bash
+cd prompts/factsynth_judge/scripts
+./quickstart.sh
+```
+
+`scripts/validate.sh` requires `ajv` from `ajv-cli` (`npm i -g ajv-cli`).
+
 ## Contents
 - `SYSTEM_PROMPT.md`
 - `TASK_TEMPLATES/`
@@ -12,4 +21,4 @@ This bundle contains the system prompt, task templates, few-shot examples, Golde
 - `tests/test_bundle.py`
 - `VERSION`, `CHANGELOG.md`, `USAGE_CHECKLIST.md`, `DEPLOYMENT_NOTES.md`, `SHASUMS256.txt`
 
-Use `scripts/validate.sh` to confirm schema and `scripts/checksums.sh` to update the checksum file. Run `scripts/quickstart.sh` to execute bundle tests.
+Use `scripts/validate.sh` to confirm schema and `scripts/checksums.sh` to update the checksum file.

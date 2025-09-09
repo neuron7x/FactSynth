@@ -11,6 +11,8 @@ cd prompts/github_codex_ops/scripts
 ./quickstart.sh
 ```
 
+`scripts/validate.sh` requires `ajv` from `ajv-cli` (`npm i -g ajv-cli`).
+
 ## Contents
 
 * `SYSTEM_PROMPT.md` – locked system instructions.

@@ -3,6 +3,9 @@ set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "== FactSynth Judge quickstart =="
+if ! command -v ajv >/dev/null; then
+  echo "ajv not found; install with npm i -g ajv-cli to use scripts/validate.sh" >&2
+fi
 if command -v pytest >/dev/null; then
   python -m pytest "${DIR}/tests" -q
 else
