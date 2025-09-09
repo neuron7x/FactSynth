@@ -1,27 +1,38 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["mode", "summary", "plan", "commands", "diff_preview", "risks", "checks", "apply", "artifacts", "next"],
+  "required": [
+    "mode",
+    "summary",
+    "plan",
+    "commands",
+    "diff_preview",
+    "risks",
+    "checks",
+    "apply",
+    "artifacts",
+    "next"
+  ],
   "properties": {
-    "mode": {"type": "string"},
-    "summary": {"type": "string"},
-    "plan": {"type": "array", "items": {"type": "string"}},
-    "commands": {"type": "array", "items": {"type": "string"}},
-    "diff_preview": {"type": "array", "items": {"type": "string"}},
-    "risks": {"type": "array", "items": {"type": "string"}},
-    "checks": {"type": "array", "items": {"type": "string"}},
+    "mode": { "type": "string" },
+    "summary": { "type": "string" },
+    "plan": { "type": "array", "items": { "type": "string" } },
+    "commands": { "type": "array", "items": { "type": "string" } },
+    "diff_preview": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "checks": { "type": "array", "items": { "type": "string" } },
     "apply": {
       "type": "object",
       "required": ["allowed"],
       "properties": {
-        "allowed": {"type": "boolean"},
-        "branch": {"type": "string"},
-        "when": {"type": "string"}
+        "allowed": { "type": "boolean" },
+        "branch": { "type": "string" },
+        "when": { "type": "string" }
       },
       "additionalProperties": false
     },
-    "artifacts": {"type": "array", "items": {"type": "string"}},
-    "next": {"type": "array", "items": {"type": "string"}}
+    "artifacts": { "type": "array", "items": { "type": "string" } },
+    "next": { "type": "array", "items": { "type": "string" } }
   },
   "additionalProperties": false
 }

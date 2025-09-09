@@ -1,7 +1,12 @@
 {
   "call": {
     "route": "/v1/generate",
-    "body": {"text":"<press release>","max_len":220,"max_sentences":2,"include_score":true}
+    "body": {
+      "text": "<press release>",
+      "max_len": 220,
+      "max_sentences": 2,
+      "include_score": true
+    }
   },
   "assert": [
     "title <= 12 words",

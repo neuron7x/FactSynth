@@ -1,14 +1,62 @@
 [
-  {"id":1,"name":"classification","description":"Mode routing. Input: `RUN: security {...}` → Must select \"security\" and output contract fields."},
-  {"id":2,"name":"extraction","description":"Detect secrets. Given diff with `.env` keys → Emit risks, require `.env.example`, redact secrets."},
-  {"id":3,"name":"transformation","description":"Add CI. Repo lacks workflows → Propose Actions; output diff_preview for `.github/workflows/*`."},
-  {"id":4,"name":"multi-step reasoning","description":"Gate APPLY. Failing tests → apply.allowed=false; add next: fix tests."},
-  {"id":5,"name":"coding","description":"Lint scripts. Add `lint`/`format` scripts when missing (npm)."},
-  {"id":6,"name":"debugging","description":"Flaky CI. Detect instability; suggest retries/artifacts; keep DRY_RUN."},
-  {"id":7,"name":"planning","description":"Monorepo. Suggest nx/turbo, workspaces, CI matrix."},
-  {"id":8,"name":"long-form writing","description":"Create SECURITY.md baseline (docs mode)."},
-  {"id":9,"name":"summarization","description":"Produce concise summary (≤2 lines) in JSON `summary`."},
-  {"id":10,"name":"translation/localization","description":"i18n scaffolding (modes include i18n)."},
-  {"id":11,"name":"data/math","description":"Verify PERF_BUDGET & coverage thresholds in checks."},
-  {"id":12,"name":"tool-use & safety/refusal","description":"Refuse APPLY if secrets present or checks red; offer plan."}
+  {
+    "id": 1,
+    "name": "classification",
+    "description": "Mode routing. Input: `RUN: security {...}` → Must select \"security\" and output contract fields."
+  },
+  {
+    "id": 2,
+    "name": "extraction",
+    "description": "Detect secrets. Given diff with `.env` keys → Emit risks, require `.env.example`, redact secrets."
+  },
+  {
+    "id": 3,
+    "name": "transformation",
+    "description": "Add CI. Repo lacks workflows → Propose Actions; output diff_preview for `.github/workflows/*`."
+  },
+  {
+    "id": 4,
+    "name": "multi-step reasoning",
+    "description": "Gate APPLY. Failing tests → apply.allowed=false; add next: fix tests."
+  },
+  {
+    "id": 5,
+    "name": "coding",
+    "description": "Lint scripts. Add `lint`/`format` scripts when missing (npm)."
+  },
+  {
+    "id": 6,
+    "name": "debugging",
+    "description": "Flaky CI. Detect instability; suggest retries/artifacts; keep DRY_RUN."
+  },
+  {
+    "id": 7,
+    "name": "planning",
+    "description": "Monorepo. Suggest nx/turbo, workspaces, CI matrix."
+  },
+  {
+    "id": 8,
+    "name": "long-form writing",
+    "description": "Create SECURITY.md baseline (docs mode)."
+  },
+  {
+    "id": 9,
+    "name": "summarization",
+    "description": "Produce concise summary (≤2 lines) in JSON `summary`."
+  },
+  {
+    "id": 10,
+    "name": "translation/localization",
+    "description": "i18n scaffolding (modes include i18n)."
+  },
+  {
+    "id": 11,
+    "name": "data/math",
+    "description": "Verify PERF_BUDGET & coverage thresholds in checks."
+  },
+  {
+    "id": 12,
+    "name": "tool-use & safety/refusal",
+    "description": "Refuse APPLY if secrets present or checks red; offer plan."
+  }
 ]
