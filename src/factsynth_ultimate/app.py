@@ -30,7 +30,8 @@ class _MetricsMiddleware(BaseHTTPMiddleware):
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
-        path = request.url.path
+        route = request.scope.get("route")
+        path = route.path if route else request.url.path
         method = request.method
         start = time.perf_counter()
         response = await call_next(request)
