@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   build:
-    name: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +32,7 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
             type=sha
-      - name: Build and push
+      - name: Build & push
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -43,12 +42,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   trivy:
-    name: trivy-scan
     needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Scan image
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/factsynth:latest
           format: sarif
@@ -60,7 +58,6 @@ jobs:
           sarif_file: trivy.sarif
 
   sbom:
-    name: sbom
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -70,20 +67,18 @@ jobs:
           image: ghcr.io/${{ github.repository_owner }}/factsynth:latest
           format: spdx-json
           output-file: sbom.spdx.json
-          artifact-name: sbom.spdx.json
       - uses: actions/upload-artifact@v4
         with:
           name: sbom
           path: sbom.spdx.json
 
   smoke:
-    name: smoke
     needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Pull image
         run: docker pull ghcr.io/${{ github.repository_owner }}/factsynth:latest
-      - name: Run container & probe /v1/healthz
+      - name: Run & probe
         run: |
           docker run -d --rm -p 8000:8000 --name factsynth ghcr.io/${{ github.repository_owner }}/factsynth:latest
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/v1/healthz && exit 0 || sleep 2; done
