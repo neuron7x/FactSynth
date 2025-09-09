@@ -1,7 +1,8 @@
-
-import numpy as np
 from dataclasses import dataclass, field
 from typing import List, Tuple
+
+import numpy as np
+
 
 @dataclass
 class NDMACO:

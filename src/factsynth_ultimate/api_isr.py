@@ -1,9 +1,11 @@
 
+from typing import Any, Dict, List, Optional
+
+import jax.numpy as jnp
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
-import jax.numpy as jnp
-from .isr.sim import simulate_isr, ISRParams, gamma_spectrum, dominant_freq, estimate_fs
+
+from .isr.sim import ISRParams, dominant_freq, estimate_fs, gamma_spectrum, simulate_isr
 
 router = APIRouter(prefix="/v1/isr", tags=["isr"])
 
