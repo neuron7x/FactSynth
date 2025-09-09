@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://factsynth.example/schemas/golden_12.schema.json",
+  "type": "object",
+  "properties": {
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "rule": { "type": "string" },
+          "input_lang": { "type": "string" },
+          "headers": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "targets": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["name", "rule"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["tests"],
+  "additionalProperties": false
+}

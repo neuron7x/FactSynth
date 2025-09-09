@@ -10,7 +10,8 @@
         "ts": { "type": "string", "format": "date-time" },
         "meta": { "$ref": "meta.schema.json" }
       },
-      "required": ["t", "v"]
+      "required": ["t", "v"],
+      "additionalProperties": false
     },
     {
       "type": "object",
@@ -19,7 +20,8 @@
         "tokens": { "type": "number" },
         "meta": { "$ref": "meta.schema.json" }
       },
-      "required": ["end"]
+      "required": ["end"],
+      "additionalProperties": false
     }
   ]
 }

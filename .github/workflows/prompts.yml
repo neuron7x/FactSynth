@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: prompts-${{ github.ref }}
@@ -19,13 +20,19 @@ jobs:
   lint-validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '20'
           cache: 'npm'
       - run: npx --yes ajv-cli@5.0.0 --version
       - run: npx --yes prettier@3.3.3 --version
       - run: make -C prompts lint validate
+      - name: verify checksums
+        run: |
+          cd prompts
+          find . -type f ! -path "./.git/*" ! -name SHASUMS256.txt -maxdepth 2 -print0 | \
+            xargs -0 shasum -a 256 | sed 's| \\*|  |' | LC_ALL=C sort > /tmp/SHASUMS256.txt
+          diff -u /tmp/SHASUMS256.txt SHASUMS256.txt

@@ -82,6 +82,12 @@ def gamma_spectrum(
     fs: Optional[float] = None,
     ts: Optional[jnp.ndarray] = None,
 ) -> jnp.ndarray:
+    """Return one-sided FFT magnitude of the mean-centered signal.
+
+    The mean of the selected channel is subtracted before computing the
+    spectrum to remove any DC component. This prevents low-frequency bias
+    from overshadowing the gamma band.
+    """
     sig = y[:, idx] - jnp.mean(y[:, idx])
     if fs is None:
         if ts is None:
@@ -92,6 +98,11 @@ def gamma_spectrum(
 
 
 def dominant_freq(spec: jnp.ndarray, fs: float) -> float:
+    """Return the dominant frequency above ``LOW_FREQ_CUTOFF``.
+
+    Frequencies below the configured cutoff are zeroed before searching for
+    the peak to avoid false detections from residual low-frequency energy.
+    """
     n = (spec.shape[0] - 1) * 2
     freqs = jnp.fft.rfftfreq(n, d=1.0 / fs)
     spec = spec.at[freqs < LOW_FREQ_CUTOFF].set(0)
