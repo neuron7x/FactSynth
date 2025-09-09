@@ -12,17 +12,42 @@ from ..schemas.requests import ScoreReq
 _WORD_RE = re.compile(r"\w+", re.UNICODE)
 
 def _text_stats(text: str) -> Dict[str, float]:
+    """Compute character-based metrics for *text*.
+
+    Returns a dictionary with:
+
+    - ``len``: total number of characters.
+    - ``uniq_ratio``: proportion of unique characters.
+    - ``alpha_ratio``: fraction of alphabetic characters.
+    - ``digit_ratio``: fraction of digit characters.
+    - ``whitespace_ratio``: fraction of whitespace characters.
+    - ``entropy``: Shannon entropy of character distribution in bits.
+    """
     n = len(text)
     if n == 0:
-        return {"len":0,"uniq_ratio":0.0,"alpha_ratio":0.0,"digit_ratio":0.0,"whitespace_ratio":0.0,"entropy":0.0}
-    uniq_ratio = len(set(text))/n
-    alpha = sum(ch.isalpha() for ch in text)/n
-    digit = sum(ch.isdigit() for ch in text)/n
-    space = sum(ch.isspace() for ch in text)/n
+        return {
+            "len": 0,
+            "uniq_ratio": 0.0,
+            "alpha_ratio": 0.0,
+            "digit_ratio": 0.0,
+            "whitespace_ratio": 0.0,
+            "entropy": 0.0,
+        }
+    uniq_ratio = len(set(text)) / n
+    alpha = sum(ch.isalpha() for ch in text) / n
+    digit = sum(ch.isdigit() for ch in text) / n
+    space = sum(ch.isspace() for ch in text) / n
     cnt = Counter(text)
-    probs = [c/n for c in cnt.values()]
-    entropy = -sum(p*math.log(p,2) for p in probs if p > 0)
-    return {"len":n,"uniq_ratio":uniq_ratio,"alpha_ratio":alpha,"digit_ratio":digit,"whitespace_ratio":space,"entropy":entropy}
+    probs = [c / n for c in cnt.values()]
+    entropy = -sum(p * math.log(p, 2) for p in probs if p > 0)
+    return {
+        "len": n,
+        "uniq_ratio": uniq_ratio,
+        "alpha_ratio": alpha,
+        "digit_ratio": digit,
+        "whitespace_ratio": space,
+        "entropy": entropy,
+    }
 
 def reflect_intent(intent: str, length: int) -> str:
     intent = re.sub(r"\s+"," ", intent).strip()
