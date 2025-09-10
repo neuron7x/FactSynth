@@ -2,20 +2,23 @@ import asyncio
 
 from app.services.nli import NLI
 
+SCORE = 0.42
+THRESHOLD = 0.9
+
 
 def test_nli_uses_async_classifier():
-    async def classifier(p: str, h: str) -> float:
-        return 0.42
+    async def classifier(_p: str, _h: str) -> float:
+        return SCORE
 
     nli = NLI(classifier)
     score = asyncio.run(nli.classify("a", "b"))
-    assert score == 0.42
+    assert score == SCORE
 
 
 def test_nli_fallback_on_error():
-    async def failing_classifier(p: str, h: str) -> float:
+    async def failing_classifier(_p: str, _h: str) -> float:
         raise RuntimeError("boom")
 
     nli = NLI(failing_classifier)
     score = asyncio.run(nli.classify("Cats are animals", "Cats are animals"))
-    assert score > 0.9
+    assert score > THRESHOLD

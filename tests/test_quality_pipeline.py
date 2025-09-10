@@ -1,4 +1,3 @@
-# ruff: noqa: E402
 import json
 from http import HTTPStatus
 from pathlib import Path

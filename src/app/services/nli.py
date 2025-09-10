@@ -24,7 +24,7 @@ class NLI:
         if self.classifier is not None:
             try:
                 return await self.classifier(premise, hypothesis)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         return self._heuristic(premise, hypothesis)
 
