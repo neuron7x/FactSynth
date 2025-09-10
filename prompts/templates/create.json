@@ -1,0 +1,45 @@
+{
+  "intent": "Create: <feature one-liner>",
+  "context": {
+    "repo_url": "https://github.com/neuron7x/FactSynth",
+    "targets": ["src/factsynth_ultimate", "openapi", "tests"],
+    "constraints": [
+      "Errors must be Problem+JSON",
+      "OpenAPI updated & linted",
+      "Prometheus metrics present",
+      "Trivy scan by digest (HIGH,CRITICAL gating)"
+    ]
+  },
+  "assumptions": [],
+  "spec": {
+    "goal": "",
+    "acceptance_criteria": [],
+    "api": { "update_openapi": true, "examples": [] }
+  },
+  "tasks": [
+    { "id": "T1", "title": "Design", "done_when": "SPEC.md updated, API sketch done" },
+    { "id": "T2", "title": "Implement", "done_when": "lint/tests pass" },
+    { "id": "T3", "title": "Docs", "done_when": "README + OpenAPI updated" },
+    { "id": "T4", "title": "Observability", "done_when": "metrics + dashboards updated" }
+  ],
+  "execution": {
+    "branch": "feat/<scope>-<kebab>",
+    "commit_style": "conventional_commits",
+    "prompts": [
+      {
+        "tool": "code",
+        "content": "Implement <feature> across <paths>. Follow FastAPI patterns; ensure Problem+JSON; add Prometheus metric(s); update OpenAPI and tests."
+      }
+    ]
+  },
+  "qa_checks": [
+    "pytest -q",
+    "ruff && mypy",
+    "spectral lint openapi/openapi.yaml",
+    "schemathesis run openapi/openapi.yaml --url http://localhost:8000"
+  ],
+  "pr": {
+    "title": "feat: <feature>",
+    "body_sections": ["Context", "Changes", "Testing", "Security", "Observability", "Docs"]
+  }
+}

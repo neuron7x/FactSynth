@@ -1,0 +1,27 @@
+{
+  "intent": "Evaluate: <area>",
+  "context": {
+    "repo_url": "https://github.com/neuron7x/FactSynth",
+    "targets": [],
+    "constraints": []
+  },
+  "assumptions": [],
+  "spec": {
+    "goal": "Audit & score",
+    "acceptance_criteria": [],
+    "scorecards": ["security", "docs", "perf"]
+  },
+  "tasks": [],
+  "execution": {
+    "branch": "docs/audit-<scope>",
+    "commit_style": "conventional_commits",
+    "prompts": [
+      { "tool": "docs", "content": "Write AUDIT.md with findings & fixes." }
+    ]
+  },
+  "qa_checks": ["n/a"],
+  "pr": {
+    "title": "docs: audit <scope>",
+    "body_sections": ["Findings", "Risks", "Fix Plan"]
+  }
+}

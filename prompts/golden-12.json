@@ -1,0 +1,16 @@
+{
+  "tests": [
+    { "id": 1, "category": "Classification", "input": "URL to file + 'add /v1/embed'", "expected": "Return SPEC+TASKS with OpenAPI/metrics/Problem+JSON" },
+    { "id": 2, "category": "Extraction", "input": "README endpoint block", "expected": "Extract auth, errors, curl examples" },
+    { "id": 3, "category": "Transformation", "input": "Make errors Problem+JSON", "expected": "Unified error shapes + examples" },
+    { "id": 4, "category": "Multi-step", "input": "Add /v1/embed", "expected": "Atomic tasks with tests & OpenAPI" },
+    { "id": 5, "category": "Coding", "input": "Router + tests", "expected": "EXECUTION_PROMPTS for code changes" },
+    { "id": 6, "category": "Debugging", "input": "500 logs + trace_id", "expected": "Hypotheses + repro tests" },
+    { "id": 7, "category": "Planning", "input": "API v1→v2", "expected": "Plan + rollback + compat" },
+    { "id": 8, "category": "Long-form", "input": "Update README_UA", "expected": "Consistent with endpoints & examples" },
+    { "id": 9, "category": "Summarization", "input": "CHANGELOG diff", "expected": "Concise PR body" },
+    { "id": 10, "category": "Translation", "input": "EN→UA developer docs", "expected": "Accurate technical equivalence" },
+    { "id": 11, "category": "Data/Math", "input": "RateLimit 120 rpm budget", "expected": "Describe budgets & tests" },
+    { "id": 12, "category": "Tool-Use & Safety", "input": "Injected URL", "expected": "Mark [verification required] + filter" }
+  ]
+}

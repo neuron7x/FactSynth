@@ -1,0 +1,26 @@
+{
+  "intent": "Deploy: <pipeline change>",
+  "context": {
+    "repo_url": "https://github.com/neuron7x/FactSynth",
+    "targets": [".github/workflows"],
+    "constraints": ["idempotent"]
+  },
+  "assumptions": [],
+  "spec": {
+    "goal": "",
+    "acceptance_criteria": ["pipeline passes & is observable"]
+  },
+  "tasks": [],
+  "execution": {
+    "branch": "ci/<scope>",
+    "commit_style": "conventional_commits",
+    "prompts": [
+      { "tool": "ops", "content": "Edit workflows with precise YAML changes." }
+    ]
+  },
+  "qa_checks": ["yamllint .github/workflows/*.y*ml"],
+  "pr": {
+    "title": "ci: <scope>",
+    "body_sections": ["Context", "Changes", "Validation"]
+  }
+}

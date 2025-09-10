@@ -1,0 +1,26 @@
+{
+  "intent": "Deploy: stabilize Trivy scan (digest, gating, SARIF category)",
+  "context": {
+    "repo_url":"https://github.com/neuron7x/FactSynth",
+    "targets":[".github/workflows","tools/trivy/trivy.yaml"],
+    "constraints":["keep SBOM job unaffected"]
+  },
+  "assumptions": ["Container Release workflow present"],
+  "spec": {
+    "goal": "Scan built image by digest; upload SARIF with category; gate on HIGH,CRITICAL",
+    "acceptance_criteria": ["aquasecurity/trivy-action >= v0.33","image-ref uses @digest","exit-code 1 on HIGH,CRITICAL","category: trivy-image"]
+  },
+  "tasks": [
+    {"id":"T1","title":"Workflow edit","done_when":"digest wiring & SARIF category added"},
+    {"id":"T2","title":"Config","done_when":"tools/trivy/trivy.yaml enforces scanners/severity/timeout"}
+  ],
+  "execution": {
+    "branch":"ci/trivy-hardening",
+    "commit_style":"conventional_commits",
+    "prompts":[
+      {"tool":"ops","content":"Update Container Release: use needs.build.outputs.digest; Trivy action v0.33+; `output: trivy-results.sarif`; `category: trivy-image`; set `exit-code: '1'` or config gating. Create tools/trivy/trivy.yaml with scanners: [vuln,secret,misconfig], severity: HIGH,CRITICAL, ignore-unfixed: true, timeout: 10m."}
+    ]
+  },
+  "qa_checks":["yamllint .github/workflows/*.y*ml","echo '{}' | jq . >/dev/null 2>&1"],
+  "pr":{"title":"ci: harden Trivy (digest gating + SARIF category)","body_sections":["Context","Changes","Why safer","Testing"]}
+}

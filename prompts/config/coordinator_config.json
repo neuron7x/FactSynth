@@ -1,0 +1,33 @@
+{
+  "model": "GPT-5 Thinking",
+  "mode": "Standard",
+  "repo": "https://github.com/neuron7x/FactSynth",
+  "defaults": {
+    "commit_style": "conventional_commits",
+    "branch_prefix": {
+      "create": "feat",
+      "improve": "chore",
+      "convert": "refactor",
+      "evaluate": "docs",
+      "deploy": "ci"
+    },
+    "qa_checks": [
+      "pytest -q",
+      "ruff",
+      "mypy",
+      "spectral lint openapi/openapi.yaml"
+    ],
+    "security": {
+      "trivy": {
+        "gating": "HIGH,CRITICAL",
+        "sarif_category": "trivy-image",
+        "by_digest": true,
+        "timeout": "10m"
+      },
+      "secrets": {
+        "scanner": "enabled",
+        "policy": "no secrets in repo"
+      }
+    }
+  }
+}

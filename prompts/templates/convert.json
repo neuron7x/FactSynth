@@ -1,0 +1,25 @@
+{
+  "intent": "Convert: <migration>",
+  "context": {
+    "repo_url": "https://github.com/neuron7x/FactSynth",
+    "targets": ["openapi"],
+    "constraints": []
+  },
+  "assumptions": [],
+  "spec": {
+    "goal": "",
+    "migration": { "plan": [], "rollback": [], "compat": "backward-compatible unless stated" },
+    "deprecation_notice": "If any"
+  },
+  "tasks": [],
+  "execution": {
+    "branch": "refactor/<scope>-migration",
+    "commit_style": "conventional_commits",
+    "prompts": []
+  },
+  "qa_checks": ["spectral lint openapi/openapi.yaml"],
+  "pr": {
+    "title": "refactor(api): migrate <scope>",
+    "body_sections": ["Context", "Migration Plan", "Rollback", "Testing"]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "intent": "Improve: Observability (Grafana dashboard update)",
+  "context": {
+    "repo_url":"https://github.com/neuron7x/FactSynth",
+    "targets":["grafana","src/factsynth_ultimate"],
+    "constraints":["prometheus metric naming"]
+  },
+  "assumptions": ["Prometheus endpoint /metrics enabled"],
+  "spec": {
+    "goal": "Add panel for new histogram metrics and SSE/WS stats",
+    "acceptance_criteria": ["New panels visible","No broken queries"]
+  },
+  "tasks": [
+    {"id":"T1","title":"Metrics inventory","done_when":"list of metrics added to README"},
+    {"id":"T2","title":"Dashboard JSON","done_when":"dashboard json updated + screenshot"}
+  ],
+  "execution": {
+    "branch":"chore/observability-dashboard",
+    "commit_style":"conventional_commits",
+    "prompts":[{"tool":"docs","content":"Document metrics in README and update Grafana dashboard JSON with new panels."}]
+  },
+  "qa_checks":["n/a"],
+  "pr":{"title":"chore(obs): update Grafana dashboard","body_sections":["Context","Metrics","Screenshots","Next steps"]}
+}

@@ -1,0 +1,25 @@
+{
+  "intent": "Improve: <target>",
+  "context": {
+    "repo_url": "https://github.com/neuron7x/FactSynth",
+    "targets": [],
+    "constraints": ["no API breakage"]
+  },
+  "assumptions": [],
+  "spec": {
+    "goal": "",
+    "performance": { "targets": ["p95 latency -20%"], "method": "bench before/after" },
+    "acceptance_criteria": []
+  },
+  "tasks": [],
+  "execution": {
+    "branch": "chore/<scope>-opt",
+    "commit_style": "conventional_commits",
+    "prompts": []
+  },
+  "qa_checks": ["pytest -q"],
+  "pr": {
+    "title": "chore: optimize <scope>",
+    "body_sections": ["Context", "Changes", "Benchmarks", "Risks"]
+  }
+}

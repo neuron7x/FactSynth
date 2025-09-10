@@ -1,0 +1,47 @@
+{
+  "intent": "Create: /v1/embed endpoint",
+  "context": {
+    "repo_url": "https://github.com/neuron7x/FactSynth",
+    "targets": ["src/factsynth_ultimate","openapi","tests"],
+    "constraints": ["Problem+JSON", "Prometheus metrics", "OpenAPI updated"]
+  },
+  "assumptions": ["FastAPI app entry exists", "Prometheus already integrated"],
+  "spec": {
+    "goal": "POST /v1/embed {text} -> {embedding:list[float],dim:int}",
+    "acceptance_criteria": [
+      "401/403/422/429 returned as application/problem+json",
+      "Histogram metrics factsynth_embed_seconds_bucket present",
+      "OpenAPI & README updated with curl"
+    ],
+    "api": {
+      "update_openapi": true,
+      "examples": ["curl -s -H 'x-api-key: $KEY' -d '{\"text\":\"hello\"}' http://127.0.0.1:8000/v1/embed"]
+    }
+  },
+  "tasks": [
+    { "id":"T1","title":"Router & Schemas","done_when":"embed.py & Pydantic models added" },
+    { "id":"T2","title":"Service impl","done_when":"happy path + error handling done" },
+    { "id":"T3","title":"Metrics & Errors","done_when":"Prometheus metric + Problem+JSON wired" },
+    { "id":"T4","title":"Tests","done_when":"pytest green" },
+    { "id":"T5","title":"Docs & OpenAPI","done_when":"README/OpenAPI updated" }
+  ],
+  "execution": {
+    "branch": "feat/embed-endpoint",
+    "commit_style": "conventional_commits",
+    "prompts": [
+      {
+        "tool":"code",
+        "content":"Create router `embed.py`, register in app, add Pydantic models, implement POST /v1/embed with Problem+JSON errors and Prometheus histogram `factsynth_embed_seconds_bucket`. Write unit tests. Update OpenAPI and README examples."
+      }
+    ]
+  },
+  "qa_checks": [
+    "pytest -q",
+    "spectral lint openapi/openapi.yaml",
+    "schemathesis run openapi/openapi.yaml --url http://localhost:8000"
+  ],
+  "pr": {
+    "title":"feat(api): add /v1/embed with metrics & Problem+JSON",
+    "body_sections":["Context","Changes","Testing","Observability","Docs"]
+  }
+}
