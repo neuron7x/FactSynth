@@ -1,0 +1,11 @@
+post:
+  summary: Verify FactSynth lock
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/FactSynthLock_v1_1.yaml
+  responses:
+    '200':
+      description: Verification result
