@@ -16,12 +16,19 @@ else:
         pass
 
 
+def _validate_key(key: str) -> str:
+    """Ensure a real API key is set in production."""
+    if os.getenv("ENV") == "prod" and key in {"", "change-me"}:
+        raise RuntimeError("API key must be set in production")
+    return key
+
+
 def read_api_key(env: str, env_file: str, default: Optional[str], env_name: str) -> str:
     """Resolve API key from file, Vault, environment or default (dev only)."""
     # 1) file
     p = os.getenv(env_file)
     if p and Path(p).exists():
-        return Path(p).read_text(encoding="utf-8").strip()
+        return _validate_key(Path(p).read_text(encoding="utf-8").strip())
     # 2) Vault (optional)
     if (
         hvac is not None
@@ -39,12 +46,12 @@ def read_api_key(env: str, env_file: str, default: Optional[str], env_name: str)
             )
             val = secret["data"]["data"].get(env_name)
             if val:
-                return str(val)
+                return _validate_key(str(val))
         except VaultError:
             pass
     # 3) environment
     val = os.getenv(env)
     if val:
-        return val
+        return _validate_key(val)
     # 4) default (non-production only)
-    return default or ""
+    return _validate_key(default or "")
