@@ -2,6 +2,8 @@ import os
 import pathlib
 
 import pytest
+
+schemathesis = pytest.importorskip("schemathesis")
 from schemathesis import openapi
 
 BASE_URL = os.getenv("FACTSYNTH_BASE_URL", "http://127.0.0.1:8000")

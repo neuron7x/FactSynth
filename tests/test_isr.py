@@ -1,6 +1,9 @@
 
 import pytest
 
+jax = pytest.importorskip("jax")
+pytest.importorskip("diffrax")
+
 from factsynth_ultimate.isr import (
     ISRParams,
     dominant_freq,
@@ -9,8 +12,6 @@ from factsynth_ultimate.isr import (
     simulate_isr,
 )
 
-jax = pytest.importorskip("jax")
-pytest.importorskip("diffrax")
 jnp = jax.numpy
 
 MIN_DOM_FREQ = 25.0

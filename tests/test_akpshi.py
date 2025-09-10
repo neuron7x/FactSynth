@@ -1,8 +1,8 @@
 import pytest
 
-from factsynth_ultimate.akpshi.metrics import fcr, pfi, rmse
-
 pytest.importorskip("numpy")
+
+from factsynth_ultimate.akpshi.metrics import fcr, pfi, rmse
 
 EXPECTED_FCR = 0.9
 
