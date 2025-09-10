@@ -1,5 +1,6 @@
 """API package for application tests."""
 
-from .verify import api as verify_api, FactSynthLock
+from .verify import fs_lock
+from .verify import router as verify_api
 
-__all__ = ["verify_api", "FactSynthLock"]
+__all__ = ["fs_lock", "verify_api"]
