@@ -28,6 +28,17 @@ ingress:
 
 resources: {}
 
+securityContext:
+  pod: {}
+  container: {}
+
+startupProbe:
+  httpGet:
+    path: /v1/healthz
+    port: 8000
+  failureThreshold: 30
+  periodSeconds: 10
+
 otelCollector:
   enabled: false
   image:
