@@ -43,8 +43,12 @@ def _ds_dt(t, S, args):
     Gamma = _compute_gamma(t)
     return alpha * IRS - beta * ES + gamma_param * AS_star + delta * Gamma
 
-def simulate_isr(S0: jnp.ndarray = jnp.array([1.0, 0.8, 0.5, 0.3, 0.2, 0.1, 0.05]),
-                 params: ISRParams = ISRParams()) -> Dict[str, jnp.ndarray]:
+def simulate_isr(S0: jnp.ndarray | None = None,
+                 params: ISRParams | None = None) -> Dict[str, jnp.ndarray]:
+    if S0 is None:
+        S0 = jnp.array([1.0, 0.8, 0.5, 0.3, 0.2, 0.1, 0.05])
+    if params is None:
+        params = ISRParams()
     term = ODETerm(lambda t, y, _: _ds_dt(t, y, (params.alpha, params.beta, params.gamma_param, params.delta)))
     solver = Tsit5()
     ts = jnp.linspace(params.t0, params.t1, params.steps)
