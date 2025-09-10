@@ -26,3 +26,14 @@ def test_read_api_key_prod_requires_real_key(monkeypatch, api_key):
         monkeypatch.setenv("API_KEY", api_key)
     with pytest.raises(RuntimeError):
         read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
+
+
+@pytest.mark.parametrize("contents", ["", "change-me"])
+def test_read_api_key_prod_file_invalid(monkeypatch, tmp_path, contents):
+    monkeypatch.setenv("ENV", "prod")
+    monkeypatch.delenv("API_KEY", raising=False)
+    path = tmp_path / "key.txt"
+    path.write_text(contents, encoding="utf-8")
+    monkeypatch.setenv("API_KEY_FILE", str(path))
+    with pytest.raises(RuntimeError):
+        read_api_key("API_KEY", "API_KEY_FILE", None, "API_KEY")
