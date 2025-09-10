@@ -1,4 +1,3 @@
-
 import pytest
 
 jax = pytest.importorskip("jax")

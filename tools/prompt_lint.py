@@ -33,7 +33,7 @@ REQUIRED_NEXUS = [
     r"(NEXUS_LOCK|Output\s*Contract)",
 ]
 FORBIDDEN = [
-    "\\b(?:\u043f\u043e\u0447\u0435\u043a\u0430\u0442\u0438)\\b",
+    r"\bпочекати\b",  # noqa: RUF001
     r"\bwait\b",
     r"background (task|work)",
     r"promise to do later",
