@@ -111,7 +111,7 @@ async def _post_callback(  # noqa: PLR0913
             attempt_num = i
             try:
                 r = await client.post(url, json=data)
-                if r.status_code < HTTPStatus.INTERNAL_SERVER_ERROR:
+                if HTTPStatus.OK <= r.status_code < HTTPStatus.MULTIPLE_CHOICES:
                     return
                 last_err = f"HTTP {r.status_code}"
             except Exception as e:  # noqa: BLE001
