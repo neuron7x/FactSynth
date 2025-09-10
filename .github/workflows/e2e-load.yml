@@ -32,18 +32,18 @@ jobs:
           import { check } from 'k6';
           export default function () {
             const headers = { 'x-api-key': 'change-me', 'Content-Type': 'application/json' };
-            check(http.post('http://localhost:8000/v1/generate', JSON.stringify({text:'hi'}), { headers }), { 'generate': r => r.status < 500 });
-            check(http.post('http://localhost:8000/v1/intent_reflector', JSON.stringify({intent:'hi'}), { headers }), { 'intent': r => r.status == 200 });
-            check(http.post('http://localhost:8000/v1/stream', JSON.stringify({text:'hi'}), { headers }), { 'sse': r => r.status == 200 });
-            ws.connect('ws://localhost:8000/ws/stream', { headers }, socket => {
+            const base = 'http://host.docker.internal:8000';
+            check(http.post(`${base}/v1/generate`, JSON.stringify({text:'hi'}), { headers }), { 'generate': r => r.status < 500 });
+            check(http.post(`${base}/v1/intent_reflector`, JSON.stringify({intent:'hi'}), { headers }), { 'intent': r => r.status == 200 });
+            check(http.post(`${base}/v1/stream`, JSON.stringify({text:'hi'}), { headers }), { 'sse': r => r.status == 200 });
+            ws.connect('ws://host.docker.internal:8000/ws/stream', { headers }, socket => {
               socket.on('open', () => { socket.send('hi'); socket.close(); });
             });
           }
           KS
+      - uses: grafana/setup-k6-action@v1
       - name: k6 smoke
-        uses: grafana/k6-action@v0.3.0
-        with:
-          filename: k6-smoke.js
+        run: k6 run k6-smoke.js
       - name: Locust smoke
         run: |
           cat <<'PY' > locustfile.py
