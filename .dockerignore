@@ -13,6 +13,7 @@ build/
 !.env.example
 
 # Tests & coverage
+.mypy_cache/
 .pytest_cache/
 .coverage
 htmlcov/

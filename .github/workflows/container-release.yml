@@ -59,14 +59,14 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Scan image (Trivy v0.33.1)
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          trivy-config: tools/trivy/trivy.yaml
-          image-ref: ghcr.io/${{ github.repository_owner }}/factsynth@${{ needs.build.outputs.digest }}
-          format: sarif
-          output: trivy-results.sarif
-          exit-code: '1'  # gate on HIGH/CRITICAL
+        - name: Scan image (Trivy v0.33.1)
+          uses: aquasecurity/trivy-action@0.33.1
+          with:
+            trivy-config: tools/trivy/trivy.yaml
+            image-ref: ghcr.io/${{ github.repository_owner }}/factsynth@${{ needs.build.outputs.digest }} # yamllint disable-line rule:line-length
+            format: sarif
+            output: trivy-results.sarif
+            exit-code: '1'  # gate on HIGH/CRITICAL
       - name: Upload SARIF
         if: always()
         uses: github/codeql-action/upload-sarif@v3

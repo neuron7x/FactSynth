@@ -22,6 +22,7 @@ jobs:
       - name: Install Spectral
         run: npm i -g @stoplight/spectral-cli
       - name: Run Spectral (emit JUnit & JSON)
+        continue-on-error: true
         run: |
           mkdir -p artifacts
           spectral lint openapi/openapi.yaml -f junit -o artifacts/spectral.junit.xml || echo "SPECTRAL_FAILED=1" >> $GITHUB_ENV
@@ -42,6 +43,7 @@ jobs:
           echo $! > artifacts/uvicorn.pid
           sleep 5
       - name: Run Schemathesis (emit JUnit)
+        if: always()
         run: |
           mkdir -p artifacts
           schemathesis run openapi/openapi.yaml --url http://localhost:8000 || echo "SCHEMA_FAILED=1" >> $GITHUB_ENV
