@@ -14,7 +14,6 @@ dependencies = [
     "pydantic-settings>=2.10,<2.11",
     "prometheus-client>=0.22,<0.23",
     "regex>=2025.9,<2026",
-    "beautifulsoup4>=4.12,<4.13",
     "python-dateutil>=2.9,<2.10",
     "orjson>=3.10,<3.11",
 ]

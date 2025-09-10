@@ -2,7 +2,6 @@ from __future__ import annotations
 import json, os, re, httpx
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
-from bs4 import BeautifulSoup
 from datetime import datetime
 
 @dataclass
