@@ -6,7 +6,10 @@ Calibrate all scripts/ without changing behavior.
 Idempotent; dry-run by default.
 """
 from __future__ import annotations
-import argparse, os, re, sys, textwrap
+
+import argparse
+import re
+import textwrap
 from pathlib import Path
 
 PY_SHEBANG = "#!/usr/bin/env python3\n"
