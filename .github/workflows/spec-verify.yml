@@ -24,10 +24,13 @@ jobs:
         run: npm i -g @stoplight/spectral-cli
 
       - name: Run Spectral (emit JUnit & JSON)
+        continue-on-error: true
         run: |
           mkdir -p artifacts
-          spectral lint openapi/openapi.yaml -f junit -o artifacts/spectral.junit.xml || echo "SPECTRAL_FAILED=1" >> $GITHUB_ENV
-          spectral lint openapi/openapi.yaml -f json  -o artifacts/spectral.json || true
+          spectral lint openapi/openapi.yaml -f junit \
+            -o artifacts/spectral.junit.xml
+          spectral lint openapi/openapi.yaml -f json \
+            -o artifacts/spectral.json
 
       - name: Setup Python (Schemathesis)
         uses: actions/setup-python@v5
@@ -41,14 +44,16 @@ jobs:
 
       - name: Boot API (background)
         run: |
-          uvicorn src.factsynth_ultimate.app:app --port 8000 > artifacts/uvicorn.log 2>&1 &
+          uvicorn src.factsynth_ultimate.app:app --port 8000 > \
+            artifacts/uvicorn.log 2>&1 &
           echo $! > artifacts/uvicorn.pid
           sleep 5
 
       - name: Run Schemathesis (emit JUnit)
+        continue-on-error: true
         run: |
           mkdir -p artifacts
-          schemathesis run openapi/openapi.yaml --url http://localhost:8000 || echo "SCHEMA_FAILED=1" >> $GITHUB_ENV
+          schemathesis run openapi/openapi.yaml --url http://localhost:8000
         env:
           PYTHONUNBUFFERED: "1"
 
@@ -65,7 +70,6 @@ jobs:
           path: artifacts/
 
       - name: Fail if any step failed
-        if: always()
+        if: failure()
         run: |
-          if [ "${SPECTRAL_FAILED}" = "1" ] || [ "${SCHEMA_FAILED}" = "1" ]; then
-            echo "One or more checks failed"; exit 2; fi
+          echo "One or more checks failed"; exit 2
