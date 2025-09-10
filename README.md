@@ -287,6 +287,7 @@ docker run -e API_KEY=change-me -p 8000:8000 factsynth:1.0.3
 ```bash
 helm registry login ghcr.io -u <user> --password <token>
 helm upgrade --install factsynth oci://ghcr.io/<owner>/charts/factsynth \
+  -f values-prod.yaml \
   --set secrets.apiKey=change-me \
   --set ingress.enabled=true \
   --set ingress.host=factsynth.local
