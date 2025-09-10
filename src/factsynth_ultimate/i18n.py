@@ -24,12 +24,34 @@ SUPPORTED_LANGS = set(MESSAGES.keys())
 
 
 def choose_language(request: Request) -> str:
-    """Pick best language from Accept-Language header."""
+    """Pick best language from ``Accept-Language`` header.
+
+    The header can contain quality values (``q``) which express the
+    preference order.  We parse the header into ``(code, q)`` pairs, sort the
+    pairs by ``q`` in descending order and return the first base language code
+    that is supported.  If no languages match we fall back to
+    :data:`DEFAULT_LANG`.
+    """
+
     header = request.headers.get("accept-language", "")
+    languages: list[tuple[str, float]] = []
     for part in header.split(","):
-        code = part.split(";")[0].strip().lower()
-        if not code:
+        item = part.strip()
+        if not item:
             continue
+        pieces = [p.strip() for p in item.split(";")]
+        code = pieces[0].lower()
+        q = 1.0
+        for p in pieces[1:]:
+            if p.startswith("q="):
+                try:
+                    q = float(p[2:])
+                except ValueError:
+                    q = 0.0
+                break
+        languages.append((code, q))
+
+    for code, _q in sorted(languages, key=lambda item: item[1], reverse=True):
         base = code.split("-")[0]
         if base in SUPPORTED_LANGS:
             return base
