@@ -1,6 +1,22 @@
+import importlib
 from pathlib import Path
 
-import yaml
+import pytest
+
+yaml = pytest.importorskip("yaml")
+
+CANDIDATES = ("factsynth_ultimate", "factsynth")
+
+
+def test_import_core():
+    for name in CANDIDATES:
+        try:
+            importlib.import_module(name)
+            break
+        except ImportError:
+            pass
+    else:
+        pytest.fail(f"Cannot import any of {CANDIDATES}")
 
 
 def test_guardrails_present():
@@ -10,7 +26,8 @@ def test_guardrails_present():
     assert guard in docs
     assert guard in prompt
 
+
 def test_policy_shape():
     y = yaml.safe_load(Path("config/quality_policy.yaml").read_text(encoding="utf-8"))
-    for k in ["hard_filters","weights","evidence_strength","diversity","recency","thresholds"]:
+    for k in ["hard_filters", "weights", "evidence_strength", "diversity", "recency", "thresholds"]:
         assert k in y
