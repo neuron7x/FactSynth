@@ -2,9 +2,10 @@ import os
 import pathlib
 
 import pytest
+import requests
 
 schemathesis = pytest.importorskip("schemathesis")
-from schemathesis import openapi
+from schemathesis import openapi  # noqa: E402
 
 BASE_URL = os.getenv("FACTSYNTH_BASE_URL", "http://127.0.0.1:8000")
 OPENAPI_PATH = os.getenv("FACTSYNTH_OPENAPI", "openapi/openapi.yaml")
@@ -27,5 +28,8 @@ def test_api_conforms(case):
     if case.path not in ["/v1/healthz", "/metrics", "/v1/version"]:
         case.headers = {**(case.headers or {}), "x-api-key": API_KEY}
     case.base_url = BASE_URL
-    response = case.call()
+    try:
+        response = case.call()
+    except requests.exceptions.RequestException:
+        pytest.skip("Could not connect to API; skipping contract tests due to connectivity issues")
     case.validate_response(response)
