@@ -2,4 +2,122 @@ openapi: 3.0.3
 info:
   title: FactSynth Ultimate Pro API
   version: '1.0.3'
-paths: {}
+paths:
+  /v1/healthz:
+    get:
+      summary: Healthz
+      responses:
+        '200':
+          description: Successful Response
+  /metrics:
+    get:
+      summary: Metrics
+      responses:
+        '200':
+          description: Successful Response
+  /v1/version:
+    get:
+      summary: Version
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+  /v1/intent_reflector:
+    post:
+      summary: Intent Reflector
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntentReq'
+      responses:
+        '200':
+          description: Successful Response
+  /v1/score:
+    post:
+      summary: Score
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreReq'
+      responses:
+        '200':
+          description: Successful Response
+  /v1/score/batch:
+    post:
+      summary: Score Batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreBatchReq'
+      responses:
+        '200':
+          description: Successful Response
+  /v1/stream:
+    post:
+      summary: Stream
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreReq'
+      responses:
+        '200':
+          description: Successful Response
+components:
+  schemas:
+    IntentReq:
+      type: object
+      properties:
+        intent:
+          type: string
+        length:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+      required:
+        - intent
+    ScoreReq:
+      type: object
+      properties:
+        text:
+          type: string
+          default: ''
+        targets:
+          type: array
+          items:
+            type: string
+        callback_url:
+          type: string
+          nullable: true
+      required:
+        - text
+    ScoreBatchReq:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreReq'
+        callback_url:
+          type: string
+          nullable: true
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          default: 1000
+      required:
+        - items
