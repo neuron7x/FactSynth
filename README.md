@@ -1,4 +1,4 @@
-# FactSynth Ultimate Pro — 1.0.3 (2025-09-07)
+# FactSynth Ultimate Pro — 1.0.4 (2025-09-07)
 [![OpenAPI docs](https://img.shields.io/badge/docs-openapi-blue)](https://neuron7x.github.io/FactSynth/openapi/)
 
 Secure, observable **FastAPI** service for intent reflection, scoring, extractive generation, streaming (SSE/WebSocket), and a toy GLRTPM pipeline.
@@ -278,8 +278,8 @@ CMD [
 Build & run:
 
 ```bash
-docker build -t factsynth:1.0.3 .
-docker run -e API_KEY=change-me -p 8000:8000 factsynth:1.0.3
+docker build -t factsynth:1.0.4 .
+docker run -e API_KEY=change-me -p 8000:8000 factsynth:1.0.4
 ```
 
 ## Helm
