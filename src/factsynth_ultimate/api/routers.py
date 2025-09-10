@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import random
+import time
 from http import HTTPStatus
 
 import httpx
@@ -88,17 +90,24 @@ async def ws_stream(ws: WebSocket):
     except WebSocketDisconnect:
         return
 
-async def _post_callback(
+async def _post_callback(  # noqa: PLR0913
     url: str,
     data: dict,
     attempts: int = 3,
     base_delay: float = 0.2,
     max_delay: float = 5.0,
+    max_elapsed: float = 15.0,
 ):
     delay = base_delay
     last_err = None
+    start = time.monotonic()
+    attempt_num = 0
     async with httpx.AsyncClient(timeout=2.0) as client:
         for i in range(1, attempts + 1):
+            elapsed = time.monotonic() - start
+            if elapsed >= max_elapsed:
+                break
+            attempt_num = i
             try:
                 r = await client.post(url, json=data)
                 if r.status_code < HTTPStatus.INTERNAL_SERVER_ERROR:
@@ -108,10 +117,15 @@ async def _post_callback(
                 last_err = str(e)
             logger.warning("Callback attempt %d/%d failed: %s", i, attempts, last_err)
             if i < attempts:
-                await _sleep(delay)
+                elapsed = time.monotonic() - start
+                if elapsed >= max_elapsed:
+                    break
+                jittered = delay * random.uniform(0.8, 1.2)
+                remaining = max_elapsed - elapsed
+                await _sleep(min(jittered, remaining))
                 delay = min(delay * 2, max_delay)
     if last_err is not None:
-        logger.error("Callback failed after %d attempts: %s", attempts, last_err)
+        logger.error("Callback failed after %d attempts: %s", attempt_num, last_err)
 
 async def _sleep(s: float):
     # виділено для тестів/патчу
