@@ -5,8 +5,12 @@ Calibrate all scripts/ without changing behavior.
 - Shell: strict header, traps, quoting, mkdir -p, cp -R src/. dst/
 Idempotent; dry-run by default.
 """
+
 from __future__ import annotations
-import argparse, os, re, sys, textwrap
+
+import argparse
+import re
+import textwrap
 from pathlib import Path
 
 PY_SHEBANG = "#!/usr/bin/env python3\n"
@@ -54,16 +58,14 @@ def ensure_py_docstring(src: str, rel: str) -> str:
         return src
     doc = f'"""{rel} — auto-added docstring (logic unchanged)."""\n'
     return (
-        src.splitlines(keepends=True)[0]
-        + doc
-        + "".join(src.splitlines(keepends=True)[1:])
+        src.splitlines(keepends=True)[0] + doc + "".join(src.splitlines(keepends=True)[1:])
         if src.startswith("#!")
         else doc + src
     )
 
 
 def has_main_guard(src: str) -> bool:
-    return re.search(r'if\s+__name__\s*==\s*[\'\"]__main__[\'\"]\s*:', src) is not None
+    return re.search(r"if\s+__name__\s*==\s*[\'\"]__main__[\'\"]\s*:", src) is not None
 
 
 def maybe_add_main_guard(src: str) -> str:
@@ -129,7 +131,11 @@ def ensure_bash_header(text: str) -> str:
             else text.replace(text.splitlines()[0] + "\n", BASH_HEADER, 1)
         )
     if text.startswith("#!"):
-        return BASH_HEADER + "\n".join(text.splitlines()[1:]) + ("\n" if not text.endswith("\n") else "")
+        return (
+            BASH_HEADER
+            + "\n".join(text.splitlines()[1:])
+            + ("\n" if not text.endswith("\n") else "")
+        )
     return BASH_HEADER + text
 
 
@@ -183,4 +189,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -5,6 +5,7 @@ from starlette.websockets import WebSocketDisconnect
 from factsynth_ultimate.app import app
 
 UNAUTHORIZED = 4401
+EXPECTED_CHUNKS = 3
 
 
 def test_ws_stream_tokens_complete():
@@ -21,7 +22,7 @@ def test_ws_stream_tokens_complete():
     assert msgs[0]["t"] == "one"
     assert msgs[1]["t"] == "two"
     assert msgs[2] == {"end": True}
-    assert len(msgs) == 3
+    assert len(msgs) == EXPECTED_CHUNKS
 
 
 def test_ws_stream_bad_key():

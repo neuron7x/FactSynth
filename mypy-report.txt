@@ -1,0 +1,4 @@
+prompts/github_codex_ops/tests/test_bundle.py: error: Duplicate module named "test_bundle" (also at "./prompts/factsynth_judge/tests/test_bundle.py")
+prompts/github_codex_ops/tests/test_bundle.py: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-file-paths-to-modules for more info
+prompts/github_codex_ops/tests/test_bundle.py: note: Common resolutions include: a) using `--exclude` to avoid checking one of them, b) adding `__init__.py` somewhere, c) using `--explicit-package-bases` or adjusting MYPYPATH
+Found 1 error in 1 file (errors prevented further checking)

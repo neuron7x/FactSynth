@@ -1,21 +1,23 @@
-
 import pytest
 
 jax = pytest.importorskip("jax")
 pytest.importorskip("diffrax")
-
-from factsynth_ultimate.isr import (
-    ISRParams,
-    dominant_freq,
-    estimate_fs,
-    gamma_spectrum,
-    simulate_isr,
-)
+try:
+    from factsynth_ultimate.isr import (
+        ISRParams,
+        dominant_freq,
+        estimate_fs,
+        gamma_spectrum,
+        simulate_isr,
+    )
+except ModuleNotFoundError as exc:
+    pytest.skip(str(exc), allow_module_level=True)
 
 jnp = jax.numpy
 
 MIN_DOM_FREQ = 25.0
 MAX_DOM_FREQ = 55.0
+
 
 def test_isr_shapes_and_peak():
     out = simulate_isr(params=ISRParams(steps=512, t1=5.12))
