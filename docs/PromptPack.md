@@ -217,6 +217,7 @@ curl -s -H 'x-api-key: $API_KEY' -H 'content-type: application/json' \
 
 ## 7) Changelog
 
+* **v2.4:** Introduced NEXUS prompts, prompt lint workflow, and YAML Golden-12 tests.
 * **New:** FactSynth-specific System Prompt & task templates.
 * **Aligned:** PersonaForge Prompt Blueprint phases + [Assumption] policy.
 * **Added:** Golden-12 tailored to extractive/scoring workflows.

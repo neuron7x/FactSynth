@@ -1,0 +1,23 @@
+name: Prompt Quality Gate
+on:
+  pull_request:
+    paths:
+      - 'prompts/**'
+      - 'docs/PromptPack.md'
+      - 'tools/prompt_lint.py'
+      - 'tests/golden_12.yaml'
+  push:
+    branches: [ feat/**, fix/**, chore/** ]
+    paths:
+      - 'prompts/**'
+      - 'docs/PromptPack.md'
+      - 'tools/prompt_lint.py'
+      - 'tests/golden_12.yaml'
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: python tools/prompt_lint.py
