@@ -1,9 +1,14 @@
+---
 name: Container Release
-on:
+'on':
   push:
     branches: ["main"]
     tags: ["v*.*.*"]
   workflow_dispatch:
+
+concurrency:
+  group: container-release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -40,22 +45,28 @@ jobs:
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            ENV=prod
 
   trivy:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Scan image
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.24.0
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/factsynth:latest
           format: sarif
-          output: trivy.sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
           ignore-unfixed: true
+          limit-severities-for-sarif: true
+          exit-code: 1
       - name: Upload SARIF
+        if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: trivy.sarif
+          sarif_file: trivy-results.sarif
 
   sbom:
     needs: build
@@ -80,6 +91,10 @@ jobs:
         run: docker pull ghcr.io/${{ github.repository_owner }}/factsynth:latest
       - name: Run & probe
         run: |
-          docker run -d --rm -p 8000:8000 --name factsynth ghcr.io/${{ github.repository_owner }}/factsynth:latest
-          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/v1/healthz && exit 0 || sleep 2; done
+          docker run -d --rm -p 8000:8000 \
+            --name factsynth \
+            ghcr.io/${{ github.repository_owner }}/factsynth:latest
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8000/v1/healthz && exit 0 || sleep 2
+          done
           docker logs factsynth; exit 1
