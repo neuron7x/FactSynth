@@ -9,6 +9,7 @@ dependencies = [
     "fastapi>=0.116,<0.117",
     "uvicorn>=0.35,<0.36",
     "httpx>=0.28,<0.29",
+    "redis>=6.4,<6.5",
     "pydantic>=2.11,<2.12",
     "pydantic-settings>=2.10,<2.11",
     "prometheus-client>=0.22,<0.23",
@@ -17,22 +18,22 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "httpx",
-    "uvicorn",
-    "schemathesis",  # API contract testing
-    "websockets",  # WebSocket test client
-    "pytest-cov",  # coverage plugin
+    "pytest>=8.4,<8.5",
+    "httpx>=0.28,<0.29",
+    "uvicorn>=0.35,<0.36",
+    "schemathesis>=4.1,<4.2",  # API contract testing
+    "websockets>=15.0,<15.1",  # WebSocket test client
+    "pytest-cov>=7.0,<7.1",  # coverage plugin
 ]
 ops = [
     "prometheus-client>=0.22,<0.23",
 ]
 isr = [
-    "jax",
-    "diffrax",
+    "jax>=0.4.38,<0.5",
+    "diffrax>=0.7,<0.8",
 ]
 numpy = [
-    "numpy",
+    "numpy>=1.26,<1.27",
 ]
 
 [project.scripts]
