@@ -1,4 +1,65 @@
 {
   "title": "FactSynth Overview",
-  "panels": []
+  "panels": [
+    {
+      "title": "Latency /v1/intent_reflector",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(factsynth_request_latency_seconds_bucket{route=\"/v1/intent_reflector\"}[5m])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(factsynth_request_latency_seconds_bucket{route=\"/v1/intent_reflector\"}[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "title": "Latency /v1/generate",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(factsynth_request_latency_seconds_bucket{route=\"/v1/generate\"}[5m])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(factsynth_request_latency_seconds_bucket{route=\"/v1/generate\"}[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "title": "Error Ratios (5xx/429)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "percent" } },
+      "targets": [
+        {
+          "expr": "sum(rate(factsynth_requests_total{status=~\"5..\"}[5m])) / sum(rate(factsynth_requests_total[5m]))",
+          "legendFormat": "5xx"
+        },
+        {
+          "expr": "sum(rate(factsynth_requests_total{status=\"429\"}[5m])) / sum(rate(factsynth_requests_total[5m]))",
+          "legendFormat": "429"
+        }
+      ]
+    },
+    {
+      "title": "Total Request Volume",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "req/s" } },
+      "targets": [
+        {
+          "expr": "sum(rate(factsynth_requests_total[5m]))",
+          "legendFormat": "requests"
+        }
+      ]
+    }
+  ]
 }
