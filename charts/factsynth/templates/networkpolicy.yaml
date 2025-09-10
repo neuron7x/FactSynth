@@ -10,9 +10,31 @@ spec:
   policyTypes:
     - Ingress
   ingress:
+{{- range .Values.networkPolicy.ingress }}
     - from:
-        - namespaceSelector: {}
+{{- range .from }}
+{{- if .podSelector }}
+        - podSelector:
+{{ toYaml .podSelector | indent 10 }}
+{{- end }}
+{{- if .namespaceSelector }}
+        - namespaceSelector:
+{{ toYaml .namespaceSelector | indent 10 }}
+{{- end }}
+{{- if .ipBlock }}
+        - ipBlock:
+{{ toYaml .ipBlock | indent 10 }}
+{{- end }}
+{{- end }}
       ports:
+{{- if .ports }}
+{{- range .ports }}
+        - protocol: {{ .protocol | default "TCP" }}
+          port: {{ .port | default $.Values.service.port }}
+{{- end }}
+{{- else }}
         - protocol: TCP
-          port: {{ .Values.service.port }}
+          port: {{ $.Values.service.port }}
+{{- end }}
+{{- end }}
 {{- end }}
