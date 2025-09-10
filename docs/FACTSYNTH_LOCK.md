@@ -11,3 +11,5 @@
 | `api_guard` | string | Guard token protecting the API. Expected value: `"factsynth-lock/v1.1"`. |
 
 All fields are mandatory. Requests are rejected when `api_guard` does not exactly match the expected token.
+
+Do not change FactSynth runtime API

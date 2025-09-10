@@ -1,8 +1,19 @@
-weights:
-  SQS: 0.7
-  ESS: 0.3
-filters:
+# Do not change FactSynth runtime API
+hard_filters:
   min_score: 0.5
   banned_topics:
     - violence
     - explicit
+weights:
+  SQS: 0.7
+  ESS: 0.3
+evidence_strength:
+  min: 0.5
+diversity:
+  min: 0.1
+recency:
+  max_age_days: 30
+thresholds:
+  rmse: 0.5
+  fcr: 0.8
+  pfi: 0.5
