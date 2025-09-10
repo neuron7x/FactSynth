@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "name": "classification",
+    "description": "Given targets [\"cloud\",\"billing\"], score a paragraph; expect coverage>=0.8, gibberish=false."
+  },
+  {
+    "id": 2,
+    "name": "extraction",
+    "description": "Title<=10w, Summary<=120w/<=2s, 3–7 keywords; no new facts."
+  },
+  {
+    "id": 3,
+    "name": "transformation",
+    "description": "Convert EN→UKR; sentence cap holds; no emails/URLs in output."
+  },
+  {
+    "id": 4,
+    "name": "multi_step_reasoning",
+    "description": "Reflect → Generate → Re-score loop improves coverage by >=0.05."
+  },
+  {
+    "id": 5,
+    "name": "coding",
+    "description": "Return Problem+JSON unchanged on 422; include trace_id in output."
+  },
+  {
+    "id": 6,
+    "name": "debugging",
+    "description": "On 429, suggest retry with backoff window; do not auto-retry."
+  },
+  {
+    "id": 7,
+    "name": "planning",
+    "description": "For long docs, advise chunking and batch /v1/score/batch; stable totals."
+  },
+  {
+    "id": 8,
+    "name": "long_form_writing",
+    "description": "Explicitly refuse creative expansion; keep extractive."
+  },
+  {
+    "id": 9,
+    "name": "summarization",
+    "description": "Entropy decreases vs input baseline after noise filtering."
+  },
+  {
+    "id": 10,
+    "name": "translation_localization",
+    "description": "Locale respected; numerals and dates preserved."
+  },
+  {
+    "id": 11,
+    "name": "data_math",
+    "description": "Report alpha-density, entropy; explain briefly."
+  },
+  {
+    "id": 12,
+    "name": "tool_use_safety",
+    "description": "If source is sensitive/medical/legal -> add \"educational use only\" disclaimer."
+  }
+]

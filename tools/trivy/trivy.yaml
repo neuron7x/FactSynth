@@ -1,0 +1,12 @@
+# Trivy configuration for CI
+---
+scanners:
+  - vuln
+  - secret
+  - misconfig
+vuln-type:
+  - os
+  - library
+severity: "HIGH,CRITICAL"
+ignore-unfixed: true
+timeout: 10m
