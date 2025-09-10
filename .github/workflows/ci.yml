@@ -28,7 +28,7 @@ jobs:
         continue-on-error: true
 
   tests:
-    name: PyTest (smoke)
+    name: PyTest
     needs: quality
     runs-on: ubuntu-latest
     strategy:
@@ -46,10 +46,10 @@ jobs:
           python -m pip install -U pip
           pip install -e .[dev,ops] || pip install -e .
           pip install -U pytest pytest-cov
-      - name: Run smoke tests
+      - name: Run tests
         env: { PYTHONPATH: src }
         run: |
-          pytest -q tests/smoke --maxfail=1 --disable-warnings --cov=src --cov-report=xml:coverage.xml
+          pytest -q --maxfail=1 --disable-warnings --cov=src --cov-report=xml:coverage.xml
       - name: Upload coverage.xml
         uses: actions/upload-artifact@v4
         with:
