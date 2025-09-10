@@ -46,6 +46,8 @@ jobs:
           python -m pip install -U pip
           pip install -e .[dev,ops] || pip install -e .
           pip install -U pytest pytest-cov
+      - name: Validate OpenAPI with Schemathesis
+        run: schemathesis run --dry-run openapi/openapi.yaml
       - name: Run smoke tests
         env: { PYTHONPATH: src }
         run: |
