@@ -346,7 +346,9 @@ See [docs/PromptPack.md](docs/PromptPack.md) for a production-ready system promp
 * Use real secrets (Vault or `API_KEY_FILE`), **never** `change-me` in prod.
 * Set `ENV=prod`, `HTTPS_REDIRECT=1`, enable reverse proxy TLS termination.
 * Configure `TRUSTED_HOSTS`, `CORS_ALLOW_ORIGINS` (exact origins), `IP_ALLOWLIST` if needed.
-* Keep `MAX_BODY_BYTES` reasonable; front with WAF / CDN where applicable.
+* Place a CDN or WAF in front of the ingress for shielding and rate limiting.
+* Enforce strict 1 MB request body limits via `MAX_BODY_BYTES` and upstream proxies.
+* Cache lightweight endpoints (`/v1/version`, `/metrics`) at the edge to reduce load.
 
 ---
 
