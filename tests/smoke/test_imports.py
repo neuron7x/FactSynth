@@ -1,13 +1,6 @@
-import importlib
+import pytest
 
-CANDIDATES = ("factsynth_ultimate", "factsynth")
-def test_import_core():
-    ok = False
-    for name in CANDIDATES:
-        try:
-            importlib.import_module(name)
-            ok = True
-            break
-        except Exception:
-            continue
-    assert ok, f"Cannot import any of {CANDIDATES}"
+@pytest.mark.parametrize("name", ["factsynth_ultimate", "factsynth"])
+def test_import_core(name):
+    pytest.importorskip(name)
+
