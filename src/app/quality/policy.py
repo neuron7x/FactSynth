@@ -4,8 +4,9 @@ import hashlib
 from pathlib import Path
 from typing import Any, Tuple
 
+
 def load_quality_policy(path: str | Path) -> Tuple[dict[str, Any], str]:
-    import yaml  # type: ignore[import-untyped]
+    import yaml  # type: ignore[import-untyped]  # noqa: PLC0415
     """Load a quality policy YAML file and return its data and SHA-256 hash.
 
     Parameters
