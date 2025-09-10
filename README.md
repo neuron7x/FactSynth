@@ -242,16 +242,37 @@ Vault support (optional): set `VAULT_ADDR`, `VAULT_TOKEN`, `VAULT_PATH` (reads `
 
 ## Docker
 
+The container uses Python 3.12 with `tini`, runs as a non-root `appuser`,
+declares a writable `/tmp` volume to support a read-only root filesystem, and
+exposes a default `UVICORN_WORKERS` environment variable. The server runs with
+proxy header support and a 30-second keep-alive timeout.
+
 Example `Dockerfile`:
 
 ```dockerfile
 FROM python:3.12-slim
+RUN apt-get update && apt-get install -y --no-install-recommends tini \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY . /app
 RUN pip install -U pip && pip install -e .[ops]
 ENV UVICORN_WORKERS=2
+RUN useradd -m appuser && chown -R appuser:appuser /app
+USER appuser
 EXPOSE 8000
-CMD ["uvicorn", "factsynth_ultimate.app:app", "--host", "0.0.0.0", "--port", "8000"]
+VOLUME ["/tmp"]
+ENTRYPOINT ["/usr/bin/tini","--"]
+CMD [
+  "uvicorn",
+  "factsynth_ultimate.app:app",
+  "--host",
+  "0.0.0.0",
+  "--port",
+  "8000",
+  "--proxy-headers",
+  "--timeout-keep-alive",
+  "30"
+]
 ```
 
 Build & run:
