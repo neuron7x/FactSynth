@@ -1,0 +1,63 @@
+name: e2e-load
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: "pip" }
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          pip install -e .[dev] locust
+      - name: Start server
+        env: { API_KEY: change-me }
+        run: |
+          uvicorn factsynth_ultimate.app:app --port 8000 &
+          sleep 5
+      - name: Write k6 script
+        run: |
+          cat <<'KS' > k6-smoke.js
+          import http from 'k6/http';
+          import ws from 'k6/ws';
+          import { check } from 'k6';
+          export default function () {
+            const headers = { 'x-api-key': 'change-me', 'Content-Type': 'application/json' };
+            check(http.post('http://localhost:8000/v1/generate', JSON.stringify({text:'hi'}), { headers }), { 'generate': r => r.status < 500 });
+            check(http.post('http://localhost:8000/v1/intent_reflector', JSON.stringify({intent:'hi'}), { headers }), { 'intent': r => r.status == 200 });
+            check(http.post('http://localhost:8000/v1/stream', JSON.stringify({text:'hi'}), { headers }), { 'sse': r => r.status == 200 });
+            ws.connect('ws://localhost:8000/ws/stream', { headers }, socket => {
+              socket.on('open', () => { socket.send('hi'); socket.close(); });
+            });
+          }
+          KS
+      - name: k6 smoke
+        uses: grafana/k6-action@v0.3.0
+        with:
+          filename: k6-smoke.js
+      - name: Locust smoke
+        run: |
+          cat <<'PY' > locustfile.py
+          from locust import HttpUser, task
+          class User(HttpUser):
+              headers = {"x-api-key": "change-me"}
+              @task
+              def generate(self):
+                  self.client.post("/v1/generate", json={"text": "hi"}, headers=self.headers)
+              @task
+              def intent(self):
+                  self.client.post("/v1/intent_reflector", json={"intent": "hi"}, headers=self.headers)
+              @task
+              def stream(self):
+                  self.client.post("/v1/stream", json={"text": "hi"}, headers=self.headers)
+          PY
+          locust -f locustfile.py --headless -u 1 -r 1 -t 10s --host=http://localhost:8000
