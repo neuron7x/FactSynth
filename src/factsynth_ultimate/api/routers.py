@@ -13,6 +13,7 @@ from factsynth_ultimate import VERSION
 
 from ..core.audit import audit_event
 from ..core.metrics import SSE_TOKENS
+from ..core.secrets import read_api_key
 from ..schemas.requests import IntentReq, ScoreBatchReq, ScoreReq
 from ..services.runtime import reflect_intent, score_payload, tokenize_preview
 
@@ -65,15 +66,17 @@ async def ws_stream(ws: WebSocket):
 
     The client establishes a WebSocket connection and the server accepts the
     handshake. After accepting, the server performs a simple authentication
-    check looking for an ``x-api-key`` header. If the key is missing, the
-    connection is closed with code ``4401`` and reason ``"Unauthorized"``.
-    Otherwise, incoming text messages are tokenized and each token is emitted
-    back to the client as JSON messages.
+    check comparing the ``x-api-key`` header to the configured key. If the
+    header is missing or does not match, the connection is closed with code
+    ``4401`` and reason ``"Unauthorized"``. Otherwise, incoming text messages
+    are tokenized and each token is emitted back to the client as JSON
+    messages.
     """
-    # simple auth: expect x-api-key in headers
-    key = ws.headers.get("x-api-key")
     await ws.accept()
-    if not key:
+    # simple auth: expect x-api-key matching the configured API key
+    key = ws.headers.get("x-api-key")
+    actual_key = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
+    if key != actual_key:
         await ws.close(code=4401, reason="Unauthorized")
         return
     try:
