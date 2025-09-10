@@ -23,8 +23,11 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           provenance: false
+      - name: Cosign sign
+        if: github.event_name != 'pull_request'
+        run: cosign sign ${{ steps.build.outputs.imageid }}
       - name: Scan image
         uses: aquasecurity/trivy-action@0.24.0
         with:
