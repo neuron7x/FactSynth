@@ -2,9 +2,10 @@ import os
 import pathlib
 
 import pytest
+import requests
 
 schemathesis = pytest.importorskip("schemathesis")
-from schemathesis import openapi
+openapi = schemathesis.openapi
 
 BASE_URL = os.getenv("FACTSYNTH_BASE_URL", "http://127.0.0.1:8000")
 OPENAPI_PATH = os.getenv("FACTSYNTH_OPENAPI", "openapi/openapi.yaml")
@@ -26,6 +27,8 @@ if not list(schema.get_all_operations()):
 def test_api_conforms(case):
     if case.path not in ["/v1/healthz", "/metrics", "/v1/version"]:
         case.headers = {**(case.headers or {}), "x-api-key": API_KEY}
-    case.base_url = BASE_URL
-    response = case.call()
+    try:
+        response = case.call(base_url=BASE_URL)
+    except requests.exceptions.ConnectionError:
+        pytest.skip("API server not running", allow_module_level=False)
     case.validate_response(response)

@@ -1,0 +1,47 @@
+# Compatibility Guard: Do not change FactSynth runtime API
+name: default-quality-policy
+version: "1.0.0"
+
+hard_filters:
+  disallow_tlds: [".zip", ".mov", ".tk", ".click"]
+  allow_filetypes: ["html","pdf"]
+  min_snippet_len: 60
+  min_year: 2005
+
+weights:
+  domain_reputation: 0.22
+  author_credibility: 0.12
+  citation_authority: 0.10
+  method_rigor: 0.16
+  recency: 0.10
+  cross_source_consistency: 0.12
+  conflict_of_interest_penalty: -0.08
+  adversarial_signals_penalty: -0.10
+
+evidence_strength:
+  mapping:
+    primary_research: 0.95
+    standard_spec: 0.90
+    meta_analysis: 0.90
+    systematic_review: 0.85
+    reputable_news: 0.70
+    blog_expert: 0.55
+    forum_post: 0.30
+
+diversity:
+  min_domains: 3
+  enforce_cross_geo: true
+  enforce_media_mix: true
+
+recency:
+  half_life_years: 3
+  timeless_domains: ["ietf.org","w3.org","iso.org","rfc-editor.org"]
+
+thresholds:
+  min_sqs_for_use: 0.55
+  min_ess_for_use: 0.60
+  staleness_days_warn: 1825
+  manual_review_triggers:
+    - "coverage.used_in_synthesis < 2"
+    - "diversity.domain_entropy < 1.0"
+    - "contradictions.conflict_pairs >= 2 and contradictions.max_pair_confidence >= 0.75"

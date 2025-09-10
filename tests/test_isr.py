@@ -4,7 +4,7 @@ import pytest
 jax = pytest.importorskip("jax")
 pytest.importorskip("diffrax")
 
-from factsynth_ultimate.isr import (
+from factsynth_ultimate.isr import (  # noqa: E402
     ISRParams,
     dominant_freq,
     estimate_fs,

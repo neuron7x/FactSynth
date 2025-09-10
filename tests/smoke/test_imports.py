@@ -8,6 +8,6 @@ def test_import_core():
             importlib.import_module(name)
             ok = True
             break
-        except Exception:
+        except ImportError:
             continue
     assert ok, f"Cannot import any of {CANDIDATES}"
