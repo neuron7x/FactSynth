@@ -10,6 +10,6 @@ def test_ukrainian_query_matches_english_fixture():
 
     results = retriever.search("Що таке мікросервіси?", k=1)
     assert results, "No results returned"
-    top_fixture, score = results[0]
-    assert top_fixture.id == "en1"
-    assert score > 0
+    top_doc = results[0]
+    assert top_doc.id == "en1"
+    assert top_doc.score > 0

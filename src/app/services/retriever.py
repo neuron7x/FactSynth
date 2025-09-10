@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import ClassVar, Iterable, List, Tuple
+from typing import ClassVar, Iterable, List
 
 from factsynth_ultimate.tokenization import tokenize
 
@@ -13,6 +13,15 @@ class Fixture:
 
     id: str
     text: str
+
+
+@dataclass
+class RetrievedDoc:
+    """Result returned by a retriever search."""
+
+    id: str
+    text: str
+    score: float
 
 
 class LocalFixtureRetriever:
@@ -40,18 +49,18 @@ class LocalFixtureRetriever:
             q = re.sub(rf"\b{ua}\b", en, q)
         return q
 
-    def search(self, query: str, k: int = 5) -> List[Tuple[Fixture, float]]:
+    def search(self, query: str, k: int = 5) -> List[RetrievedDoc]:
         """Return top ``k`` fixtures ranked by similarity to ``query``."""
 
         translated = self._translate_query(query)
         q_tokens = {t.lower() for t in tokenize(translated)}
-        results: List[Tuple[Fixture, float]] = []
+        results: List[RetrievedDoc] = []
         for fix in self.fixtures:
             f_tokens = {t.lower() for t in tokenize(fix.text)}
             if q_tokens or f_tokens:
                 score = len(q_tokens & f_tokens) / len(q_tokens | f_tokens)
             else:
                 score = 0.0
-            results.append((fix, score))
-        results.sort(key=lambda x: x[1], reverse=True)
+            results.append(RetrievedDoc(id=fix.id, text=fix.text, score=score))
+        results.sort(key=lambda d: d.score, reverse=True)
         return results[:k]
