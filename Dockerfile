@@ -13,7 +13,8 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
-COPY .env.example ./.env
+ARG ENV=dev
+ENV ENV=${ENV}
 RUN pip install -U pip && pip install .[ops]
 EXPOSE 8000
 USER 10001
