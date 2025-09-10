@@ -1,17 +1,24 @@
-**/__pycache__/
-**/*.pyc
+# Python
+__pycache__/
+*.py[cod]
+*.so
 .venv/
 dist/
 build/
-.git/
-.gitignore
-.coverage
-.coverage.*
-htmlcov/
 *.egg-info/
-node_modules/
-_site/
+
+# Env
 .env
 .env.*
-# allow the non-secret sample env file for container builds
 !.env.example
+
+# Tests & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+
+# OpenAPI build artifacts (if any)
+openapi/generated/

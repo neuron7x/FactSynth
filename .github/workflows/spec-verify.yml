@@ -1,6 +1,4 @@
----
 name: Spectral & Schemathesis
-
 on:
   pull_request:
     paths:
@@ -10,71 +8,54 @@ on:
 
 jobs:
   contract-and-conformance:
+    name: Spectral & Schemathesis
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
       - uses: actions/checkout@v4
 
+      # Spectral
       - name: Setup Node (Spectral)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Install Spectral
         run: npm i -g @stoplight/spectral-cli
-
       - name: Run Spectral (emit JUnit & JSON)
         run: |
           mkdir -p artifacts
-          spectral lint openapi/openapi.yaml \
-            -f junit -o artifacts/spectral.junit.xml || \
-            echo "SPECTRAL_FAILED=1" >> $GITHUB_ENV
-          spectral lint openapi/openapi.yaml \
-            -f json -o artifacts/spectral.json || \
-            true
+          spectral lint openapi/openapi.yaml -f junit -o artifacts/spectral.junit.xml || echo "SPECTRAL_FAILED=1" >> $GITHUB_ENV
+          spectral lint openapi/openapi.yaml -f json -o artifacts/spectral.json || true
 
+      # Schemathesis
       - name: Setup Python (Schemathesis)
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install Schemathesis & app deps
         run: |
           python -m pip install --upgrade pip
           pip install schemathesis uvicorn .
-
       - name: Boot API (background)
         run: |
-          uvicorn src.factsynth_ultimate.app:app --port 8000 \
-            > artifacts/uvicorn.log 2>&1 &
+          uvicorn src.factsynth_ultimate.app:app --port 8000 > artifacts/uvicorn.log 2>&1 &
           echo $! > artifacts/uvicorn.pid
           sleep 5
-
       - name: Run Schemathesis (emit JUnit)
         run: |
           mkdir -p artifacts
-          schemathesis run openapi/openapi.yaml --url http://localhost:8000 || \
-            echo "SCHEMA_FAILED=1" >> $GITHUB_ENV
+          schemathesis run openapi/openapi.yaml --url http://localhost:8000 || echo "SCHEMA_FAILED=1" >> $GITHUB_ENV
         env:
-          PYTHONUNBUFFERED: "1"
-
+          PYTHONUNBUFFERED: '1'
       - name: Teardown API
         if: always()
         run: |
           kill $(cat artifacts/uvicorn.pid) || true
 
+      # Artifacts
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: spectral-schemathesis-artifacts
           path: artifacts/
-
-      - name: Fail if any step failed
-        if: always()
-        run: |
-          if [ "${SPECTRAL_FAILED}" = "1" ] || \
-             [ "${SCHEMA_FAILED}" = "1" ]; then
-            echo "One or more checks failed"; exit 2
-          fi
