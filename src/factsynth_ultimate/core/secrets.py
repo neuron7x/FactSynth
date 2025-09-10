@@ -25,12 +25,13 @@ def _validate_key(key: str) -> str:
 
 def read_api_key(env: str, env_file: str, default: Optional[str], env_name: str) -> str:
     """Resolve API key from file, Vault, environment or default (dev only)."""
+    key = ""
     # 1) file
     p = os.getenv(env_file)
     if p and Path(p).exists():
-        return _validate_key(Path(p).read_text(encoding="utf-8").strip())
+        key = Path(p).read_text(encoding="utf-8").strip()
     # 2) Vault (optional)
-    if (
+    elif (
         hvac is not None
         and os.getenv("VAULT_ADDR")
         and os.getenv("VAULT_TOKEN")
@@ -46,12 +47,15 @@ def read_api_key(env: str, env_file: str, default: Optional[str], env_name: str)
             )
             val = secret["data"]["data"].get(env_name)
             if val:
-                return _validate_key(str(val))
+                key = str(val)
         except VaultError:
             pass
     # 3) environment
-    val = os.getenv(env)
-    if val:
-        return _validate_key(val)
+    if not key:
+        val = os.getenv(env)
+        if val:
+            key = val
     # 4) default (non-production only)
-    return _validate_key(default or "")
+    if not key:
+        key = default or ""
+    return _validate_key(key)
