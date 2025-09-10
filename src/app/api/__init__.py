@@ -1,5 +1,6 @@
-"""API package for application tests."""
+"""API package exposing the verification endpoint and models."""
 
-from .verify import api as verify_api, FactSynthLock
+from .verify import FactSynthLock
+from .verify import api as verify_api
 
 __all__ = ["verify_api", "FactSynthLock"]

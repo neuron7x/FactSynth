@@ -1,7 +1,7 @@
 import inspect
-import threading
 
 from fastapi.params import Depends as DependsParam
+from pydantic import BaseModel
 
 from app.api import verify as verify_mod
 from app.services.evaluator import evaluate_claim
@@ -37,8 +37,8 @@ def test_evaluate_claim_composes_and_closes():
     assert retriever.closed
 
 
-def test_verify_depends_on_evaluate_and_exposes_lock():
-    assert isinstance(verify_mod.FactSynthLock, type(threading.Lock()))
+def test_verify_depends_on_evaluate_and_exposes_model():
+    assert issubclass(verify_mod.FactSynthLock, BaseModel)
 
     sig = inspect.signature(verify_mod.verify)
     params = list(sig.parameters.values())
