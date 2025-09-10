@@ -1,0 +1,11 @@
+[
+  {
+    "name": "baseline",
+    "request": "fixtures/verify_request.json",
+    "expected": {
+      "rmse": 0.408248290463863,
+      "fcr": 0.8,
+      "pfi": 0.5
+    }
+  }
+]

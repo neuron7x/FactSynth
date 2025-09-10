@@ -1,0 +1,25 @@
+name: FactSynth Lock
+on:
+  pull_request:
+    paths:
+      - 'prompts/factsynth_lock.system.md'
+      - 'tests/factsynth_lock_examples.json'
+      - 'tests/fixtures/**'
+      - 'tools/factsynth_lock_lint.py'
+      - '.github/workflows/factsynth-lock.yml'
+  push:
+    branches: [ feat/**, fix/**, chore/** ]
+    paths:
+      - 'prompts/factsynth_lock.system.md'
+      - 'tests/factsynth_lock_examples.json'
+      - 'tests/fixtures/**'
+      - 'tools/factsynth_lock_lint.py'
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tools/factsynth_lock_lint.py
