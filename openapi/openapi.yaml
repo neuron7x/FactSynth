@@ -75,6 +75,8 @@ paths:
       responses:
         '200':
           description: Successful Response
+  /v1/verify:
+    $ref: './paths/verify.yaml'
 components:
   schemas:
     IntentReq:
@@ -121,3 +123,5 @@ components:
           default: 1000
       required:
         - items
+    FactSynthLock:
+      $ref: './components/schemas/FactSynthLock_v1_1.yaml#/components/schemas/FactSynthLock'
