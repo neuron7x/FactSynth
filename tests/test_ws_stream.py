@@ -7,12 +7,21 @@ from factsynth_ultimate.app import app
 UNAUTHORIZED = 4401
 
 
-def test_ws_stream_smoke():
+def test_ws_stream_tokens_complete():
     c = TestClient(app)
-    with c.websocket_connect("/ws/stream", headers={"x-api-key":"change-me"}) as ws:
-        ws.send_text("hello world")
-        msg = ws.receive_json()
-        assert "t" in msg or "end" in msg
+    with c.websocket_connect("/ws/stream", headers={"x-api-key": "change-me"}) as ws:
+        ws.send_text("one two")
+        msgs = []
+        while True:
+            msg = ws.receive_json()
+            msgs.append(msg)
+            if msg.get("end"):
+                break
+
+    assert msgs[0]["t"] == "one"
+    assert msgs[1]["t"] == "two"
+    assert msgs[2] == {"end": True}
+    assert len(msgs) == 3
 
 
 def test_ws_stream_bad_key():
