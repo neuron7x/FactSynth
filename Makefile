@@ -28,5 +28,19 @@ checksums:
 	cd release && sha256sum *.zip > SHA256SUMS
 
 test-contract:
-	FACTSYNTH_BASE_URL?=http://127.0.0.1:8000 \
-	pytest -q tests/test_openapi_contract.py
+        FACTSYNTH_BASE_URL?=http://127.0.0.1:8000 \
+        pytest -q tests/test_openapi_contract.py
+
+.PHONY: scripts.calibrate scripts.fmt scripts.lint
+scripts.calibrate:
+	python tools/scripts_calibrate.py --root scripts --write
+scripts.fmt:
+	black scripts || true
+	ruff check --fix scripts || true
+	isort scripts || true
+	shfmt -w -s -i 2 scripts || true
+scripts.lint:
+	ruff check scripts
+	black --check scripts
+	isort --check-only scripts
+	shellcheck scripts/*.sh || true
