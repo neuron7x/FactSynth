@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "factsynth-ultimate-pro"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
-    "fastapi",
-    "uvicorn",
-    "httpx",
-    "pydantic>=2.0",
-    "pydantic-settings>=2.0",
-    "prometheus-client",
-    "regex",
+    "fastapi>=0.116,<0.117",
+    "uvicorn>=0.35,<0.36",
+    "httpx>=0.28,<0.29",
+    "pydantic>=2.11,<2.12",
+    "pydantic-settings>=2.10,<2.11",
+    "prometheus-client>=0.22,<0.23",
+    "regex>=2025.9,<2026",
 ]
 
 [project.optional-dependencies]
@@ -25,7 +25,7 @@ dev = [
     "pytest-cov",  # coverage plugin
 ]
 ops = [
-    "prometheus-client",
+    "prometheus-client>=0.22,<0.23",
 ]
 isr = [
     "jax",
