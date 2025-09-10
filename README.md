@@ -22,6 +22,7 @@ Secure, observable **FastAPI** service for intent reflection, scoring, extractiv
 * [Docker](#docker)
 * [Postman & OpenAPI](#postman--openapi)
 * [Testing](#testing)
+* [Prompt Pack](#prompt-pack)
 * [Security Hardening](#security-hardening)
 * [Roadmap](#roadmap)
 * [License](#license)
@@ -307,6 +308,12 @@ pip install -e .[dev,isr,numpy]
 pytest -q
 pytest -q --cov=src --cov-report=term-missing
 ```
+
+---
+
+## Prompt Pack
+
+See [docs/PromptPack.md](docs/PromptPack.md) for a production-ready system prompt, task templates, few-shot examples, and the Golden-12 test set.
 
 ---
 

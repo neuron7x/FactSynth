@@ -1,46 +1,71 @@
-name: Spec verification
+name: Spectral & Schemathesis
 
 on:
   pull_request:
     paths:
-      - "openapi/**"
-      - "src/**"
-      - "tests/**"
+      - 'openapi/**'
+      - 'src/**'
+      - 'tests/**'
 
 jobs:
-  spec-verify:
-    name: Spectral & Schemathesis
+  contract-and-conformance:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node (Spectral)
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
 
       - name: Install Spectral
-        run: npm install -g @stoplight/spectral-cli
+        run: npm i -g @stoplight/spectral-cli
 
-      - name: Run Spectral
-        run: spectral lint openapi/openapi.yaml
+      - name: Run Spectral (emit JUnit & JSON)
+        run: |
+          mkdir -p artifacts
+          spectral lint openapi/openapi.yaml -f junit -o artifacts/spectral.junit.xml || echo "SPECTRAL_FAILED=1" >> $GITHUB_ENV
+          spectral lint openapi/openapi.yaml -f json  -o artifacts/spectral.json || true
 
-      - name: Setup Python
+      - name: Setup Python (Schemathesis)
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-          cache: "pip"
+          python-version: '3.11'
 
-      - name: Install Schemathesis
+      - name: Install Schemathesis & app deps
         run: |
-          python -m pip install -U pip
-          pip install -e .[dev,ops] || pip install -e .
-          pip install schemathesis uvicorn
+          python -m pip install --upgrade pip
+          pip install schemathesis uvicorn .
 
-      - name: Run Schemathesis
+      - name: Boot API (background)
         run: |
-          uvicorn src.factsynth_ultimate.app:app --port 8000 &
-          pid=$!
+          uvicorn src.factsynth_ultimate.app:app --port 8000 > artifacts/uvicorn.log 2>&1 &
+          echo $! > artifacts/uvicorn.pid
           sleep 5
-          schemathesis run --base-url=http://localhost:8000 openapi/openapi.yaml
-          kill $pid
+
+      - name: Run Schemathesis (emit JUnit)
+        run: |
+          mkdir -p artifacts
+          schemathesis run openapi/openapi.yaml --url http://localhost:8000 || echo "SCHEMA_FAILED=1" >> $GITHUB_ENV
+        env:
+          PYTHONUNBUFFERED: "1"
+
+      - name: Teardown API
+        if: always()
+        run: |
+          kill $(cat artifacts/uvicorn.pid) || true
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spectral-schemathesis-artifacts
+          path: artifacts/
+
+      - name: Fail if any step failed
+        if: always()
+        run: |
+          if [ "${SPECTRAL_FAILED}" = "1" ] || [ "${SCHEMA_FAILED}" = "1" ]; then
+            echo "One or more checks failed"; exit 2; fi
