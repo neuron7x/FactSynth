@@ -1,0 +1,8 @@
+weights:
+  SQS: 0.7
+  ESS: 0.3
+filters:
+  min_score: 0.5
+  banned_topics:
+    - violence
+    - explicit
