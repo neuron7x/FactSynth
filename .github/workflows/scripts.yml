@@ -1,0 +1,13 @@
+name: scripts-quality
+on: [push, pull_request]
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with: { python-version: "3.11" }
+    - run: pip install black ruff isort
+    - run: make scripts.upgrade
+    - run: make fmt
+    - run: make lint
