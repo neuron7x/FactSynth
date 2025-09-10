@@ -6,7 +6,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from .i18n import translate
+from ..i18n import choose_language, translate
 
 
 class IPAllowlistMiddleware(BaseHTTPMiddleware):
@@ -25,7 +25,8 @@ class IPAllowlistMiddleware(BaseHTTPMiddleware):
             addr = None
         if addr and any(addr in n for n in self.networks):
             return await call_next(request)
-        title = translate("Forbidden", request.headers.get("accept-language"))
+        lang = choose_language(request)
+        title = translate(lang, "forbidden")
         return JSONResponse(
             {"type": "about:blank", "title": title, "status": 403},
             status_code=403,
