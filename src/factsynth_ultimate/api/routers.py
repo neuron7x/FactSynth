@@ -21,6 +21,8 @@ from ..services.runtime import reflect_intent, score_payload, tokenize_preview
 
 logger=logging.getLogger(__name__)
 
+API_KEY = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
+
 api=APIRouter()
 
 @api.get("/v1/version")
@@ -77,8 +79,7 @@ async def ws_stream(ws: WebSocket):
     await ws.accept()
     # simple auth: expect x-api-key matching the configured API key
     key = ws.headers.get("x-api-key")
-    actual_key = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
-    if key != actual_key:
+    if key != API_KEY:
         await ws.close(code=4401, reason="Unauthorized")
         return
     try:
