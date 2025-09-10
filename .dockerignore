@@ -13,4 +13,5 @@ node_modules/
 _site/
 .env
 .env.*
+# allow the non-secret sample env file for container builds
 !.env.example

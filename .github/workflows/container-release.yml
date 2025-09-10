@@ -89,14 +89,16 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Pull image
-        run: docker pull ghcr.io/${{ github.repository_owner }}/factsynth:latest
-      - name: Run & probe
+      - name: Run & probe (exact digest)
+        # yamllint disable rule:line-length
         run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/factsynth@${{ needs.build.outputs.digest }}
           docker run -d --rm -p 8000:8000 \
             --name factsynth \
-            ghcr.io/${{ github.repository_owner }}/factsynth:latest
+            "$IMAGE"
           for i in $(seq 1 30); do
             curl -fsS http://127.0.0.1:8000/v1/healthz && exit 0 || sleep 2
           done
-          docker logs factsynth; exit 1
+          docker logs factsynth
+          exit 1
+        # yamllint enable rule:line-length
