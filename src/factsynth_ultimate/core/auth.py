@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable
+from collections.abc import Iterable
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -18,7 +18,7 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         app,
         api_key: str,
         header_name: str = "x-api-key",
-        skip: Iterable[str] = ("/v1/healthz", "/metrics"),
+        skip: Iterable[str] = ("/v1/healthz", "/v1/version"),
     ):
         super().__init__(app)
         self.api_key = api_key

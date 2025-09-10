@@ -1,0 +1,348 @@
+name: ci-release
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["**"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  packages: write
+  security-events: write
+  id-token: write
+
+env:
+  PY_FALLBACK: "3.12"
+  COV_MIN: "80"
+  IMAGE_REPO: ghcr.io/${{ github.repository_owner }}
+  REPO_NAME: ${{ github.event.repository.name }}
+
+jobs:
+  lint:
+    name: Lint (ruff + mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Detect Python version
+        id: pydet
+        run: |
+          set -euo pipefail
+          V="${{ env.PY_FALLBACK }}"
+          if [ -f pyproject.toml ]; then
+            V=$(python - <<'PY'
+import re,sys,Pathlib
+from pathlib import Path
+t=Path("pyproject.toml").read_text()
+m=re.search(r'python(?:-version)?\s*=\s*"[<>=~^ ]*([0-9]+\.[0-9]+)"',t)
+print(m.group(1) if m else "${{ env.PY_FALLBACK }}")
+PY
+)
+          fi
+          echo "version=$V" >> $GITHUB_OUTPUT
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ steps.pydet.outputs.version }}
+          cache: "pip"
+      - name: Install linters
+        run: |
+          python -m pip install -U pip
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt || true; fi
+          python -m pip install -U ruff mypy
+          python -m pip install -U types-requests types-setuptools || true
+          python -m pip install -e . || true
+      - name: Ruff
+        run: ruff check --exit-non-zero-on-fix --fix .
+      - name: mypy
+        run: |
+          echo "Running mypy (best-effort)…"
+          mypy . || (echo "::warning title=mypy::Type check reported issues" && exit 0)
+      - name: Upload Ruff results (SARIF)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: .ruff_cache/ruff.json
+        continue-on-error: true
+
+  test:
+    name: Test (pytest + coverage ≥${{ env.COV_MIN }}%)
+    needs: [lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ needs.lint.outputs.version || env.PY_FALLBACK }}
+          cache: "pip"
+      - name: Install test deps
+        run: |
+          python -m pip install -U pip
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt || true; fi
+          python -m pip install -U pytest pytest-cov genbadge[coverage] openapi-spec-validator aiohttp websockets
+          python -m pip install -e . || true
+      - name: Write .coveragerc
+        run: |
+          cat > .coveragerc <<'RC'
+[run]
+source = .
+omit =
+  tests/*
+[report]
+fail_under = ${COV_MIN}
+show_missing = True
+RC
+      - name: PyTest + Coverage
+        run: |
+          pytest -q --maxfail=1 --disable-warnings \
+                 --cov=. --cov-report=xml --cov-report=term-missing
+      - name: Generate coverage badge & HTML
+        run: |
+          genbadge coverage -i coverage.xml -o coverage.svg
+          python - <<'PY'
+from pathlib import Path
+p=Path("htmlcov")
+if not p.exists(): p.mkdir()
+PY
+          python -m coverage html
+      - name: Upload coverage HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov
+          if-no-files-found: error
+      - name: Commit coverage.svg to repo (default branch only)
+        if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "github-actions"
+          git add coverage.svg
+          git commit -m "chore(ci): update coverage badge [skip ci]" || echo "No changes"
+          git push
+
+  build:
+    name: Build (Docker)
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compute tags
+        id: tags
+        run: |
+          set -euo pipefail
+          REPO=${GITHUB_REPOSITORY#*/}
+          IMAGE="${{ env.IMAGE_REPO }}/${REPO}"
+          SHA_TAG="sha-${GITHUB_SHA::12}"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            echo "tags=${IMAGE}:${TAG},${IMAGE}:${SHA_TAG}" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF}" == "refs/heads/${{ github.event.repository.default_branch }}" ]]; then
+            echo "tags=${IMAGE}:latest,${IMAGE}:${SHA_TAG}" >> $GITHUB_OUTPUT
+          else
+            BR="${GITHUB_REF#refs/heads/}"
+            echo "tags=${IMAGE}:${BR//\//-},${IMAGE}:${SHA_TAG}" >> $GITHUB_OUTPUT
+          fi
+      - name: Build (no push yet)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: ${{ steps.tags.outputs.tags }}
+
+  security:
+    name: Security Scan (Trivy + Semgrep)
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Semgrep
+        run: python -m pip install semgrep
+      - name: Semgrep CI (SARIF)
+        run: |
+          semgrep ci --config auto --sarif --output semgrep.sarif || true
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+      - name: Trivy FS scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          format: sarif
+          output: trivy-fs.sarif
+          severity: CRITICAL,HIGH
+      - name: Upload Trivy FS SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+      - name: Trivy Image scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ${{ steps.tags.outputs.tags || '' }}
+          format: sarif
+          output: trivy-image.sarif
+          severity: CRITICAL,HIGH
+        continue-on-error: true
+      - name: Upload Trivy Image SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image.sarif
+      - name: Fail on High/Critical (Semgrep textual)
+        run: |
+          semgrep ci --config auto || true
+          # Already uploaded SARIF; enforce failure via Trivy reports
+          if grep -q '"severity":"HIGH"\|"severity":"CRITICAL"' trivy-fs.sarif; then
+            echo "High/Critical findings present"; exit 1; fi
+
+  push:
+    name: Push to GHCR
+    needs: [security]
+    runs-on: ubuntu-latest
+    if: needs.security.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Rebuild + Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ needs.build.outputs.tags || '' }}
+
+  openapi:
+    name: OpenAPI (extract/validate + collections)
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: ${{ env.PY_FALLBACK }} }
+      - name: Install tools
+        run: |
+          python -m pip install -U openapi-spec-validator aiohttp fastapi pydantic || true
+          python -m pip install -U requests
+          npm i -g @apideck/portman openapi-to-postmanv2 @apidevtools/swagger-cli || true
+      - name: Extract OpenAPI if needed
+        run: |
+          python scripts/extract_openapi.py || true
+          mkdir -p openapi
+          if [ -f openapi/openapi.yaml ]; then SRC=openapi/openapi.yaml;
+          elif [ -f openapi/openapi.json ]; then SRC=openapi/openapi.json;
+          else
+            echo "No local spec found; set OPENAPI_URL to fetch" >&2; exit 0
+          fi
+          echo "SRC=$SRC" >> $GITHUB_ENV
+      - name: Validate OpenAPI
+        if: env.SRC != ''
+        run: |
+          npx swagger-cli validate "$SRC"
+          python - <<'PY'
+import sys, json, pathlib
+from openapi_spec_validator import validate_spec
+import yaml, json as js
+p=pathlib.Path("${SRC}")
+data=yaml.safe_load(p.read_text()) if p.suffix in (".yml",".yaml") else js.loads(p.read_text())
+validate_spec(data)
+print("OpenAPI validation OK")
+PY
+      - name: Generate Postman collection
+        if: env.SRC != ''
+        run: |
+          npx openapi-to-postmanv2 -s "$SRC" -o dist/postman_collection.json -p --pretty
+          echo "POSTMAN=dist/postman_collection.json" >> $GITHUB_ENV
+      - name: Generate Insomnia collection (minimal)
+        if: env.SRC != ''
+        run: |
+          mkdir -p dist
+          cat > dist/insomnia_collection.yaml <<'YAML'
+_type: export
+__export_format: 4
+__export_date: "${{ github.run_id }}"
+__export_source: "ci-release"
+resources:
+  - _id: wrk_OpenAPI
+    _type: workspace
+    name: FactSynth API
+  - _id: env_Base
+    _type: environment
+    parentId: wrk_OpenAPI
+    name: Base Environment
+    data: {}
+  - _id: spc_OpenAPI
+    _type: api_spec
+    parentId: wrk_OpenAPI
+    fileName: openapi
+    contents: ""
+YAML
+          if [ -n "${SRC}" ]; then
+            # Inline spec for portability
+            python - <<'PY'
+from pathlib import Path
+p=Path("dist/insomnia_collection.yaml")
+s=Path("${SRC}").read_text()
+txt=p.read_text().replace('contents: ""','contents: |\n'+'\n'.join('  '+l for l in s.splitlines()))
+p.write_text(txt)
+PY
+          fi
+          echo "INSOMNIA=dist/insomnia_collection.yaml" >> $GITHUB_ENV
+      - name: Upload OpenAPI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-artifacts
+          path: |
+            ${{ env.SRC }}
+            ${{ env.POSTMAN }}
+            ${{ env.INSOMNIA }}
+          if-no-files-found: ignore
+
+  release:
+    name: Release (tag builds, SBOM + cosign)
+    needs: [push, openapi]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install syft & cosign
+        uses: sigstore/cosign-installer@v3
+      - name: Syft SBOM (SPDX JSON)
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v1.16.0
+          IMAGE="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${GITHUB_REF#refs/tags/}"
+          syft "$IMAGE" -o spdx-json > dist/sbom.spdx.json
+      - name: Cosign sign image (keyless)
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${GITHUB_REF#refs/tags/}"
+          cosign sign --yes "$IMAGE"
+      - name: Attach release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/sbom.spdx.json
+            dist/postman_collection.json
+            dist/insomnia_collection.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

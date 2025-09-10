@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     auth_header_name: str = Field(default="x-api-key", env="AUTH_HEADER_NAME")
     ip_allowlist: list[str] = Field(default_factory=list, env="IP_ALLOWLIST")
     skip_auth_paths: list[str] = Field(
-        default_factory=lambda: ["/v1/healthz", "/metrics"], env="SKIP_AUTH_PATHS"
+        default_factory=lambda: ["/v1/healthz", "/v1/version"], env="SKIP_AUTH_PATHS"
     )
     rate_limit_per_minute: int = Field(default=120, env="RATE_LIMIT_PER_MINUTE")
     rate_limit_bucket_ttl: float = Field(default=300.0, env="RATE_LIMIT_BUCKET_TTL")

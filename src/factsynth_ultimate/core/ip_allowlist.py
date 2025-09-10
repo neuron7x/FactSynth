@@ -10,7 +10,7 @@ from .i18n import translate
 
 
 class IPAllowlistMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, cidrs: list[str] | None = None, skip: tuple[str, ...] = ("/v1/healthz","/metrics")):
+    def __init__(self, app, cidrs: list[str] | None = None, skip: tuple[str, ...] = ("/v1/healthz","/v1/version")):
         super().__init__(app)
         self.networks = [ipaddress.ip_network(c.strip(), strict=False) for c in (cidrs or [])]
         self.skip = skip

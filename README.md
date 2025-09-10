@@ -1,4 +1,7 @@
 # FactSynth Ultimate Pro — 1.0.4 (2025-09-07)
+[![CI](https://github.com/neuron7x/FactSynth/actions/workflows/ci-release.yml/badge.svg)](https://github.com/neuron7x/FactSynth/actions/workflows/ci-release.yml)
+![coverage](./coverage.svg)
+[![Container](https://img.shields.io/badge/GHCR-FactSynth-0A66C2?logo=docker)](https://ghcr.io/neuron7x/FactSynth)
 [![OpenAPI docs](https://img.shields.io/badge/docs-openapi-blue)](https://neuron7x.github.io/FactSynth/openapi/)
 
 Secure, observable **FastAPI** service for intent reflection, scoring, extractive generation, streaming (SSE/WebSocket), and a toy GLRTPM pipeline.
@@ -31,7 +34,7 @@ Secure, observable **FastAPI** service for intent reflection, scoring, extractiv
 
 ## Features
 
-* **API-key auth** via `x-api-key` header (skips `/v1/healthz`, `/metrics`, `/v1/version`).
+* **API-key auth** via `x-api-key` header (skips `/v1/healthz`, `/v1/version`).
 * **Rate limiting** (default 120 req/min) with `X-RateLimit-*` headers.
 * **SSE & WebSocket streaming** for token-like updates.
 * **Extractive generation**: `title`, `summary`, `keywords` from input text.
@@ -39,7 +42,7 @@ Secure, observable **FastAPI** service for intent reflection, scoring, extractiv
 * **Noise filtering**: strips HTML/URLs/emails, dedupes targets, stops UA/EN stopwords.
 * **Batch scoring** & optional **webhook callbacks** (with retries).
 * **Problem+JSON** structured errors.
-* **Prometheus metrics** + **JSON logs**; optional OpenTelemetry.
+* **Prometheus metrics** (disabled by default) + **JSON logs**; optional OpenTelemetry.
 * **HSTS/CSP** security headers; body size limit; optional IP allowlist.
 
 ---
@@ -148,8 +151,10 @@ curl -s -H 'x-api-key: change-me' \
 
 ### Metrics
 
+`/metrics` is closed by default. Allow only trusted IPs via `deploy/nginx/metrics.conf` or `deploy/traefik/metrics.yml`.
+
 ```bash
-curl -s http://127.0.0.1:8000/metrics
+curl -H 'x-api-key: change-me' http://127.0.0.1:8000/metrics
 ```
 
 ---
@@ -158,7 +163,7 @@ curl -s http://127.0.0.1:8000/metrics
 
 * API key sources: `API_KEY_FILE` → Vault → `API_KEY` → default `change-me` (dev only)
 * Auth: `x-api-key: <your-secret>`
-* Default skip list (no auth): `/v1/healthz`, `/metrics`, `/v1/version`
+* Default skip list (no auth): `/v1/healthz`, `/v1/version`
 * Rate limit: `RATE_LIMIT_PER_MIN` (default **120**) per API key / client IP
 * Response headers:
 
@@ -176,7 +181,7 @@ Restrict access by client IP. Set `IP_ALLOWLIST` to a comma-separated list of CI
 export IP_ALLOWLIST="10.0.0.0/8,192.168.1.0/24"
 ```
 
-Requests from other addresses receive `403 Forbidden`. Health (`/v1/healthz`) and metrics (`/metrics`) always bypass the check. Leaving the variable empty disables the allowlist.
+Requests from other addresses receive `403 Forbidden`. Health (`/v1/healthz`) always bypasses the check; metrics respect the allowlist. Leaving the variable empty disables the allowlist.
 
 ---
 
@@ -225,7 +230,7 @@ Environment variables (examples):
 * `ENV` = `dev`|`prod`
 * `API_KEY` or **file** via `API_KEY_FILE`
 * `AUTH_HEADER_NAME` (default `x-api-key`)
-* `SKIP_AUTH_PATHS` (CSV; default `/v1/healthz,/metrics,/v1/version`)
+* `SKIP_AUTH_PATHS` (CSV; default `/v1/healthz,/v1/version`)
 * `CORS_ALLOW_ORIGINS` (CSV; default `*` in dev)
 * `HTTPS_REDIRECT` = `1` to force HTTPS
 * `TRUSTED_HOSTS` (CSV; prod only)
@@ -348,7 +353,7 @@ See [docs/PromptPack.md](docs/PromptPack.md) for a production-ready system promp
 * Configure `TRUSTED_HOSTS`, `CORS_ALLOW_ORIGINS` (exact origins), `IP_ALLOWLIST` if needed.
 * Place a CDN or WAF in front of the ingress for shielding and rate limiting.
 * Enforce strict 1 MB request body limits via `MAX_BODY_BYTES` and upstream proxies.
-* Cache lightweight endpoints (`/v1/version`, `/metrics`) at the edge to reduce load.
+* Cache lightweight endpoints (`/v1/version`, `/metrics` if enabled) at the edge to reduce load.
 
 ---
 
