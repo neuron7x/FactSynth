@@ -70,7 +70,9 @@ jobs:
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
-          image: ghcr.io/${{ github.repository_owner }}/factsynth:latest
+          # yamllint disable rule:line-length
+          image: ghcr.io/${{ github.repository_owner }}/factsynth@${{ needs.build.outputs.digest }}
+          # yamllint enable rule:line-length
           format: spdx-json
           output-file: sbom.spdx.json
       - uses: actions/upload-artifact@v4
