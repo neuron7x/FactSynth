@@ -1,0 +1,29 @@
+name: FactSynth LOCK Check
+on:
+  pull_request:
+    paths:
+      - 'docs/FACTSYNTH_LOCK.md'
+      - 'openapi/**'
+      - 'prompts/factsynth_lock.system.md'
+      - 'tests/**'
+      - 'tools/factsynth_lock_lint.py'
+      - 'app/**'
+  push:
+    branches: [ feat/**, fix/**, chore/** ]
+    paths:
+      - 'docs/FACTSYNTH_LOCK.md'
+      - 'openapi/**'
+      - 'prompts/factsynth_lock.system.md'
+      - 'tests/**'
+      - 'tools/factsynth_lock_lint.py'
+      - 'app/**'
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: python tools/factsynth_lock_lint.py
+      - run: pip install -e .
+      - run: pytest -q

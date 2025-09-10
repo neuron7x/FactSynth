@@ -1,0 +1,28 @@
+post:
+  summary: Verify a factual claim and return a FACTSYNTH_LOCK report
+  operationId: postVerify
+  tags: [verify]
+  security: [ { ApiKeyAuth: [] } ]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required: [claim, locale]
+          properties:
+            claim: { type: string, maxLength: 1000 }
+            locale: { type: string, example: "uk-UA" }
+            max_sources: { type: integer, minimum: 1, maximum: 50, default: 10 }
+            allow_untrusted: { type: boolean, default: false }
+  responses:
+    "200":
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/FactSynthLock.yaml#/components/schemas/FactSynthLock'
+    "400": { description: Bad Request, content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    "401": { description: Unauthorized,  content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    "429": { description: Rate Limited,  content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    "500": { description: Server Error,   content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } } }

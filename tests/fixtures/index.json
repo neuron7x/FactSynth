@@ -1,0 +1,29 @@
+[
+  {
+    "id": "S1",
+    "title": "HTTPS provides encryption between clients and servers",
+    "url": "https://datatracker.ietf.org/doc/html/rfc2818",
+    "date": "2021-01-01",
+    "snippet": "HTTPS uses TLS to encrypt the HTTP message exchange.",
+    "content": "TLS provides confidentiality and integrity for HTTP requests and responses. This supports encryption between client and server.",
+    "relevance": 0.96
+  },
+  {
+    "id": "S2",
+    "title": "Microservices trade-offs in cost and complexity",
+    "url": "https://martinfowler.com/articles/microservices.html",
+    "date": "2020-06-01",
+    "snippet": "Costs can rise initially due to operational overhead and complexity.",
+    "content": "Microservices may increase costs early on; benefits depend on context, maturity, and scale.",
+    "relevance": 0.88
+  },
+  {
+    "id": "S3",
+    "title": "Vaccine safety myths debunked",
+    "url": "https://www.who.int/",
+    "date": "2023-03-01",
+    "snippet": "Claims of microchips are false and not supported by evidence.",
+    "content": "There is no microchip in vaccines. Multiple regulatory bodies confirm safety and effectiveness.",
+    "relevance": 0.92
+  }
+]
