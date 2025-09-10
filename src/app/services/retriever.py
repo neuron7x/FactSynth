@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
-from typing import Iterable, List, Tuple
+from typing import ClassVar, Iterable, List, Tuple
 
 from factsynth_ultimate.tokenization import tokenize
 
@@ -24,7 +25,7 @@ class LocalFixtureRetriever:
     """
 
     # Common Ukrainian→English keyword replacements.
-    _UA_TO_EN: dict[str, str] = {
+    _UA_TO_EN: ClassVar[dict[str, str]] = {
         "мікросервіси": "microservices",
         "мікросервіс": "microservice",
         "хмара": "cloud",
@@ -36,7 +37,7 @@ class LocalFixtureRetriever:
     def _translate_query(self, query: str) -> str:
         q = query.lower()
         for ua, en in self._UA_TO_EN.items():
-            q = q.replace(ua, en)
+            q = re.sub(rf"\b{ua}\b", en, q)
         return q
 
     def search(self, query: str, k: int = 5) -> List[Tuple[Fixture, float]]:
