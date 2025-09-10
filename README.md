@@ -234,6 +234,8 @@ Environment variables (examples):
 * `RATE_LIMIT_PER_MIN` (default `120`)
 * `HEALTH_TCP_CHECKS` (CSV like `127.0.0.1:5432,[::1]:6379`)
 
+For deployment, start from the provided `.env.production` file next to `.env.example` and adjust the values to match your environment.
+
 Vault support (optional): set `VAULT_ADDR`, `VAULT_TOKEN`, `VAULT_PATH` (reads `API_KEY`).
 
 ---
