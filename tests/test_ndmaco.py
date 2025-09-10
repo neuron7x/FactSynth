@@ -1,9 +1,9 @@
 
 import pytest
 
-from factsynth_ultimate.ndmaco.kuramoto import NDMACO
-
 pytest.importorskip("numpy")
+
+from factsynth_ultimate.ndmaco.kuramoto import NDMACO
 
 MIN_TIME_POINTS = 10
 EXPECTED_CHANNELS = 5
