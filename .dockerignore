@@ -14,3 +14,5 @@ _site/
 .env
 .env.*
 !.env.example
+.mypy_cache/
+.pytest_cache/
