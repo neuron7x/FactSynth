@@ -106,9 +106,10 @@ def maybe_argparse_shim(src: str) -> str:
     _ = _parse_args(None)  # no-op, keeps defaults identical
     """
     ).strip("\n")
-    insert_at = src.rfind('if __name__ == "__main__":')
-    if insert_at == -1:
+    m = re.search(r'if\s+__name__\s*==\s*[\'"]__main__[\'"]\s*:', src)
+    if not m:
         return src.rstrip() + "\n\n" + shim + "\n"
+    insert_at = m.start()
     return src[:insert_at] + shim + "\n\n" + src[insert_at:]
 
 
