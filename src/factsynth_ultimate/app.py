@@ -73,9 +73,12 @@ def create_app(
             IPAllowlistMiddleware, cidrs=settings.ip_allowlist
         )
     app.add_middleware(BodySizeLimitMiddleware)
+    api_key = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
+    if settings.env == "prod" and api_key in {"", "change-me"}:
+        raise RuntimeError("API key must be set in production")
     app.add_middleware(
         APIKeyAuthMiddleware,
-        api_key=read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY"),
+        api_key=api_key,
         header_name=settings.auth_header_name,
         skip=tuple(settings.skip_auth_paths),
     )
