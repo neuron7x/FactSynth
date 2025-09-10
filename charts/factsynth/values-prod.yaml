@@ -9,14 +9,25 @@ resources:
     memory: 512Mi
 
 securityContext:
-  runAsNonRoot: true
-  runAsUser: 1000
-  allowPrivilegeEscalation: false
-  capabilities:
-    drop:
-      - ALL
-  seccompProfile:
-    type: RuntimeDefault
+  pod:
+    runAsNonRoot: true
+    runAsUser: 1000
+  container:
+    runAsNonRoot: true
+    runAsUser: 1000
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+
+startupProbe:
+  httpGet:
+    path: /v1/healthz
+    port: 8000
+  failureThreshold: 30
+  periodSeconds: 10
 
 pdb:
   enabled: true

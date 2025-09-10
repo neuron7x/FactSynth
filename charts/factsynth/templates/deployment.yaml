@@ -12,8 +12,17 @@ spec:
       labels:
         app: factsynth
     spec:
+      terminationGracePeriodSeconds: 30
+      {{- with .Values.securityContext.pod }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: factsynth
+          {{- with .Values.securityContext.container }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
           ports:
             - containerPort: 8000
@@ -43,4 +52,9 @@ spec:
             httpGet:
               path: /v1/healthz
               port: 8000
+          startupProbe: {{- toYaml .Values.startupProbe | nindent 12 }}
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep","15"]
           resources: {{- toYaml .Values.resources | nindent 12 }}
