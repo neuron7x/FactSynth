@@ -25,3 +25,28 @@ ingress:
 ```
 
 Adjust the `1m` value as required.
+
+## NetworkPolicy
+
+Customize Kubernetes NetworkPolicy ingress rules through `.Values.networkPolicy.ingress`.
+Each entry supports `podSelector`, `namespaceSelector`, or `ipBlock` sources and
+optionally overrides the target port.
+
+Example:
+
+```yaml
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 8000
+    - from:
+        - ipBlock:
+            cidr: 10.0.0.0/24
+      ports:
+        - port: 8000
+```
