@@ -3,8 +3,12 @@ from collections import Counter
 from http import HTTPStatus
 
 import pytest
-from hypothesis import HealthCheck, given, settings
-from hypothesis import strategies as st
+
+try:
+    from hypothesis import HealthCheck, given, settings
+    from hypothesis import strategies as st
+except ModuleNotFoundError:  # pragma: no cover - optional
+    pytest.skip("hypothesis not installed", allow_module_level=True)
 
 
 def _pick_text(payload):
