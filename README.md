@@ -69,7 +69,7 @@ See full [dependency graph](https://github.com/neuron7x/FactSynth/network/depend
 git clone https://github.com/neuron7x/FactSynth.git
 cd FactSynth
 python -m venv .venv && source .venv/bin/activate
-pip install -U pip && pip install -r requirements.txt
+pip install -U pip && pip install -r requirements.lock
 uvicorn factsynth_ultimate.app:app --reload
 ```
 
