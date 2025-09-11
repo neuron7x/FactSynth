@@ -136,6 +136,7 @@ numpy==1.26.4
     #   jaxlib
     #   ml-dtypes
     #   scipy
+    #   spectral
 opt-einsum==3.4.0
     # via jax
 optimistix==0.0.10
@@ -247,6 +248,8 @@ sortedcontainers==2.4.0
     # via
     #   cyclonedx-python-lib
     #   hypothesis
+spectral==0.24
+    # via factsynth-ultimate-pro (pyproject.toml)
 starlette==0.47.3
     # via
     #   fastapi
