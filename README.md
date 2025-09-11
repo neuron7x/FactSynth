@@ -92,6 +92,10 @@ docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
 | `RATE_LIMIT_BUCKET_TTL` | `300` | Seconds to keep rate data. |
 | `RATE_LIMIT_CLEANUP_INTERVAL` | `60` | Seconds between cleanup. |
 | `SKIP_AUTH_PATHS` | `/v1/healthz,/metrics` | Paths that skip auth. |
+| `LOG_LEVEL` | `INFO` | Logging verbosity level. |
+| `VAULT_ADDR` | *(empty)* | URL of Vault server. |
+| `VAULT_TOKEN` | *(empty)* | Authentication token for Vault. |
+| `VAULT_PATH` | *(empty)* | Secret path in Vault. |
 
 Secrets are supplied via GitHub Secrets or environment variables.
 
