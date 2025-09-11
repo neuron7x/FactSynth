@@ -1,8 +1,11 @@
 # FactSynth Ultimate Pro — 1.0.3 (2025-09-07)
 
-Захищений, спостережуваний сервіс **FastAPI** для рефлексії наміру, скорингу, екстрактивної генерації, стримінгу (SSE/WebSocket) та демонстраційного конвеєра GLRTPM.
+Захищений, спостережуваний сервіс **FastAPI** для рефлексії наміру,
+скорингу, екстрактивної генерації, стримінгу (SSE/WebSocket) та
+демонстраційного конвеєра GLRTPM.
 
-> **EN short:** production-ready API with API-key auth, Prometheus metrics, SSE/WS streaming, noise filtering, batch scoring and Problem+JSON errors.
+> **EN short:** production-ready API with API-key auth, Prometheus metrics,
+> SSE/WS streaming, noise filtering, batch scoring and Problem+JSON errors.
 
 ---
 
@@ -106,7 +109,7 @@ curl -N -H 'x-api-key: change-me' \
 
 ### WebSocket Стрім
 
-```
+```text
 WS /ws/stream
 Header: x-api-key: change-me
 Send: "your text"
@@ -196,4 +199,3 @@ pytest
 ## Ліцензія
 
 Проєкт поширюється за ліцензією MIT. Див. файл [LICENSE](LICENSE).
-
