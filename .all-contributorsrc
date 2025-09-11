@@ -1,0 +1,11 @@
+{
+  "projectName": "FactSynth",
+  "projectOwner": "neuron7x",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": ["README.md"],
+  "imageSize": 80,
+  "commit": false,
+  "contributorsPerLine": 8,
+  "contributors": []
+}

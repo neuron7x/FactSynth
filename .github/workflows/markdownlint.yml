@@ -1,0 +1,15 @@
+name: Markdown Lint
+on:
+  pull_request:
+  push:
+    paths: ["**/*.md"]
+permissions:
+  contents: read
+jobs:
+  mdlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          config: ".markdownlint.jsonc"
