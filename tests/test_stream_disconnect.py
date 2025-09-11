@@ -8,11 +8,11 @@ from factsynth_ultimate.core.metrics import current_sse_tokens
 from factsynth_ultimate.schemas.requests import ScoreReq
 
 TOTAL_TOKENS = 100
+MAX_TOKENS = 256
 
 
 def test_stream_sse_client_disconnect() -> None:
     text = " ".join(str(i) for i in range(TOTAL_TOKENS))
-    total_tokens = TOTAL_TOKENS
     initial = current_sse_tokens()
     with TestClient(create_app()) as client, client.stream(
         "POST",
@@ -23,7 +23,7 @@ def test_stream_sse_client_disconnect() -> None:
         # Do not consume the stream to simulate client disconnect.
         pass
     diff = current_sse_tokens() - initial
-    assert diff <= total_tokens
+    assert diff <= TOTAL_TOKENS
 
 
 def test_stream_sse_client_cancel(monkeypatch) -> None:
@@ -40,14 +40,13 @@ def test_stream_sse_client_cancel(monkeypatch) -> None:
 
     dummy = DummyTokenizer([str(i) for i in range(TOTAL_TOKENS)])
 
-    def fake_tokenizer(text: str, max_tokens: int = 256) -> DummyTokenizer:
+    def fake_tokenizer(text: str, max_tokens: int = MAX_TOKENS) -> DummyTokenizer:
         del text, max_tokens
         return dummy
 
     monkeypatch.setattr(routers, "tokenize_preview", fake_tokenizer)
 
     async def run() -> None:
-        total_tokens = TOTAL_TOKENS
         initial = current_sse_tokens()
         resp = await routers.stream(ScoreReq(text="whatever"))
         agen = resp.body_iterator
@@ -55,6 +54,6 @@ def test_stream_sse_client_cancel(monkeypatch) -> None:
         await agen.aclose()
         assert dummy.closed
         diff = current_sse_tokens() - initial
-        assert diff < total_tokens
+        assert diff < TOTAL_TOKENS
 
     asyncio.run(run())
