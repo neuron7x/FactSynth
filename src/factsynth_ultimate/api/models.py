@@ -12,4 +12,5 @@ class VerifyRequest(BaseModel):
     lock: FactSynthLock
 
 
-__all__ = ["VerifyRequest"]
+# Export the request and lock models for use in routers
+__all__ = ["VerifyRequest", "FactSynthLock"]

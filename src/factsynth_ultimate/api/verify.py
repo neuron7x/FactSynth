@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from ..core.factsynth_lock import FactSynthLock
 from ..services.evaluator import evaluate_claim
-from .models import VerifyRequest
+from .models import FactSynthLock, VerifyRequest
 
 api = APIRouter()
 
