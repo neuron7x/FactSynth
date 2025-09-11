@@ -46,10 +46,38 @@ jobs:
           python -m pip install -U pip
           pip install -e .[dev,ops] || pip install -e .
           pip install -U pytest pytest-cov
-      - name: Run smoke tests
-        env: { PYTHONPATH: src }
+      - name: Launch API service
+        env:
+          PYTHONPATH: src
+          API_KEY: change-me
+          RATE_LIMIT_PER_MINUTE: "1000"
+          RATE_LIMIT_BUCKET_TTL: "60"
+          RATE_LIMIT_CLEANUP_INTERVAL: "5"
+          SKIP_AUTH_PATHS: '["/v1/healthz","/metrics","/v1/version"]'
         run: |
-          pytest -q tests/smoke --maxfail=1 --disable-warnings --cov=src --cov-report=xml:coverage.xml
+          uvicorn factsynth_ultimate.app:app --host 127.0.0.1 --port 8000 &
+          echo $! > uvicorn.pid
+      - name: Wait for API readiness
+        run: |
+          for i in {1..30}; do
+            status=$(curl -o /dev/null -s -w "%{http_code}" http://127.0.0.1:8000/v1/healthz || true)
+            if [ "$status" = "200" ]; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API failed to start" >&2
+          exit 1
+      - name: Run smoke tests
+        env:
+          PYTHONPATH: src
+          FACTSYNTH_BASE_URL: http://127.0.0.1:8000
+          API_KEY: change-me
+        run: |
+          pytest -q --maxfail=1 --disable-warnings --cov=src --cov-report=xml:coverage.xml
+      - name: Shutdown API service
+        if: always()
+        run: kill $(cat uvicorn.pid) || true
       - name: Upload coverage.xml
         uses: actions/upload-artifact@v4
         with:
