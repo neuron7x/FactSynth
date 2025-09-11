@@ -18,6 +18,9 @@ def test_internal_error_logs_path_and_exception():
     ) as mock_logger:
         r = client.get("/boom", headers={"x-api-key": "change-me"})
         assert r.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+        body = r.json()
+        for field in ("type", "title", "status", "detail", "trace_id"):
+            assert field in body
         mock_logger.exception.assert_called_once()
         msg, path, exc = mock_logger.exception.call_args[0]
         assert path == "/boom"

@@ -12,7 +12,11 @@ def test_auth_required() -> None:
         create_app()
     ) as client:
         url = "/v1/score"
-        assert client.post(url, json={"text": "x"}).status_code == HTTPStatus.UNAUTHORIZED
+        r = client.post(url, json={"text": "x"})
+        assert r.status_code == HTTPStatus.UNAUTHORIZED
+        body = r.json()
+        for field in ("type", "title", "status", "detail", "trace_id"):
+            assert field in body
         assert (
             client.post(url, headers={"x-api-key": "secret"}, json={"text": "x"}).status_code
             == HTTPStatus.OK

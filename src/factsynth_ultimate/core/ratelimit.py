@@ -61,12 +61,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             with suppress(Exception):
                 REQUESTS.labels(request.method, path, "429").inc()
             lang = choose_language(request)
+            problem = {
+                "type": "about:blank",
+                "title": translate(lang, "too_many_requests"),
+                "status": 429,
+                "detail": "Request rate limit exceeded",
+                "trace_id": getattr(request.state, "request_id", ""),
+            }
             resp = JSONResponse(
-                {
-                    "type": "about:blank",
-                    "title": translate(lang, "too_many_requests"),
-                    "status": 429,
-                },
+                problem,
                 status_code=429,
                 media_type="application/problem+json",
             )

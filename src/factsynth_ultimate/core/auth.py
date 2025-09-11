@@ -41,8 +41,16 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         lang = choose_language(request)
         title = translate(lang, "unauthorized")
+        detail = "Invalid or missing API key"
+        problem = {
+            "type": "about:blank",
+            "title": title,
+            "status": 401,
+            "detail": detail,
+            "trace_id": getattr(request.state, "request_id", ""),
+        }
         return JSONResponse(
-            {"type": "about:blank", "title": title, "status": 401},
+            problem,
             status_code=401,
             media_type="application/problem+json",
         )

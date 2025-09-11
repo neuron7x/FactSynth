@@ -17,6 +17,9 @@ def test_rate_limit_exceeded_returns_429():
             assert client.post("/v1/score", headers=headers, json={"text": "x"}).status_code == HTTPStatus.OK
             r = client.post("/v1/score", headers=headers, json={"text": "x"})
             assert r.status_code == HTTPStatus.TOO_MANY_REQUESTS
+            body = r.json()
+            for field in ("type", "title", "status", "detail", "trace_id"):
+                assert field in body
 
 
 def test_rate_limit_localized_messages():
@@ -32,4 +35,7 @@ def test_rate_limit_localized_messages():
                     json={"text": "x"},
                 )
                 assert r.status_code == HTTPStatus.TOO_MANY_REQUESTS
-                assert r.json()["title"] == title
+                body = r.json()
+                assert body["title"] == title
+                for field in ("type", "status", "detail", "trace_id"):
+                    assert field in body

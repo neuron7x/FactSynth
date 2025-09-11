@@ -16,5 +16,11 @@ def install_handlers(app: FastAPI) -> None:
         logger.exception("Unhandled exception on %s: %s", request.url.path, exc)
         lang = choose_language(request)
         title = translate(lang, "internal_server_error")
-        problem = {"type": "about:blank", "title": title, "status": 500}
+        problem = {
+            "type": "about:blank",
+            "title": title,
+            "status": 500,
+            "detail": str(exc),
+            "trace_id": getattr(request.state, "request_id", ""),
+        }
         return JSONResponse(problem, status_code=500, media_type="application/problem+json")
