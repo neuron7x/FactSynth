@@ -15,7 +15,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "payload_too_large": "Занадто великий запит",
         "forbidden": "Заборонено",
         "unauthorized": "Неавторизовано",
-        "too_many_requests": "Занадто багато запитів",
+        "too_many_requests": "Забагато запитів",
     },
 }
 
