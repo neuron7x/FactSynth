@@ -7,9 +7,15 @@
 
 [![GitHub issues](https://img.shields.io/github/issues/neuron7x/FactSynth)](https://github.com/neuron7x/FactSynth/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/neuron7x/FactSynth)](https://github.com/neuron7x/FactSynth/pulls)
+<!-- markdownlint-disable-next-line MD013 -->
 [![docs](https://img.shields.io/badge/docs-OpenAPI%20Pages-0D1117.svg)](https://neuron7x.github.io/FactSynth/)
 
-<img src="./assets/banner.svg" alt="FactSynth FastAPI service for secure extractive generation with streaming and observability" width="100%" loading="lazy">
+<img
+  src="./assets/banner.svg"
+  alt="FactSynth FastAPI service for secure extractive generation with streaming and observability"
+  width="100%"
+  loading="lazy"
+>
 
 FastAPI service for intent reflection and extractive generation with SSE/WebSocket streaming,
 Problem+JSON errors, rate limits, and rich observability.

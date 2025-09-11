@@ -13,3 +13,6 @@ jobs:
       - uses: DavidAnson/markdownlint-cli2-action@v16
         with:
           config: ".markdownlint.jsonc"
+          globs: |
+            README.md
+            .github/PULL_REQUEST_TEMPLATE.md
