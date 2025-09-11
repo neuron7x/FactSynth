@@ -16,8 +16,16 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
         if cl and cl.isdigit() and int(cl) > self.max_bytes:
             lang = choose_language(request)
             title = translate(lang, "payload_too_large")
+            detail = f"Payload size {cl} exceeds limit of {self.max_bytes} bytes"
+            problem = {
+                "type": "about:blank",
+                "title": title,
+                "status": 413,
+                "detail": detail,
+                "trace_id": getattr(request.state, "request_id", ""),
+            }
             return JSONResponse(
-                {"type": "about:blank", "title": title, "status": 413},
+                problem,
                 status_code=413,
                 media_type="application/problem+json",
             )

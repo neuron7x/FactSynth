@@ -15,3 +15,6 @@ def test_forbidden_ip_returns_403():
         with TestClient(app) as client:
             r = client.post("/v1/score", headers={"x-api-key": "secret"}, json={"text": "x"})
             assert r.status_code == HTTPStatus.FORBIDDEN
+            body = r.json()
+            for field in ("type", "title", "status", "detail", "trace_id"):
+                assert field in body

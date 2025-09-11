@@ -27,8 +27,16 @@ class IPAllowlistMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         lang = choose_language(request)
         title = translate(lang, "forbidden")
+        detail = f"IP {ip} not allowed"
+        problem = {
+            "type": "about:blank",
+            "title": title,
+            "status": 403,
+            "detail": detail,
+            "trace_id": getattr(request.state, "request_id", ""),
+        }
         return JSONResponse(
-            {"type": "about:blank", "title": title, "status": 403},
+            problem,
             status_code=403,
             media_type="application/problem+json",
         )
