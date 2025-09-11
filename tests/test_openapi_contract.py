@@ -4,7 +4,7 @@ import pathlib
 import pytest
 
 # Optional dependencies; skip contract tests when missing.
-requests = pytest.importorskip("requests")
+requests = pytest.importorskip("requests")  # HTTP client
 schemathesis = pytest.importorskip("schemathesis")
 from schemathesis import openapi  # noqa: E402
 
