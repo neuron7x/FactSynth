@@ -172,6 +172,7 @@ docker run -p 8000:8000 -e API_KEY=change-me factsynth
 ## Тестування
 
 ```bash
+pip install -e .[dev] || pip install -r requirements.lock
 pytest
 ```
 

@@ -20,7 +20,7 @@
 
     ```bash
     python -m pip install -U pip wheel build
-    pip install -e .[dev]
+    pip install -e .[dev] || pip install -r requirements.lock
     pytest --cov --cov-report=xml
     python tools/coverage_gate.py --xml coverage.xml --min 90
     ```

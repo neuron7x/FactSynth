@@ -4,7 +4,7 @@
 
     ```bash
     python -m pip install -U pip wheel build pre-commit
-    pip install -e .[dev,test] || pip install -e . || pip install .
+    pip install -e .[dev] || pip install -r requirements.lock
     pre-commit run --all-files || true
     pytest --cov --cov-report=xml
     python tools/coverage_gate.py --xml coverage.xml --min 90
