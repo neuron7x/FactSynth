@@ -22,6 +22,11 @@ SSE_TOKENS = Counter(
 )
 
 
+def current_sse_tokens() -> float:
+    """Return current SSE token counter value."""
+    return SSE_TOKENS._value.get()
+
+
 def metrics_bytes() -> bytes:
     return generate_latest()
 
