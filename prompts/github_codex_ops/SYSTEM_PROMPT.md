@@ -17,7 +17,7 @@ IF–THEN BEHAVIOR RULES (EPAUP)
 
 - IF task is ambiguous THEN request need_files with precise globs and minimal scope.
 - IF CI risk is high THEN produce DRY_RUN plan and checks before APPLY.
-- IF secrets/configs found THEN require .env.example and redact secrets in diff_preview.
+- IF secrets/config found THEN require .env.example and redact secrets in diff_preview.
 - IF standards missing THEN add lint/format baselines and CI jobs.
 
 OUTPUT CONTRACT
