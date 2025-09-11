@@ -2,14 +2,17 @@ import asyncio
 
 from factsynth_ultimate.services.nli import NLI
 
+EXPECTED_SCORE = 0.42
+THRESHOLD = 0.9
+
 
 def test_nli_uses_async_classifier():
     async def classifier(_p: str, _h: str) -> float:
-        return 0.42
+        return EXPECTED_SCORE
 
     nli = NLI(classifier)
     score = asyncio.run(nli.classify("a", "b"))
-    assert score == 0.42  # noqa: PLR2004
+    assert score == EXPECTED_SCORE
 
 
 def test_nli_fallback_on_error():
@@ -18,4 +21,4 @@ def test_nli_fallback_on_error():
 
     nli = NLI(failing_classifier)
     score = asyncio.run(nli.classify("Cats are animals", "Cats are animals"))
-    assert score > 0.9  # noqa: PLR2004
+    assert score > THRESHOLD
