@@ -56,12 +56,18 @@ def score_batch(batch: ScoreBatchReq, request: Request, background_tasks: Backgr
 async def stream(req: ScoreReq):
     tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
     async def event_stream():
-        yield 'event: start\n'+'data: {}\n\n'
-        for i, t in enumerate(tokens, 1):
-            await asyncio.sleep(0.002)
-            SSE_TOKENS.inc()
-            yield 'event: token\n'+'data: '+json.dumps({'t':t,'n':i})+'\n\n'
-        yield 'event: end\n'+'data: {}\n\n'
+        sent = 0
+        try:
+            yield 'event: start\n' + 'data: {}\n\n'
+            for t in tokens:
+                await asyncio.sleep(0.002)
+                sent += 1
+                yield 'event: token\n' + 'data: ' + json.dumps({'t': t, 'n': sent}) + '\n\n'
+            yield 'event: end\n' + 'data: {}\n\n'
+        except asyncio.CancelledError:
+            logger.info("SSE stream cancelled after %d tokens", sent)
+        finally:
+            SSE_TOKENS.inc(sent)
     return StreamingResponse(event_stream(), media_type='text/event-stream')
 
 @api.websocket("/ws/stream")
