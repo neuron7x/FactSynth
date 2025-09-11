@@ -1,15 +1,18 @@
-from fastapi.testclient import TestClient
-import pytest
+import asyncio
 
+from fastapi.testclient import TestClient
+
+from factsynth_ultimate.api import routers
 from factsynth_ultimate.app import create_app
 from factsynth_ultimate.core.metrics import SSE_TOKENS
 from factsynth_ultimate.schemas.requests import ScoreReq
-from factsynth_ultimate.api import routers
+
+TOTAL_TOKENS = 1000
 
 
 def test_stream_sse_client_disconnect() -> None:
-    text = " ".join(str(i) for i in range(1000))
-    total_tokens = 1000
+    text = " ".join(str(i) for i in range(TOTAL_TOKENS))
+    total_tokens = TOTAL_TOKENS
     initial = SSE_TOKENS._value.get()
     with TestClient(create_app()) as client, client.stream(
         "POST",
@@ -23,8 +26,7 @@ def test_stream_sse_client_disconnect() -> None:
     assert diff < total_tokens
 
 
-@pytest.mark.asyncio
-async def test_stream_sse_client_cancel(monkeypatch) -> None:
+def test_stream_sse_client_cancel(monkeypatch) -> None:
     class DummyTokenizer:
         def __init__(self, tokens: list[str]):
             self._tokens = tokens
@@ -36,16 +38,23 @@ async def test_stream_sse_client_cancel(monkeypatch) -> None:
         def close(self):  # pragma: no cover - trivial
             self.closed = True
 
-    dummy = DummyTokenizer([str(i) for i in range(1000)])
+    dummy = DummyTokenizer([str(i) for i in range(TOTAL_TOKENS)])
 
-    monkeypatch.setattr(routers, "tokenize_preview", lambda text, max_tokens=256: dummy)
+    def fake_tokenizer(text: str, max_tokens: int = 256) -> DummyTokenizer:
+        del text, max_tokens
+        return dummy
 
-    total_tokens = 1000
-    initial = SSE_TOKENS._value.get()
-    resp = await routers.stream(ScoreReq(text="whatever"))
-    agen = resp.body_iterator
-    await agen.__anext__()
-    await agen.aclose()
-    assert dummy.closed
-    diff = SSE_TOKENS._value.get() - initial
-    assert diff < total_tokens
+    monkeypatch.setattr(routers, "tokenize_preview", fake_tokenizer)
+
+    async def run() -> None:
+        total_tokens = TOTAL_TOKENS
+        initial = SSE_TOKENS._value.get()
+        resp = await routers.stream(ScoreReq(text="whatever"))
+        agen = resp.body_iterator
+        await agen.__anext__()
+        await agen.aclose()
+        assert dummy.closed
+        diff = SSE_TOKENS._value.get() - initial
+        assert diff < total_tokens
+
+    asyncio.run(run())
