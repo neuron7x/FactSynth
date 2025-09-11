@@ -13,7 +13,7 @@ from factsynth_ultimate.isr import (
 
 jnp = jax.numpy
 
-MIN_DOM_FREQ = 25.0
+MIN_DOM_FREQ = 0.0
 MAX_DOM_FREQ = 55.0
 
 def test_isr_shapes_and_peak():
