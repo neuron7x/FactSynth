@@ -21,3 +21,22 @@
     ```
 
     Отримаєш артефакти (wheel+sdist+checksums+SBOM) і контейнер у GHCR.
+
+## Cleanup branches with failed checks
+
+Use the **Cleanup branches with failed checks** workflow to prune branches whose
+checks have failed. Trigger it from the GitHub UI via:
+
+```
+Actions → Cleanup branches with failed checks → Run workflow
+```
+
+### Prerequisites
+
+* Requires repository write access.
+* Protected branches `main` and `master` are skipped automatically.
+
+### Caution
+
+Branch deletions performed by this workflow are irreversible. Ensure any branch
+you remove is no longer needed.
