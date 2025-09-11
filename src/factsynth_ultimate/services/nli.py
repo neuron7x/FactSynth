@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Awaitable, Callable, Optional
 
-from factsynth_ultimate.tokenization import tokenize
+from ..tokenization import tokenize
 
 Classifier = Callable[[str, str], Awaitable[float]]
 
@@ -24,7 +24,7 @@ class NLI:
         if self.classifier is not None:
             try:
                 return await self.classifier(premise, hypothesis)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         return self._heuristic(premise, hypothesis)
 

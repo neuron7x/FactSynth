@@ -73,6 +73,10 @@ pip install -U pip && pip install -r requirements.lock
 uvicorn factsynth_ultimate.app:app --reload
 ```
 
+Helper utilities such as the NLI classifier, simple claim evaluator, and
+in-memory fixture retriever now live under the `factsynth_ultimate.services`
+package. The legacy `app` module has been removed.
+
 Docker:
 
 ```bash

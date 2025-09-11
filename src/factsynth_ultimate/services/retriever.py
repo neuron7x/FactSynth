@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from typing import ClassVar, Iterable, List
 
-from factsynth_ultimate.tokenization import tokenize
+from ..tokenization import tokenize
 
 
 @dataclass
