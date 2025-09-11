@@ -65,8 +65,7 @@ def create_app(
     def metrics() -> Response:
         return Response(metrics_bytes(), media_type=metrics_content_type())
 
-    # middleware stack
-    app.add_middleware(RequestIDMiddleware)
+    # middleware stack (order matters: last added runs first)
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.https_redirect)
     if settings.ip_allowlist:
         app.add_middleware(
@@ -94,6 +93,7 @@ def create_app(
         else settings.rate_limit_cleanup_interval,
     )
     app.add_middleware(_MetricsMiddleware)
+    app.add_middleware(RequestIDMiddleware)
 
     return app
 

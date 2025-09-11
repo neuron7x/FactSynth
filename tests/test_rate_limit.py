@@ -18,8 +18,14 @@ def test_rate_limit_exceeded_returns_429():
             r = client.post("/v1/score", headers=headers, json={"text": "x"})
             assert r.status_code == HTTPStatus.TOO_MANY_REQUESTS
             body = r.json()
-            for field in ("type", "title", "status", "detail", "trace_id"):
-                assert field in body
+            trace_id = body.pop("trace_id")
+            assert trace_id
+            assert body == {
+                "type": "about:blank",
+                "title": "Too Many Requests",
+                "status": HTTPStatus.TOO_MANY_REQUESTS,
+                "detail": "Request rate limit exceeded",
+            }
 
 
 def test_rate_limit_localized_messages():
@@ -36,6 +42,11 @@ def test_rate_limit_localized_messages():
                 )
                 assert r.status_code == HTTPStatus.TOO_MANY_REQUESTS
                 body = r.json()
-                assert body["title"] == title
-                for field in ("type", "status", "detail", "trace_id"):
-                    assert field in body
+                trace_id = body.pop("trace_id")
+                assert trace_id
+                assert body == {
+                    "type": "about:blank",
+                    "title": title,
+                    "status": HTTPStatus.TOO_MANY_REQUESTS,
+                    "detail": "Request rate limit exceeded",
+                }
