@@ -24,6 +24,7 @@ dev = [
     "schemathesis>=4.1,<4.2",  # API contract testing
     "websockets>=15.0,<15.1",  # WebSocket test client
     "pytest-cov>=7.0,<7.1",  # coverage plugin
+    "requests>=2.32,<2.33",  # HTTP client for contract tests
 ]
 ops = [
     "prometheus-client>=0.22,<0.23",

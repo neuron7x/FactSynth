@@ -27,9 +27,8 @@ if not list(schema.get_all_operations()):
 def test_api_conforms(case):
     if case.path not in ["/v1/healthz", "/metrics", "/v1/version"]:
         case.headers = {**(case.headers or {}), "x-api-key": API_KEY}
-    case.base_url = BASE_URL
     try:
-        response = case.call()
+        response = case.call(base_url=BASE_URL)
     except requests.exceptions.RequestException:
         pytest.skip("Could not connect to API; skipping contract tests due to connectivity issues")
     case.validate_response(response)
