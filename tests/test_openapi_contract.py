@@ -2,8 +2,8 @@ import os
 import pathlib
 
 import pytest
-import requests
 
+requests = pytest.importorskip("requests")
 schemathesis = pytest.importorskip("schemathesis")
 from schemathesis import openapi  # noqa: E402
 
