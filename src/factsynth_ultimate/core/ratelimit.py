@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-from .i18n import translate
+from ..i18n import choose_language, translate
 from .metrics import REQUESTS
 
 
@@ -60,10 +60,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if len(q) >= self.per_minute:
             with suppress(Exception):
                 REQUESTS.labels(request.method, path, "429").inc()
+            lang = choose_language(request)
             resp = JSONResponse(
                 {
                     "type": "about:blank",
-                    "title": translate("Too Many Requests", request.headers.get("accept-language")),
+                    "title": translate(lang, "too_many_requests"),
                     "status": 429,
                 },
                 status_code=429,
