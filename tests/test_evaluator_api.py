@@ -6,6 +6,10 @@ from pydantic import BaseModel
 from factsynth_ultimate.api import verify as verify_mod
 from factsynth_ultimate.services.evaluator import evaluate_claim
 
+EXPECTED_SCORE = 0.5
+EXPECTED_DIVERSITY = 0.1
+EVIDENCE_SCORE = 1.0
+
 
 def test_evaluate_claim_composes_and_closes():
     class DummyRetriever:
@@ -13,7 +17,7 @@ def test_evaluate_claim_composes_and_closes():
             self.closed = False
 
         def search(self, q):
-            return [(q, 1.0)]
+            return [(q, EVIDENCE_SCORE)]
 
         def close(self):
             self.closed = True
@@ -23,17 +27,17 @@ def test_evaluate_claim_composes_and_closes():
     result = evaluate_claim(
         "alpha",
         policy_check=lambda _: {"allowed": True},
-        scoring=lambda _: 0.5,
-        diversity=lambda _: 0.1,
+        scoring=lambda _: EXPECTED_SCORE,
+        diversity=lambda _: EXPECTED_DIVERSITY,
         nli=lambda _: {"label": "neutral"},
         retriever=retriever,
     )
 
     assert result["policy"] == {"allowed": True}
-    assert result["score"] == 0.5  # noqa: PLR2004
-    assert result["diversity"] == 0.1  # noqa: PLR2004
+    assert result["score"] == EXPECTED_SCORE
+    assert result["diversity"] == EXPECTED_DIVERSITY
     assert result["nli"] == {"label": "neutral"}
-    assert result["evidence"] == [("alpha", 1.0)]
+    assert result["evidence"] == [("alpha", EVIDENCE_SCORE)]
     assert retriever.closed
 
 

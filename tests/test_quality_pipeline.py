@@ -6,9 +6,10 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-pytest.importorskip("numpy")
+from factsynth_ultimate.api_akpshi import VerifyReq
+from factsynth_ultimate.api_akpshi import verify as verify_fn
 
-from factsynth_ultimate.api_akpshi import VerifyReq, verify as verify_fn  # noqa: E402
+pytest.importorskip("numpy")
 
 app = FastAPI()
 

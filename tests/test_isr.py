@@ -1,15 +1,15 @@
 import pytest
 
-jax = pytest.importorskip("jax")
-pytest.importorskip("diffrax")
-
-from factsynth_ultimate.isr import (  # noqa: E402
+from factsynth_ultimate.isr import (
     ISRParams,
     dominant_freq,
     estimate_fs,
     gamma_spectrum,
     simulate_isr,
 )
+
+jax = pytest.importorskip("jax")
+pytest.importorskip("diffrax")
 
 jnp = jax.numpy
 
