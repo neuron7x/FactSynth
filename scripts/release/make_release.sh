@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 IFS=$'\n\t'
-trap 'code=$?; echo "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit ${code})" >&2' ERR
+trap 'echo "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit $?)" >&2' ERR
 
-repo_root="$(git rev-parse --show-toplevel 2>/dev/null || echo "$(pwd)")"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "${repo_root}"
 
 PYVER=$(
@@ -29,7 +29,7 @@ PKGDIR="${OUTDIR}/factsynth-${VERSION}"
 mkdir -p "${PKGDIR}"
 
 # Collect canonical contents
-cp -a README.md README_UA.md LICENSE "${PKGDIR}" 2>/dev/null || true
+cp -a README.md docs/README_UA.md LICENSE "${PKGDIR}" 2>/dev/null || true
 cp -a openapi "${PKGDIR}/openapi" 2>/dev/null || true
 cp -a grafana "${PKGDIR}/grafana" 2>/dev/null || true
 cp -a k8s "${PKGDIR}/k8s" 2>/dev/null || true

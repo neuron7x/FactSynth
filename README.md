@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/neuron7x/FactSynth/actions/workflows/ci.yml/badge.svg)](https://github.com/neuron7x/FactSynth/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/neuron7x/FactSynth/actions/workflows/codeql.yml/badge.svg)](https://github.com/neuron7x/FactSynth/actions/workflows/codeql.yml)
+![Coverage](https://neuron7x.github.io/FactSynth/badges/coverage.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/neuron7x/FactSynth?style=flat)](https://github.com/neuron7x/FactSynth/stargazers)
 
@@ -20,7 +21,7 @@
 FastAPI service for intent reflection and extractive generation with SSE/WebSocket streaming,
 Problem+JSON errors, rate limits, and rich observability.
 
-Language: EN · [Українська](./README_UA.md)
+Language: EN · [Українська](./docs/README_UA.md)
 
 ## Table of Contents
 
@@ -101,7 +102,11 @@ Secrets are supplied via GitHub Secrets or environment variables.
 
 ## Demo & OpenAPI
 
-View the [OpenAPI docs](https://neuron7x.github.io/FactSynth/).
+Visit the [live demo and OpenAPI docs](https://neuron7x.github.io/FactSynth/) (override the API base with `?api=https://your-api-host`).
+
+### SDK Examples
+- Python: `examples/python/sdk_example.py`
+- TypeScript: `examples/typescript/sdk_example.ts`
 
 ```bash
 curl -X POST http://localhost:8000/v1/generate \
