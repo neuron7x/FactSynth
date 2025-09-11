@@ -98,14 +98,14 @@ class FactSynthLock(BaseModel):
 
 
 __all__ = [
-    "Verdict",
     "Citation",
+    "FactSynthLock",
+    "PolicySnapshot",
+    "Provenance",
+    "QualityReport",
+    "Recommendations",
     "SourceSynthesis",
     "Traceability",
-    "Recommendations",
-    "QualityReport",
-    "Provenance",
-    "PolicySnapshot",
-    "FactSynthLock",
+    "Verdict",
 ]
 
