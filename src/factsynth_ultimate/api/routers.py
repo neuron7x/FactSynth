@@ -55,6 +55,15 @@ def score_batch(batch: ScoreBatchReq, request: Request, background_tasks: Backgr
 @api.post('/v1/stream')
 async def stream(req: ScoreReq):
     tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
+    resources = []
+    for obj in (
+        tokens,
+        getattr(tokens, "tokenizer", None),
+        getattr(tokens, "retriever", None),
+    ):
+        if obj and (hasattr(obj, "close") or hasattr(obj, "aclose")):
+            resources.append(obj)
+
     async def event_stream():
         sent = 0
         try:
@@ -66,8 +75,20 @@ async def stream(req: ScoreReq):
             yield 'event: end\n' + 'data: {}\n\n'
         except asyncio.CancelledError:
             logger.info("SSE stream cancelled after %d tokens", sent)
+            raise
         finally:
             SSE_TOKENS.inc(sent)
+            for obj in resources:
+                try:
+                    aclose = getattr(obj, "aclose", None)
+                    if callable(aclose):
+                        await aclose()
+                        continue
+                    close = getattr(obj, "close", None)
+                    if callable(close):
+                        close()
+                except Exception:  # noqa: BLE001
+                    logger.debug("Error closing resource", exc_info=True)
     return StreamingResponse(event_stream(), media_type='text/event-stream')
 
 @api.websocket("/ws/stream")
