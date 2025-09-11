@@ -4,8 +4,7 @@
     "contexts": [
       "CI / Lint/Types/Tests (py3.11)",
       "CI / Lint/Types/Tests (py3.12)",
-      "Pages (OpenAPI) / deploy",
-      "ZipCI / zip"
+      "Pages (OpenAPI) / deploy"
     ]
   },
   "enforce_admins": true,
