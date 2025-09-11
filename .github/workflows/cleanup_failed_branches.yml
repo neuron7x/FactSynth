@@ -1,0 +1,76 @@
+name: Cleanup branches with failed checks
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const protectedNames = new Set(['main','master']);
+            const deleted = [];
+            const skipped = [];
+
+            const query = `
+              query ($owner:String!, $name:String!, $cursor:String) {
+                repository(owner:$owner, name:$name) {
+                  pullRequests(states:CLOSED, first:100, after:$cursor, orderBy:{field:UPDATED_AT, direction:DESC}) {
+                    nodes {
+                      number
+                      merged
+                      isCrossRepository
+                      headRefName
+                      commits(last:1) {
+                        nodes {
+                          commit { statusCheckRollup { state } }
+                        }
+                      }
+                    }
+                    pageInfo { hasNextPage endCursor }
+                  }
+                }
+              }
+            `;
+
+            let cursor = null;
+            for (let page = 0; page < 50; page++) {
+              const res = await github.graphql(query, { owner, name: repo, cursor });
+              const prs = res.repository.pullRequests;
+              for (const pr of prs.nodes) {
+                const state = pr.commits.nodes[0]?.commit?.statusCheckRollup?.state;
+                const shouldDelete = !pr.merged && !pr.isCrossRepository &&
+                  (state === 'FAILURE' || state === 'ERROR') &&
+                  !protectedNames.has(pr.headRefName);
+
+                if (!shouldDelete) continue;
+
+                try {
+                  await github.rest.git.deleteRef({
+                    owner, repo, ref: `heads/${pr.headRefName}`
+                  });
+                  deleted.push(`${pr.headRefName} (#${pr.number})`);
+                } catch (e) {
+                  skipped.push(`${pr.headRefName} (#${pr.number}) — ${e.status || ''} ${e.message}`);
+                }
+              }
+              if (!prs.pageInfo.hasNextPage) break;
+              cursor = prs.pageInfo.endCursor;
+            }
+
+            await core.summary
+              .addHeading('Cleanup result')
+              .addList(deleted.length ? deleted : ['Nothing deleted'])
+              .addHeading('Skipped', 2)
+              .addList(skipped.length ? skipped : ['None'])
+              .write();
+
+            console.log('Deleted:', deleted);
+            console.log('Skipped:', skipped);
