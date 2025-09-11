@@ -5,7 +5,11 @@ post:
     content:
       application/json:
         schema:
-          $ref: ../components/schemas/FactSynthLock_v1_1.yaml
+          $ref: ../components/schemas/VerifyRequest.yaml
   responses:
     '200':
       description: Verification result
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/FactSynthLock_v1_1.yaml
