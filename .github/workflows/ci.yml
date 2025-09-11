@@ -19,7 +19,9 @@ jobs:
       - name: Install Spectral
         run: npm ci
       - name: Spectral
-        run: npx spectral lint openapi/openapi.yaml
+        run: |
+          export PATH="$(npm bin):$PATH"
+          spectral lint openapi/openapi.yaml --fail-severity=warn
 
   pip-audit:
     name: Pip Audit
@@ -28,10 +30,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12', cache: 'pip' }
-      - name: Install pip-audit
+      - name: Install dependencies
         run: |
           python -m pip install -U pip
-          pip install pip-audit
+          pip install -r requirements.lock
       - name: Run pip-audit
         run: pip-audit -r requirements.lock
 

@@ -9,11 +9,13 @@
     pytest --cov --cov-report=xml
     python tools/coverage_gate.py --xml coverage.xml --min 90
     python tools/validate_openapi.py || true
+    spectral lint openapi/openapi.yaml
+    pip-audit -r requirements.lock
     ```
 
 > Contract tests rely on `requests`; they use `pytest.importorskip` to skip when it's absent.
 
-Install [Node.js](https://nodejs.org/) ≥ 18 for Markdown linting:
+Install [Node.js](https://nodejs.org/) ≥ 18 for Markdown and OpenAPI linting:
 
 ```bash
 npx markdownlint-cli2 README.md .github/PULL_REQUEST_TEMPLATE.md
