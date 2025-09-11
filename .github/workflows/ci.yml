@@ -9,6 +9,32 @@ permissions:
   contents: read
 
 jobs:
+  spectral:
+    name: OpenAPI Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Install Spectral
+        run: npm ci
+      - name: Spectral
+        run: npx spectral lint openapi/openapi.yaml
+
+  pip-audit:
+    name: Pip Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12', cache: 'pip' }
+      - name: Install pip-audit
+        run: |
+          python -m pip install -U pip
+          pip install pip-audit
+      - name: Run pip-audit
+        run: pip-audit -r requirements.lock
+
   quality:
     name: Quality (ruff/mypy)
     runs-on: ubuntu-latest
@@ -29,7 +55,7 @@ jobs:
 
   tests:
     name: PyTest (smoke)
-    needs: quality
+    needs: [quality, spectral, pip-audit]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

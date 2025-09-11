@@ -16,6 +16,10 @@ attrs==25.3.0
     #   referencing
 backoff==2.2.1
     # via schemathesis
+boolean-py==5.0
+    # via license-expression
+cachecontrol==0.14.3
+    # via pip-audit
 certifi==2025.8.3
     # via
     #   httpcore
@@ -32,6 +36,10 @@ colorama==0.4.6
     # via schemathesis
 coverage==7.10.6
     # via pytest-cov
+cyclonedx-python-lib==9.1.0
+    # via pip-audit
+defusedxml==0.7.1
+    # via py-serializable
 diffrax==0.7.0
     # via factsynth-ultimate-pro (pyproject.toml)
 equinox==0.13.0
@@ -41,6 +49,8 @@ equinox==0.13.0
     #   optimistix
 fastapi==0.116.1
     # via factsynth-ultimate-pro (pyproject.toml)
+filelock==3.19.1
+    # via cachecontrol
 fqdn==1.5.1
     # via jsonschema
 graphql-core==3.2.6
@@ -101,6 +111,8 @@ jsonschema-specifications==2025.9.1
     # via jsonschema
 junit-xml==1.9
     # via schemathesis
+license-expression==30.4.4
+    # via cyclonedx-python-lib
 lineax==0.0.8
     # via
     #   diffrax
@@ -115,6 +127,8 @@ ml-dtypes==0.5.3
     # via
     #   jax
     #   jaxlib
+msgpack==1.1.1
+    # via cachecontrol
 numpy==1.26.4
     # via
     #   factsynth-ultimate-pro (pyproject.toml)
@@ -126,14 +140,31 @@ opt-einsum==3.4.0
     # via jax
 optimistix==0.0.10
     # via diffrax
+packageurl-python==0.17.5
+    # via cyclonedx-python-lib
 packaging==25.0
-    # via pytest
+    # via
+    #   pip-audit
+    #   pip-requirements-parser
+    #   pytest
+pip==25.2
+    # via pip-api
+pip-api==0.0.34
+    # via pip-audit
+pip-audit==2.9.0
+    # via factsynth-ultimate-pro (pyproject.toml)
+pip-requirements-parser==32.0.1
+    # via pip-audit
+platformdirs==4.4.0
+    # via pip-audit
 pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
 prometheus-client==0.22.1
     # via factsynth-ultimate-pro (pyproject.toml)
+py-serializable==2.1.0
+    # via cyclonedx-python-lib
 pydantic==2.11.7
     # via
     #   factsynth-ultimate-pro (pyproject.toml)
@@ -147,6 +178,8 @@ pygments==2.19.2
     # via
     #   pytest
     #   rich
+pyparsing==3.2.3
+    # via pip-requirements-parser
 pyrate-limiter==3.9.0
     # via schemathesis
 pytest==8.4.2
@@ -178,6 +211,8 @@ regex==2025.9.1
 requests==2.32.5
     # via
     #   factsynth-ultimate-pro (pyproject.toml)
+    #   cachecontrol
+    #   pip-audit
     #   schemathesis
     #   starlette-testclient
 rfc3339-validator==0.1.4
@@ -186,6 +221,7 @@ rfc3987==1.3.8
     # via jsonschema
 rich==14.1.0
     # via
+    #   pip-audit
     #   schemathesis
     #   typer
 rpds-py==0.27.1
@@ -208,13 +244,17 @@ six==1.17.0
 sniffio==1.3.1
     # via anyio
 sortedcontainers==2.4.0
-    # via hypothesis
+    # via
+    #   cyclonedx-python-lib
+    #   hypothesis
 starlette==0.47.3
     # via
     #   fastapi
     #   starlette-testclient
 starlette-testclient==0.4.1
     # via schemathesis
+toml==0.10.2
+    # via pip-audit
 tomli==2.2.1
     # via schemathesis
 typer==0.17.4
