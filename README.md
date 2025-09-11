@@ -69,9 +69,12 @@ See full [dependency graph](https://github.com/neuron7x/FactSynth/network/depend
 git clone https://github.com/neuron7x/FactSynth.git
 cd FactSynth
 python -m venv .venv && source .venv/bin/activate
-pip install -U pip && pip install -r requirements.lock
+pip install -U pip && (pip install -r requirements.lock || pip install -e .[dev])
 uvicorn factsynth_ultimate.app:app --reload
 ```
+
+`requests` powers the contract tests while `PyYAML` supports schema
+validation; both are installed from the lock file or via the `dev` extra.
 
 Helper utilities such as the NLI classifier, simple claim evaluator, and
 in-memory fixture retriever now live under the `factsynth_ultimate.services`
