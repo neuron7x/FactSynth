@@ -4,22 +4,24 @@
 
     ```bash
     python -m pip install -U pip wheel build pre-commit
-    pip install -e .[dev,test] || pip install -e . || pip install .
+    pip install -r requirements.lock || pip install -e .[dev,test]
     pre-commit run --all-files || true
     pytest --cov --cov-report=xml
     python tools/coverage_gate.py --xml coverage.xml --min 90
     python tools/validate_openapi.py || true
     ```
 
-   Install [Node.js](https://nodejs.org/) ≥ 18 for Markdown linting:
+> Contract tests rely on `requests`; they use `pytest.importorskip` to skip when it's absent.
 
-    ```bash
-    npx markdownlint-cli2 README.md .github/PULL_REQUEST_TEMPLATE.md
-    ```
+Install [Node.js](https://nodejs.org/) ≥ 18 for Markdown linting:
 
-2. Push to main/PR — GitHub Actions `CI` запуститься автоматично (matrix 3.10–3.12).
+```bash
+npx markdownlint-cli2 README.md .github/PULL_REQUEST_TEMPLATE.md
+```
 
-3. Реліз:
+1. Push to main/PR — GitHub Actions `CI` запуститься автоматично (matrix 3.10–3.12).
+
+1. Реліз:
 
     ```bash
     git tag my-release-1
@@ -33,7 +35,7 @@
 Use the **Cleanup branches with failed checks** workflow to prune branches whose
 checks have failed. Trigger it from the GitHub UI via:
 
-```
+```text
 Actions → Cleanup branches with failed checks → Run workflow
 ```
 
