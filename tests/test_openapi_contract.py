@@ -3,10 +3,14 @@ import pathlib
 
 import pytest
 
-# Optional dependencies; skip contract tests when missing.
-requests = pytest.importorskip("requests")  # HTTP client
-schemathesis = pytest.importorskip("schemathesis")
-from schemathesis import openapi  # noqa: E402
+try:
+    import requests
+    import schemathesis
+    from schemathesis import openapi
+
+    _ = schemathesis
+except ModuleNotFoundError as e:
+    pytest.skip(f"Missing dependency: {e}", allow_module_level=True)
 
 BASE_URL = os.getenv("FACTSYNTH_BASE_URL", "http://127.0.0.1:8000")
 OPENAPI_PATH = os.getenv("FACTSYNTH_OPENAPI", "openapi/openapi.yaml")
@@ -14,7 +18,10 @@ API_KEY = os.getenv("API_KEY", "change-me")
 
 openapi_file = pathlib.Path(OPENAPI_PATH)
 if not openapi_file.exists():
-    pytest.skip("OpenAPI spec not found; add openapi/openapi.yaml to enable contract tests", allow_module_level=True)
+    pytest.skip(
+        "OpenAPI spec not found; add openapi/openapi.yaml to enable contract tests",
+        allow_module_level=True,
+    )
 
 schema = openapi.from_path(OPENAPI_PATH)
 schema.validate()
@@ -23,6 +30,7 @@ if not list(schema.get_all_operations()):
         "OpenAPI spec has no operations; contract tests skipped",
         allow_module_level=True,
     )
+
 
 @schema.parametrize()
 def test_api_conforms(case):
