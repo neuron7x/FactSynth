@@ -1,5 +1,5 @@
 post:
-  summary: Verify FactSynth lock
+  summary: Verify claim and lock
   requestBody:
     required: true
     content:
