@@ -3,8 +3,8 @@ import inspect
 from fastapi.params import Depends as DependsParam
 from pydantic import BaseModel
 
-from app.api import verify as verify_mod
-from app.services.evaluator import evaluate_claim
+from factsynth_ultimate.api import verify as verify_mod
+from factsynth_ultimate.services.evaluator import evaluate_claim
 
 
 def test_evaluate_claim_composes_and_closes():

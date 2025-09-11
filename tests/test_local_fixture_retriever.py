@@ -1,4 +1,7 @@
-from app.services.retriever import Fixture, LocalFixtureRetriever
+from factsynth_ultimate.services.retriever import (
+    Fixture,
+    LocalFixtureRetriever,
+)
 
 
 def test_ukrainian_query_matches_english_fixture():
