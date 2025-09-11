@@ -4,16 +4,16 @@ from fastapi.testclient import TestClient
 
 from factsynth_ultimate.api import routers
 from factsynth_ultimate.app import create_app
-from factsynth_ultimate.core.metrics import SSE_TOKENS
+from factsynth_ultimate.core.metrics import current_sse_tokens
 from factsynth_ultimate.schemas.requests import ScoreReq
 
-TOTAL_TOKENS = 1000
+TOTAL_TOKENS = 300
 
 
 def test_stream_sse_client_disconnect() -> None:
     text = " ".join(str(i) for i in range(TOTAL_TOKENS))
     total_tokens = TOTAL_TOKENS
-    initial = SSE_TOKENS._value.get()
+    initial = current_sse_tokens()
     with TestClient(create_app()) as client, client.stream(
         "POST",
         "/v1/stream",
@@ -22,7 +22,7 @@ def test_stream_sse_client_disconnect() -> None:
     ):
         # Do not consume the stream to simulate client disconnect.
         pass
-    diff = SSE_TOKENS._value.get() - initial
+    diff = current_sse_tokens() - initial
     assert diff < total_tokens
 
 
@@ -48,13 +48,13 @@ def test_stream_sse_client_cancel(monkeypatch) -> None:
 
     async def run() -> None:
         total_tokens = TOTAL_TOKENS
-        initial = SSE_TOKENS._value.get()
+        initial = current_sse_tokens()
         resp = await routers.stream(ScoreReq(text="whatever"))
         agen = resp.body_iterator
         await agen.__anext__()
         await agen.aclose()
         assert dummy.closed
-        diff = SSE_TOKENS._value.get() - initial
+        diff = current_sse_tokens() - initial
         assert diff < total_tokens
 
     asyncio.run(run())
