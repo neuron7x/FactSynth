@@ -9,12 +9,15 @@ jobs:
   mdlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: npm
-          cache-dependency-path: .markdownlint.jsonc
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('.markdownlint.jsonc') }}
+          restore-keys: ${{ runner.os }}-node-
       - run: >-
           npx markdownlint-cli2 --config .markdownlint.jsonc README.md
           .github/PULL_REQUEST_TEMPLATE.md
