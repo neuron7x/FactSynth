@@ -25,6 +25,15 @@ Run checks on staged files:
 pre-commit run --files <path/to/file.py>
 ```
 
+## Markdown lint
+
+`markdownlint-cli2` runs via `npx` and requires Node.js (v18+).
+Lint all Markdown files with:
+
+```bash
+npx -y markdownlint-cli2 "**/*.md"
+```
+
 ## Branch protection
 
 The `main` branch is protected to keep the codebase stable:
