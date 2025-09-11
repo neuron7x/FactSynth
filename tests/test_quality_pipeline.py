@@ -1,17 +1,14 @@
-# ruff: noqa: E402
 import json
 from http import HTTPStatus
 from pathlib import Path
 
 import pytest
-
-pytest.importorskip("numpy")
-
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from factsynth_ultimate.api_akpshi import VerifyReq
-from factsynth_ultimate.api_akpshi import verify as verify_fn
+pytest.importorskip("numpy")
+
+from factsynth_ultimate.api_akpshi import VerifyReq, verify as verify_fn  # noqa: E402
 
 app = FastAPI()
 
