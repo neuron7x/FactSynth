@@ -53,7 +53,7 @@ def score_batch(batch: ScoreBatchReq, request: Request, background_tasks: Backgr
     return out
 
 @api.post('/v1/stream')
-async def stream(req: ScoreReq):
+async def stream(req: ScoreReq, request: Request = None):  # type: ignore[assignment]
     tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
     resources = []
     for obj in (
@@ -64,12 +64,14 @@ async def stream(req: ScoreReq):
         if obj and (hasattr(obj, "close") or hasattr(obj, "aclose")):
             resources.append(obj)
 
-    async def event_stream():
+    async def event_stream(request: Request = None):  # type: ignore[assignment]
         sent = 0
         try:
             yield 'event: start\n' + 'data: {}\n\n'
             for t in tokens:
                 await asyncio.sleep(0.002)
+                if request is not None and await request.is_disconnected():
+                    break
                 sent += 1
                 yield 'event: token\n' + 'data: ' + json.dumps({'t': t, 'n': sent}) + '\n\n'
             yield 'event: end\n' + 'data: {}\n\n'
@@ -89,7 +91,7 @@ async def stream(req: ScoreReq):
                         close()
                 except Exception:  # noqa: BLE001
                     logger.debug("Error closing resource", exc_info=True)
-    return StreamingResponse(event_stream(), media_type='text/event-stream')
+    return StreamingResponse(event_stream(request), media_type='text/event-stream')
 
 @api.websocket("/ws/stream")
 async def ws_stream(ws: WebSocket):
