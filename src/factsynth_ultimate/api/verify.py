@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
 from ..core.factsynth_lock import FactSynthLock
 from ..services.evaluator import evaluate_claim
+from .models import VerifyRequest
 
 api = APIRouter()
 
 
 @api.post("/verify", response_model=FactSynthLock)
-def verify(lock: FactSynthLock, _result: dict = Depends(evaluate_claim)) -> FactSynthLock:  # noqa: B008
-    """Verify a claim by delegating to :func:`evaluate_claim`.
+def verify(req: VerifyRequest) -> FactSynthLock:
+    """Verify a claim and return the provided lock."""
 
-    The evaluation is resolved via FastAPI's dependency injection. The supplied
-    ``FactSynthLock`` document is validated and returned.
-    """
-    return lock
+    evaluate_claim(req.claim)
+    return req.lock

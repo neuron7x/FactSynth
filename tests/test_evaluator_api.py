@@ -1,6 +1,4 @@
-import inspect
 
-from fastapi.params import Depends as DependsParam
 from pydantic import BaseModel
 
 from factsynth_ultimate.api import verify as verify_mod
@@ -37,12 +35,6 @@ def test_evaluate_claim_composes_and_closes():
     assert retriever.closed
 
 
-def test_verify_depends_on_evaluate_and_exposes_model():
+def test_verify_exposes_models():
     assert issubclass(verify_mod.FactSynthLock, BaseModel)
-
-    sig = inspect.signature(verify_mod.verify)
-    params = list(sig.parameters.values())
-    assert any(
-        isinstance(p.default, DependsParam) and p.default.dependency is evaluate_claim
-        for p in params
-    )
+    assert issubclass(verify_mod.VerifyRequest, BaseModel)
