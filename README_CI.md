@@ -11,6 +11,12 @@
     python tools/validate_openapi.py || true
     ```
 
+   Install [Node.js](https://nodejs.org/) ≥ 18 for Markdown linting:
+
+    ```bash
+    npx markdownlint-cli2 README.md .github/PULL_REQUEST_TEMPLATE.md
+    ```
+
 2. Push to main/PR — GitHub Actions `CI` запуститься автоматично (matrix 3.10–3.12).
 
 3. Реліз:

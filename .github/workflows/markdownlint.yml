@@ -10,9 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: DavidAnson/markdownlint-cli2-action@v16
+      - uses: actions/setup-node@v4
         with:
-          config: ".markdownlint.jsonc"
-          globs: |
-            README.md
-            .github/PULL_REQUEST_TEMPLATE.md
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: .markdownlint.jsonc
+      - run: >-
+          npx markdownlint-cli2 --config .markdownlint.jsonc README.md
+          .github/PULL_REQUEST_TEMPLATE.md
