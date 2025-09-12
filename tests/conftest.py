@@ -41,7 +41,7 @@ async def client():
 
 @pytest.fixture(autouse=True)
 def _stub_external_api(monkeypatch) -> None:
-    """Stub external HTTP calls so tests remain offline."""
+    """Stub external HTTP calls (generate/score/OpenAPI) to avoid network access."""
 
     original_post = AsyncClient.post
     original_get = AsyncClient.get

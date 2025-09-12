@@ -20,9 +20,8 @@ jobs:
       HYPOTHESIS_PROFILE: ci
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
-      - uses: actions/setup-python@v5
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
@@ -33,7 +32,6 @@ jobs:
           pip install --require-hashes -r requirements.lock
           # Install testing/dev extras
           pip install -r requirements-dev.txt
-          pip install numpy hypothesis diffrax jax schemathesis
           pip install -e . --no-deps
           npm install -g @stoplight/spectral-cli@6
 
@@ -72,8 +70,8 @@ jobs:
       API_KEY: change-me
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
@@ -84,7 +82,6 @@ jobs:
           pip install --require-hashes -r requirements.lock
           # Install testing/dev extras
           pip install -r requirements-dev.txt
-          pip install numpy hypothesis diffrax jax schemathesis
           pip install -e . --no-deps
 
       - name: Smoke (SSE/WS only)
