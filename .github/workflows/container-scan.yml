@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      IMAGE: ghcr.io/${{ github.repository }}
+      IMAGE: ghcr.io/${{ github.repository_owner }}/factsynth
       TAG: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
