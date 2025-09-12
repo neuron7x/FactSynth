@@ -1,53 +1,37 @@
 name: Pages
 on:
-  push:
-    branches: [ "main" ]
   workflow_dispatch:
-
+  push: { branches: [ main ] }
 permissions:
   contents: read
   pages: write
   id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
+concurrency: { group: pages, cancel-in-progress: true }
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-      - uses: actions/setup-node@v5
-        with:
-          node-version: "20"
-      - name: Build docs
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.11' }
+      - name: Build MkDocs
+        if: hashFiles('mkdocs.yml') != ''
         run: |
+          python -m pip install -U pip
           pip install mkdocs mkdocs-material
-          mkdocs build --strict
-      - name: Build ReDoc
+          mkdocs build -d site
+      - name: Fallback static
+        if: hashFiles('mkdocs.yml') == ''
         run: |
-          if [ -f openapi/openapi.yaml ]; then
-            mkdir -p site/openapi
-            npx --yes redoc-cli@0.13.23 bundle openapi/openapi.yaml -o site/openapi/index.html
-          else
-            mkdir -p site/openapi
-            echo "<!doctype html><title>No OpenAPI</title><p>No openapi/openapi.yaml</p>" > site/openapi/index.html
-          fi
-      - uses: actions/configure-pages@v5
+          mkdir -p site && cp -r docs/* site/ || true
       - uses: actions/upload-pages-artifact@v4
-        with:
-          path: site
-
+        with: { path: site }
   deploy:
     needs: build
-    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4

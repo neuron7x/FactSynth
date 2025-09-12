@@ -1,0 +1,16 @@
+name: Docs Quality
+on:
+  pull_request:
+    branches: [ main ]
+    paths: [ '**/*.md', '.markdownlint.json' ]
+  push:
+    branches: [ main ]
+    paths: [ '**/*.md', '.markdownlint.json' ]
+permissions: { contents: read }
+jobs:
+  markdown-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: davidanson/markdownlint-cli2-action@v17
+        with: { globs: '**/*.md' }
