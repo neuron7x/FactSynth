@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import random
+import string
 import time
 from collections.abc import AsyncGenerator
 from http import HTTPStatus
@@ -29,7 +30,7 @@ from factsynth_ultimate import VERSION
 from ..core.audit import audit_event
 from ..core.metrics import SSE_TOKENS
 from ..core.secrets import read_api_key
-from ..schemas.requests import IntentReq, ScoreBatchReq, ScoreReq
+from ..schemas.requests import GenerateReq, IntentReq, ScoreBatchReq, ScoreReq
 from ..services.runtime import reflect_intent, score_payload, tokenize_preview
 
 logger = logging.getLogger(__name__)
@@ -120,6 +121,17 @@ def score_batch(
             )
         background_tasks.add_task(_post_callback, batch.callback_url, out)
     return out
+
+
+@api.post("/v1/generate")
+def generate(req: GenerateReq, request: Request) -> dict[str, dict[str, str]]:
+    """Produce a deterministic pseudo-random string matching the input length."""
+
+    audit_event("generate", request.client.host if request.client else "unknown")
+    rng = random.Random(req.seed)
+    alphabet = string.ascii_letters + string.digits + " "
+    out = "".join(rng.choice(alphabet) for _ in req.text)
+    return {"output": {"text": out}}
 
 @api.post("/v1/stream")
 async def stream(req: ScoreReq, request: Request) -> StreamingResponse:
