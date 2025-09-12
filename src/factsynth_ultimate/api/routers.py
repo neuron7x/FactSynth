@@ -20,11 +20,11 @@ from ..core.secrets import read_api_key
 from ..schemas.requests import IntentReq, ScoreBatchReq, ScoreReq
 from ..services.runtime import reflect_intent, score_payload, tokenize_preview
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 API_KEY = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
 
-api=APIRouter()
+api = APIRouter()
 
 @api.get("/v1/version")
 def version() -> dict[str, str]:
