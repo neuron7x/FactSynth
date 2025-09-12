@@ -91,7 +91,7 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
 
     # Ensure API key authentication happens before rate limiting so
     # unauthenticated requests do not consume the rate limit. Middleware
-    # added first runs earlier in FastAPI when using ``add_middleware``,
+    # added last runs first in FastAPI when using ``add_middleware``,
     # therefore RateLimitMiddleware is added after APIKeyAuthMiddleware.
     app.add_middleware(
         APIKeyAuthMiddleware,
