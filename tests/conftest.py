@@ -1,5 +1,6 @@
 """Shared test fixtures for FactSynth API tests."""
 
+import asyncio
 import os
 from unittest.mock import patch
 
@@ -15,7 +16,7 @@ os.environ.setdefault("RATE_LIMIT_PER_KEY", "1000")
 os.environ.setdefault("RATE_LIMIT_PER_IP", "1000")
 os.environ.setdefault("RATE_LIMIT_PER_ORG", "1000")
 
-from factsynth_ultimate.app import create_app
+from factsynth_ultimate.app import create_app  # noqa: E402
 
 API_KEY = os.getenv("API_KEY", "change-me")
 
@@ -36,3 +37,8 @@ async def client():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture(autouse=True)
+def _reset_fake_redis() -> None:
+    asyncio.run(_FAKE_REDIS.flushall())
