@@ -30,6 +30,11 @@ def test_split_csv_edge_cases(raw, expected):
     assert Settings._split_csv(raw) == expected
 
 
+def test_cors_allow_origins_default_empty():
+    settings = Settings()
+    assert settings.cors_allow_origins == []
+
+
 def test_invalid_rate_limit_per_key(monkeypatch):
     monkeypatch.setenv("RATE_LIMIT_REDIS_URL", "redis://localhost:6379/0")
     monkeypatch.setenv("RATE_LIMIT_PER_KEY", "abc")
