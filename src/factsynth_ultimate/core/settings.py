@@ -12,9 +12,9 @@ class Settings(BaseSettings):
     env: str = Field(default="dev", env="ENV")
     https_redirect: bool = Field(default=False, env="HTTPS_REDIRECT")
     cors_allow_origins: list[str] = Field(
-        default_factory=list,
+        default=[],
         env="CORS_ALLOW_ORIGINS",
-        description="Allowed CORS origins. Defaults to empty; set explicitly to enable cross-origin access.",
+        description="Allowed CORS origins. Defaults to empty list; set explicitly to enable cross-origin access.",
     )
     auth_header_name: str = Field(default="x-api-key", env="AUTH_HEADER_NAME")
     ip_allowlist: list[str] = Field(default_factory=list, env="IP_ALLOWLIST")
