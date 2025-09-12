@@ -1,3 +1,5 @@
+"""Application settings loaded from the environment."""
+
 from __future__ import annotations
 
 from pydantic import Field, field_validator
@@ -38,5 +40,7 @@ class Settings(BaseSettings):
 
 
 def load_settings() -> Settings:
+    """Load settings from environment variables."""
+
     return Settings()
 

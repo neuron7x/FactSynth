@@ -1,8 +1,11 @@
+"""Lightweight metrics used by the GLRTPM pipeline."""
+
 from typing import Dict, List
 
 
 def _len(s: str) -> int:
     """Return length of ``s`` treating ``None`` as empty."""
+
     return len(s or "")
 
 

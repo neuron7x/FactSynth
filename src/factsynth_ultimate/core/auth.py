@@ -1,11 +1,14 @@
+"""Middleware implementing simple header-based API key authentication."""
+
 from __future__ import annotations
 
 import re
-from typing import Iterable
+from typing import Awaitable, Callable, Iterable
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 from ..i18n import choose_language, translate
 
@@ -19,7 +22,9 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         api_key: str,
         header_name: str = "x-api-key",
         skip: Iterable[str] = ("/v1/healthz", "/metrics"),
-    ):
+    ) -> None:
+        """Store configuration for later request checks."""
+
         super().__init__(app)
         self.api_key = api_key
         self.header_name = header_name
@@ -32,7 +37,13 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
                 self.skip_exact.add(s)
         self.skip_patterns = tuple(patterns)
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
+        """Check the API key header before processing the request."""
+
         path = request.url.path
         if path in self.skip_exact or any(p.fullmatch(path) for p in self.skip_patterns):
             return await call_next(request)

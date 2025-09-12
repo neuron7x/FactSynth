@@ -1,3 +1,5 @@
+"""FastAPI application factory and middleware setup."""
+
 from __future__ import annotations
 
 import time
@@ -58,10 +60,14 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
 
     @app.get("/v1/healthz")
     def healthz() -> dict[str, str]:
+        """Simple liveness probe."""
+
         return {"status": "ok"}
 
     @app.get("/metrics")
     def metrics() -> Response:
+        """Expose Prometheus metrics."""
+
         return Response(metrics_bytes(), media_type=metrics_content_type())
 
     # middleware stack (order matters: last added runs first)
@@ -75,6 +81,8 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
 
     @app.on_event("shutdown")
     async def shutdown() -> None:
+        """Close underlying Redis connection on shutdown."""
+
         await redis_client.close()
 
     api_key = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")

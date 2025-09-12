@@ -1,7 +1,11 @@
+"""Optional OpenTelemetry instrumentation."""
+
 from __future__ import annotations
 
 import logging
 from contextlib import suppress
+
+from fastapi import FastAPI
 
 log = logging.getLogger("factsynth.telemetry")
 
@@ -11,7 +15,9 @@ except ImportError:  # pragma: no cover - optional dependency
     FastAPIInstrumentor = None
 
 
-def try_enable_otel(app) -> None:
+def try_enable_otel(app: FastAPI) -> None:
+    """Instrument *app* with OpenTelemetry if available."""
+
     if FastAPIInstrumentor is None:
         log.info("otel_disabled: missing dependency")
         return

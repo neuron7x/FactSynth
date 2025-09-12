@@ -1,3 +1,5 @@
+"""Core claim evaluation orchestration."""
+
 from __future__ import annotations
 
 from contextlib import ExitStack

@@ -1,3 +1,5 @@
+"""Interactive Symbolic Reasoning utilities."""
+
 from .sim import (
     ISRParams,
     dominant_freq,
