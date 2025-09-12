@@ -33,3 +33,8 @@ def metrics_bytes() -> bytes:
 
 def metrics_content_type() -> str:
     return CONTENT_TYPE_LATEST
+
+
+def current_sse_tokens() -> int:
+    """Return the current SSE token count."""
+    return int(SSE_TOKENS._value.get())
