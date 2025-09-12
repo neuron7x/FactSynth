@@ -3,13 +3,22 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import random
 import time
 from collections.abc import AsyncGenerator
 from http import HTTPStatus
+from urllib.parse import urlparse
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    HTTPException,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import StreamingResponse
 
 from factsynth_ultimate import VERSION
@@ -23,6 +32,24 @@ from ..services.runtime import reflect_intent, score_payload, tokenize_preview
 logger=logging.getLogger(__name__)
 
 API_KEY = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
+
+ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
+
+
+def validate_callback_url(url: str) -> bool:
+    """Validate that the callback URL uses an allowed scheme and host."""
+    allowed_hosts = set(
+        filter(None, os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "").split(","))
+    )
+    try:
+        parsed = urlparse(url)
+    except Exception:  # noqa: BLE001
+        return False
+    if parsed.scheme not in ALLOWED_CALLBACK_SCHEMES:
+        return False
+    if allowed_hosts:
+        return parsed.hostname in allowed_hosts
+    return True
 
 api=APIRouter()
 
@@ -40,6 +67,10 @@ def score(req: ScoreReq, request: Request, background_tasks: BackgroundTasks):
     audit_event("score", request.client.host if request.client else "unknown")
     result = {'score': score_payload(req.model_dump())}
     if req.callback_url:
+        if not validate_callback_url(req.callback_url):
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
+            )
         background_tasks.add_task(_post_callback, req.callback_url, result)
     return result
 
@@ -50,6 +81,10 @@ def score_batch(batch: ScoreBatchReq, request: Request, background_tasks: Backgr
     results = [{'score': score_payload(it.model_dump())} for it in items]
     out = {'results': results, 'count': len(results)}
     if batch.callback_url:
+        if not validate_callback_url(batch.callback_url):
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
+            )
         background_tasks.add_task(_post_callback, batch.callback_url, out)
     return out
 
