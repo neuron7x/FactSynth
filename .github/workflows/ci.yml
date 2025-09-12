@@ -33,6 +33,7 @@ jobs:
           pip install --require-hashes -r requirements.lock
           # Install testing/dev extras
           pip install -r requirements-dev.txt
+          pip install numpy hypothesis diffrax jax schemathesis
           pip install -e . --no-deps
           npm install -g @stoplight/spectral-cli@6
 
@@ -83,6 +84,7 @@ jobs:
           pip install --require-hashes -r requirements.lock
           # Install testing/dev extras
           pip install -r requirements-dev.txt
+          pip install numpy hypothesis diffrax jax schemathesis
           pip install -e . --no-deps
 
       - name: Smoke (SSE/WS only)
