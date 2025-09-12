@@ -16,6 +16,10 @@ jobs:
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v5
         with:
           python-version: '3.11'
+      - name: Sync version and docs
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          bash scripts/release/bump_version.sh "$VERSION"
       - name: Build release artifacts
         run: bash scripts/build_release.sh
       - name: Upload release assets
