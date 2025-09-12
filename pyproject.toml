@@ -26,7 +26,7 @@ dev = [
     "requests==2.32.5",  # HTTP client for contract tests (dev)
     "pip-audit==2.9.0",  # Python dependency vulnerability scanner
     "spectral==0.24",  # OpenAPI linting utility
-    "fakeredis==2.23.0",  # Redis mock for tests
+    "fakeredis==2.31.1",  # Redis mock for tests
     "hypothesis==6.138.15",  # Property-based testing
     "numpy==1.26.4",  # Numerical computations in tests
     "jax==0.4.38",  # JAX core for diffrax
