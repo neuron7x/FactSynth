@@ -13,7 +13,7 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
         self.max_bytes = max_bytes
     async def dispatch(self, request: Request, call_next):
         received = 0
-        chunks: list[bytes] = []
+        body = bytearray()
         async for chunk in request.stream():
             received += len(chunk)
             if received > self.max_bytes:
@@ -34,6 +34,6 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
                     status_code=413,
                     media_type="application/problem+json",
                 )
-            chunks.append(chunk)
-        request._body = b"".join(chunks)
+            body.extend(chunk)
+        request._body = bytes(body)
         return await call_next(request)
