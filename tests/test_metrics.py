@@ -17,4 +17,3 @@ async def test_prometheus_metrics_exposed(client):
     text = r.text
     for metric in EXPECTED_METRICS:
         assert metric in text
-

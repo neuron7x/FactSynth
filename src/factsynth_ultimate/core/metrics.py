@@ -21,6 +21,7 @@ SSE_TOKENS = Counter(
     "Number of SSE tokens streamed",
 )
 
+
 def metrics_bytes() -> bytes:
     return generate_latest()
 

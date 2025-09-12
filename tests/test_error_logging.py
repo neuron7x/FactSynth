@@ -13,9 +13,10 @@ def test_internal_error_logs_path_and_exception():
     def boom():
         raise RuntimeError("boom")
 
-    with TestClient(app, raise_server_exceptions=False) as client, patch(
-        "factsynth_ultimate.core.errors.logger"
-    ) as mock_logger:
+    with (
+        TestClient(app, raise_server_exceptions=False) as client,
+        patch("factsynth_ultimate.core.errors.logger") as mock_logger,
+    ):
         r = client.get("/boom", headers={"x-api-key": "change-me"})
         assert r.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
         body = r.json()

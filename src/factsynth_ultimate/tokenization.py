@@ -7,7 +7,6 @@ CLI and other parts of the project without pulling in heavy dependencies.
 from __future__ import annotations
 
 import unicodedata
-from typing import List
 
 import regex as re
 
@@ -32,7 +31,7 @@ def normalize(text: str) -> str:
     return t.strip()
 
 
-def tokenize(text: str) -> List[str]:
+def tokenize(text: str) -> list[str]:
     """Split ``text`` into individual word tokens.
 
     The input is first :func:`normalize`d. Tokens are defined as runs of Unicode

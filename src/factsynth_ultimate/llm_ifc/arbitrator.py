@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict, List
 
 
 @dataclass
@@ -9,7 +8,8 @@ class Candidate:
     context: float  # [0,1]
     text: str
 
-def choose(cands: List[Candidate], w1: float = 0.5, w2: float = 0.5) -> Dict:
+
+def choose(cands: list[Candidate], w1: float = 0.5, w2: float = 0.5) -> dict:
     if not cands:
         return {"winner": None, "score": 0.0, "text": ""}
     scored = [(c, w1 * float(c.quality) + w2 * float(c.context)) for c in cands]

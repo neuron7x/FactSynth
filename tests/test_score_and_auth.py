@@ -8,9 +8,7 @@ from factsynth_ultimate.app import create_app
 
 
 def test_auth_required() -> None:
-    with patch.dict(os.environ, {"API_KEY": "secret"}), TestClient(
-        create_app()
-    ) as client:
+    with patch.dict(os.environ, {"API_KEY": "secret"}), TestClient(create_app()) as client:
         url = "/v1/score"
         r = client.post(url, json={"text": "x"})
         assert r.status_code == HTTPStatus.UNAUTHORIZED
@@ -30,9 +28,7 @@ def test_auth_required() -> None:
 
 
 def test_score_values() -> None:
-    with patch.dict(os.environ, {"API_KEY": "secret"}), TestClient(
-        create_app()
-    ) as client:
+    with patch.dict(os.environ, {"API_KEY": "secret"}), TestClient(create_app()) as client:
         r = client.post(
             "/v1/score",
             headers={"x-api-key": "secret"},

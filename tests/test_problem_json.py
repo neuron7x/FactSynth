@@ -14,4 +14,3 @@ async def test_problem_json_shape_on_validation_error(client, base_headers):
     )
     body = r.json()
     assert PROBLEM_KEYS.issubset(body.keys())
-

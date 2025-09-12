@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 IFS=$'\n\t'
+code=0
 trap 'code=$?; echo "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit ${code})" >&2' ERR
 
-repo_root="$(git rev-parse --show-toplevel 2>/dev/null || echo "$(pwd)")"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "${repo_root}"
 
 PYVER=$(
@@ -44,10 +45,11 @@ cat >"${PKGDIR}/quickstart/run.sh" <<'SH'
 #!/usr/bin/env bash
 set -Eeuo pipefail
 IFS=$'\n\t'
+code=0
 trap 'code=$?; echo "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit ${code})" >&2' ERR
 python -m venv .venv && . .venv/bin/activate
 pip install -U pip
-pip install -e .[ops]
+pip install -e '.[ops]'
 export API_KEY=change-me
 uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000
 SH

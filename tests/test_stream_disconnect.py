@@ -15,11 +15,14 @@ MAX_TOKENS = 256
 def test_stream_sse_client_disconnect() -> None:
     text = " ".join(str(i) for i in range(TOTAL_TOKENS))
     initial = current_sse_tokens()
-    with TestClient(create_app()) as client, client.stream(
-        "POST",
-        "/v1/stream",
-        headers={"x-api-key": "change-me"},
-        json={"text": text},
+    with (
+        TestClient(create_app()) as client,
+        client.stream(
+            "POST",
+            "/v1/stream",
+            headers={"x-api-key": "change-me"},
+            json={"text": text},
+        ),
     ):
         # Do not consume the stream to simulate client disconnect.
         pass

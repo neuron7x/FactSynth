@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import Dict, Tuple
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -14,7 +13,7 @@ from .metrics import REQUESTS
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         app: ASGIApp,
         *,
@@ -35,13 +34,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.org_header = org_header
         self.window = window
 
-    def _identifiers(self, request: Request) -> Tuple[str, str, str]:
+    def _identifiers(self, request: Request) -> tuple[str, str, str]:
         api_key = request.headers.get(self.key_header) or "anon"
         ip = request.client.host if request.client else "anon"
         org = request.headers.get(self.org_header) or "anon"
         return api_key, ip, org
 
-    async def _check(self, redis_key: str, limit: int) -> Tuple[bool, int]:
+    async def _check(self, redis_key: str, limit: int) -> tuple[bool, int]:
         count = await self.redis.incr(redis_key)
         if count == 1:
             await self.redis.expire(redis_key, self.window)
@@ -56,12 +55,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if path.startswith(("/v1/healthz", "/metrics")):
             return await call_next(request)
         api_key, ip, org = self._identifiers(request)
-        checks: Dict[str, Tuple[str, int]] = {
+        checks: dict[str, tuple[str, int]] = {
             "key": (f"rl:key:{api_key}", self.per_key),
             "ip": (f"rl:ip:{ip}", self.per_ip),
             "org": (f"rl:org:{org}", self.per_org),
         }
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         for name, (redis_key, limit) in checks.items():
             if limit <= 0:
                 continue

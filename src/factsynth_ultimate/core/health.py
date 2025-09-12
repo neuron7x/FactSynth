@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import socket
-from typing import Iterable
+from collections.abc import Iterable
 
 MAX_PORT = 65535
 
@@ -34,6 +34,7 @@ def tcp_check(host: str, port: int, timeout: float = 1.5) -> bool:
             return True
     except OSError:
         return False
+
 
 def multi_tcp_check(items: Iterable[str]) -> dict[str, bool]:
     results: dict[str, bool] = {}

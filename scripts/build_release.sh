@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 IFS=$'\n\t'
+code=0
 trap 'code=$?; echo "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit ${code})" >&2' ERR
 
-rm -rf dist build *.egg-info release
+rm -rf dist build ./*.egg-info release
 python -m pip install --upgrade pip build
 python -m build
 mkdir -p release

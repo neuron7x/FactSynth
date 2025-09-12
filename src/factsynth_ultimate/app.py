@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Awaitable, Callable
 from contextlib import suppress
-from typing import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
 from redis.asyncio import from_url as redis_from_url
@@ -67,9 +67,7 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
     # middleware stack (order matters: last added runs first)
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.https_redirect)
     if settings.ip_allowlist:
-        app.add_middleware(
-            IPAllowlistMiddleware, cidrs=settings.ip_allowlist
-        )
+        app.add_middleware(IPAllowlistMiddleware, cidrs=settings.ip_allowlist)
     app.add_middleware(BodySizeLimitMiddleware)
     redis_client = redis_from_url(settings.rate_limit_redis_url, decode_responses=True)
 

@@ -34,7 +34,10 @@ def test_rate_limit_exceeded_returns_429():
     app, _ = _build_app(per_key=1)
     with TestClient(app) as client:
         headers = {"x-api-key": "secret"}
-        assert client.post("/v1/score", headers=headers, json={"text": "x"}).status_code == HTTPStatus.OK
+        assert (
+            client.post("/v1/score", headers=headers, json={"text": "x"}).status_code
+            == HTTPStatus.OK
+        )
         r = client.post("/v1/score", headers=headers, json={"text": "x"})
         assert r.status_code == HTTPStatus.TOO_MANY_REQUESTS
         body = r.json()
@@ -52,10 +55,19 @@ def test_rate_limit_resets_after_window():
     app, _ = _build_app(per_key=1, window=1)
     with TestClient(app) as client:
         headers = {"x-api-key": "secret"}
-        assert client.post("/v1/score", headers=headers, json={"text": "x"}).status_code == HTTPStatus.OK
-        assert client.post("/v1/score", headers=headers, json={"text": "x"}).status_code == HTTPStatus.TOO_MANY_REQUESTS
+        assert (
+            client.post("/v1/score", headers=headers, json={"text": "x"}).status_code
+            == HTTPStatus.OK
+        )
+        assert (
+            client.post("/v1/score", headers=headers, json={"text": "x"}).status_code
+            == HTTPStatus.TOO_MANY_REQUESTS
+        )
         time.sleep(1.1)
-        assert client.post("/v1/score", headers=headers, json={"text": "x"}).status_code == HTTPStatus.OK
+        assert (
+            client.post("/v1/score", headers=headers, json={"text": "x"}).status_code
+            == HTTPStatus.OK
+        )
 
 
 def test_rate_limit_concurrency_safety():
@@ -74,10 +86,7 @@ def test_rate_limit_concurrency_safety():
 def test_first_authorized_request_not_rate_limited():
     app, _ = _build_app(per_key=100, per_ip=1)
     with TestClient(app) as client:
-        assert (
-            client.post("/v1/score", json={"text": "x"}).status_code
-            == HTTPStatus.UNAUTHORIZED
-        )
+        assert client.post("/v1/score", json={"text": "x"}).status_code == HTTPStatus.UNAUTHORIZED
         headers = {"x-api-key": "secret"}
         assert (
             client.post("/v1/score", headers=headers, json={"text": "x"}).status_code

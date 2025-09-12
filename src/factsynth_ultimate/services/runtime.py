@@ -4,14 +4,16 @@ import math
 import re
 import time
 from collections import Counter
-from typing import Any, Dict, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from ..core.metrics import SCORING_TIME
 from ..schemas.requests import ScoreReq
 
 _WORD_RE = re.compile(r"\w+", re.UNICODE)
 
-def _text_stats(text: str) -> Dict[str, float]:
+
+def _text_stats(text: str) -> dict[str, float]:
     """Compute character-based metrics for *text*.
 
     Returns a dictionary with:
@@ -49,9 +51,11 @@ def _text_stats(text: str) -> Dict[str, float]:
         "entropy": entropy,
     }
 
+
 def reflect_intent(intent: str, length: int) -> str:
-    intent = re.sub(r"\s+"," ", intent).strip()
-    return intent[:max(0,length)]
+    intent = re.sub(r"\s+", " ", intent).strip()
+    return intent[: max(0, length)]
+
 
 def _coverage(text: str, targets: Iterable[str]) -> float:
     if not targets:
@@ -63,21 +67,24 @@ def _coverage(text: str, targets: Iterable[str]) -> float:
     found = sum(1 for t in toks if t in words)
     return found / len(toks)
 
+
 def _score_impl(req: ScoreReq) -> float:
     s = _text_stats(req.text)
     cov = _coverage(req.text, req.targets or [])
-    length_sat = min(1.0, s["len"]/500.0)
+    length_sat = min(1.0, s["len"] / 500.0)
     alpha = s["alpha_ratio"]
-    ent = min(1.0, s["entropy"]/8.0)
-    score = 0.4*cov + 0.3*length_sat + 0.2*alpha + 0.1*ent
-    return round(float(score),4)
+    ent = min(1.0, s["entropy"] / 8.0)
+    score = 0.4 * cov + 0.3 * length_sat + 0.2 * alpha + 0.1 * ent
+    return round(float(score), 4)
 
-def score_payload(payload: Dict[str, Any]) -> float:
+
+def score_payload(payload: dict[str, Any]) -> float:
     req = ScoreReq(**(payload or {}))
     t0 = time.perf_counter()
     val = _score_impl(req)
     SCORING_TIME.observe(max(0.0, time.perf_counter() - t0))
     return val
+
 
 def tokenize_preview(text: str, max_tokens: int = 256) -> list[str]:
     toks = _WORD_RE.findall(text)

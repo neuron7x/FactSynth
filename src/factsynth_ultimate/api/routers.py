@@ -38,9 +38,7 @@ ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 def validate_callback_url(url: str) -> bool:
     """Validate that the callback URL uses an allowed scheme and host."""
-    allowed_hosts = set(
-        filter(None, os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "").split(","))
-    )
+    allowed_hosts = set(filter(None, os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "").split(",")))
     try:
         parsed = urlparse(url)
     except Exception:  # noqa: BLE001
@@ -62,39 +60,39 @@ api = APIRouter()
 def version() -> dict[str, str]:
     return {"name": "factsynth-ultimate-pro", "version": VERSION}
 
-@api.post('/v1/intent_reflector')
+
+@api.post("/v1/intent_reflector")
 def intent_reflector(req: IntentReq, request: Request):
     audit_event("intent_reflector", request.client.host if request.client else "unknown")
-    return {'insight': reflect_intent(req.intent, req.length)}
+    return {"insight": reflect_intent(req.intent, req.length)}
 
-@api.post('/v1/score')
+
+@api.post("/v1/score")
 def score(req: ScoreReq, request: Request, background_tasks: BackgroundTasks):
     audit_event("score", request.client.host if request.client else "unknown")
-    result = {'score': score_payload(req.model_dump())}
+    result = {"score": score_payload(req.model_dump())}
     if req.callback_url:
         if not validate_callback_url(req.callback_url):
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
-            )
+            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL")
         background_tasks.add_task(_post_callback, req.callback_url, result)
     return result
 
-@api.post('/v1/score/batch')
+
+@api.post("/v1/score/batch")
 def score_batch(batch: ScoreBatchReq, request: Request, background_tasks: BackgroundTasks):
     audit_event("score_batch", request.client.host if request.client else "unknown")
-    items = batch.items[:batch.limit]
-    results = [{'score': score_payload(it.model_dump())} for it in items]
-    out = {'results': results, 'count': len(results)}
+    items = batch.items[: batch.limit]
+    results = [{"score": score_payload(it.model_dump())} for it in items]
+    out = {"results": results, "count": len(results)}
     if batch.callback_url:
         if not validate_callback_url(batch.callback_url):
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
-            )
+            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL")
         background_tasks.add_task(_post_callback, batch.callback_url, out)
     return out
 
-@api.post('/v1/stream')
-async def stream(req: ScoreReq, request: Request) -> StreamingResponse:
+
+@api.post("/v1/stream")
+async def stream(req: ScoreReq, request: Request) -> StreamingResponse:  # noqa: C901
     tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
     resources: list[object] = []
     for obj in (
@@ -108,14 +106,14 @@ async def stream(req: ScoreReq, request: Request) -> StreamingResponse:
     async def event_stream() -> AsyncGenerator[str, None]:
         sent = 0
         try:
-            yield 'event: start\n' + 'data: {}\n\n'
+            yield "event: start\n" + "data: {}\n\n"
             for t in tokens:
                 await asyncio.sleep(0.002)
                 if await request.is_disconnected():
                     break
                 sent += 1
-                yield 'event: token\n' + 'data: ' + json.dumps({'t': t, 'n': sent}) + '\n\n'
-            yield 'event: end\n' + 'data: {}\n\n'
+                yield "event: token\n" + "data: " + json.dumps({"t": t, "n": sent}) + "\n\n"
+            yield "event: end\n" + "data: {}\n\n"
         except asyncio.CancelledError:
             logger.info("SSE stream cancelled after %d tokens", sent)
             raise
@@ -133,7 +131,8 @@ async def stream(req: ScoreReq, request: Request) -> StreamingResponse:
                 except Exception:  # noqa: BLE001
                     logger.debug("Error closing resource", exc_info=True)
 
-    return StreamingResponse(event_stream(), media_type='text/event-stream')
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
 
 @api.websocket("/ws/stream")
 async def ws_stream(ws: WebSocket):
@@ -159,6 +158,7 @@ async def ws_stream(ws: WebSocket):
             await ws.send_json({"end": True})
     except WebSocketDisconnect:
         return
+
 
 async def _post_callback(  # noqa: PLR0913
     url: str,
@@ -196,6 +196,7 @@ async def _post_callback(  # noqa: PLR0913
                 delay = min(delay * 2, max_delay)
     if last_err is not None:
         logger.error("Callback failed after %d attempts: %s", attempt_num, last_err)
+
 
 async def _sleep(s: float):
     # виділено для тестів/патчу

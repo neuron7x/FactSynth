@@ -1,5 +1,4 @@
-
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -10,6 +9,7 @@ def rmse(y: Sequence[float], yhat: Sequence[float]) -> float:
     if y_arr.shape != yhat_arr.shape:
         raise ValueError("y and yhat must have the same shape")
     return float(np.sqrt(np.mean((y_arr - yhat_arr) ** 2)))
+
 
 def fcr(num_confirmed: int, total: int) -> float:
     total = max(int(total), 1)

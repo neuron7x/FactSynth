@@ -10,10 +10,16 @@ from ..i18n import choose_language, translate
 
 
 class IPAllowlistMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, cidrs: list[str] | None = None, skip: tuple[str, ...] = ("/v1/healthz","/metrics")):
+    def __init__(
+        self,
+        app,
+        cidrs: list[str] | None = None,
+        skip: tuple[str, ...] = ("/v1/healthz", "/metrics"),
+    ):
         super().__init__(app)
         self.networks = [ipaddress.ip_network(c.strip(), strict=False) for c in (cidrs or [])]
         self.skip = skip
+
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
         if any(path.startswith(s) for s in self.skip) or not self.networks:

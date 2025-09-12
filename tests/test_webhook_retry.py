@@ -19,7 +19,9 @@ def test_webhook_retry_failure(caplog, monkeypatch):
     caplog.set_level(logging.WARNING)
     attempts = 3
 
-    asyncio.run(routers._post_callback("http://cb", {}, attempts=attempts, base_delay=0.0, max_delay=0.0))
+    asyncio.run(
+        routers._post_callback("http://cb", {}, attempts=attempts, base_delay=0.0, max_delay=0.0)
+    )
 
     assert client.post.call_count == attempts
     warnings = [r for r in caplog.records if r.levelno == logging.WARNING]

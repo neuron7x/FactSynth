@@ -8,8 +8,6 @@ so the schema can evolve without breaking consumers.
 
 from __future__ import annotations
 
-from typing import Dict, List
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -17,9 +15,7 @@ class Verdict(BaseModel):
     """Outcome of the claim evaluation."""
 
     decision: str = Field(..., description="Assessment of the claim")
-    confidence: float | None = Field(
-        None, description="Confidence score for the assessment"
-    )
+    confidence: float | None = Field(None, description="Confidence score for the assessment")
 
     model_config = ConfigDict(extra="allow")
 
@@ -37,7 +33,7 @@ class SourceSynthesis(BaseModel):
     """Synthesis derived from multiple citations."""
 
     summary: str = Field(..., description="Summary of the gathered sources")
-    citations: List[Citation] = Field(default_factory=list)
+    citations: list[Citation] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="allow")
 
@@ -45,8 +41,8 @@ class SourceSynthesis(BaseModel):
 class Traceability(BaseModel):
     """Information enabling reproduction of the verdict."""
 
-    steps: List[str] = Field(default_factory=list)
-    sources: List[str] = Field(default_factory=list)
+    steps: list[str] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="allow")
 
@@ -54,7 +50,7 @@ class Traceability(BaseModel):
 class Recommendations(BaseModel):
     """Follow-up actions suggested by the evaluation."""
 
-    actions: List[str] = Field(default_factory=list)
+    actions: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="allow")
 
@@ -62,7 +58,7 @@ class Recommendations(BaseModel):
 class QualityReport(BaseModel):
     """Optional quality metrics for the evaluation."""
 
-    metrics: Dict[str, float] = Field(default_factory=dict)
+    metrics: dict[str, float] = Field(default_factory=dict)
 
     model_config = ConfigDict(extra="allow")
 
@@ -70,7 +66,7 @@ class QualityReport(BaseModel):
 class Provenance(BaseModel):
     """Optional provenance information for sources."""
 
-    sources: List[str] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="allow")
 
@@ -78,7 +74,7 @@ class Provenance(BaseModel):
 class PolicySnapshot(BaseModel):
     """Optional snapshot of policies in effect during evaluation."""
 
-    policies: Dict[str, str] = Field(default_factory=dict)
+    policies: dict[str, str] = Field(default_factory=dict)
 
     model_config = ConfigDict(extra="allow")
 
@@ -108,4 +104,3 @@ __all__ = [
     "Traceability",
     "Verdict",
 ]
-

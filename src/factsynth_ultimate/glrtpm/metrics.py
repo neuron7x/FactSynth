@@ -1,6 +1,3 @@
-from typing import Dict, List
-
-
 def _len(s: str) -> int:
     """Return length of ``s`` treating ``None`` as empty."""
     return len(s or "")
@@ -24,7 +21,7 @@ def compute_coherence(*parts: str) -> float:
     return round(uniq_tokens / total_len * 10.0, 4)
 
 
-def cluster_density(nodes: List[str]) -> float:
+def cluster_density(nodes: list[str]) -> float:
     """Measure density of unique tokens within ``nodes``.
 
     Args:
@@ -39,7 +36,7 @@ def cluster_density(nodes: List[str]) -> float:
     return round(uniq / total, 4)
 
 
-def role_contribution(chunks: Dict[str, str]) -> Dict[str, float]:
+def role_contribution(chunks: dict[str, str]) -> dict[str, float]:
     """Compute relative contribution of text length for each role.
 
     Args:

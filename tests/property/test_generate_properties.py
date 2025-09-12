@@ -16,7 +16,11 @@ def _pick_text(payload):
         for k in ("text",):
             if k in payload and isinstance(payload[k], str):
                 return payload[k]
-        if "output" in payload and isinstance(payload["output"], dict) and "text" in payload["output"]:
+        if (
+            "output" in payload
+            and isinstance(payload["output"], dict)
+            and "text" in payload["output"]
+        ):
             return payload["output"]["text"]
         if "data" in payload and isinstance(payload["data"], dict) and "text" in payload["data"]:
             return payload["data"]["text"]
@@ -33,7 +37,9 @@ def _entropy_bits_per_char(s: str) -> float:
 
 
 @pytest.mark.anyio
-@settings(max_examples=30, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(
+    max_examples=30, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture]
+)
 @given(text=st.text(alphabet=st.characters(blacklist_categories=("Cs",)), min_size=5, max_size=120))
 async def test_generate_entropy_and_length_stability(client, base_headers, text):
     r1 = await client.post("/v1/generate", headers=base_headers, json={"text": text, "seed": 42})
@@ -55,7 +61,9 @@ async def test_generate_entropy_and_length_stability(client, base_headers, text)
 
 
 @pytest.mark.anyio
-@settings(max_examples=20, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(
+    max_examples=20, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture]
+)
 @given(text=st.text(min_size=10, max_size=200))
 async def test_generate_nonempty_output(client, base_headers, text):
     r = await client.post("/v1/generate", headers=base_headers, json={"text": text})

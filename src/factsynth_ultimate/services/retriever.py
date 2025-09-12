@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import ClassVar, Iterable, List
+from typing import ClassVar
 
 from ..tokenization import tokenize
 
@@ -49,12 +50,12 @@ class LocalFixtureRetriever:
             q = re.sub(rf"\b{ua}\b", en, q)
         return q
 
-    def search(self, query: str, k: int = 5) -> List[RetrievedDoc]:
+    def search(self, query: str, k: int = 5) -> list[RetrievedDoc]:
         """Return top ``k`` fixtures ranked by similarity to ``query``."""
 
         translated = self._translate_query(query)
         q_tokens = {t.lower() for t in tokenize(translated)}
-        results: List[RetrievedDoc] = []
+        results: list[RetrievedDoc] = []
         for fix in self.fixtures:
             f_tokens = {t.lower() for t in tokenize(fix.text)}
             if q_tokens or f_tokens:

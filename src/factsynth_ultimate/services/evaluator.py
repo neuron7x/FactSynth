@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from contextlib import ExitStack
-from typing import Any, Callable, Dict, Iterable, Optional
+from typing import Any
 
-ResultDict = Dict[str, Any]
+ResultDict = dict[str, Any]
 
 
 def evaluate_claim(  # noqa: PLR0913
@@ -13,7 +14,7 @@ def evaluate_claim(  # noqa: PLR0913
     scoring: Callable[[str], Any] | None = None,
     diversity: Callable[[str], Any] | None = None,
     nli: Callable[[str], Any] | None = None,
-    retriever: Optional[Any] = None,
+    retriever: Any | None = None,
 ) -> ResultDict:
     """Evaluate *claim* and compose results from several subsystems.
 

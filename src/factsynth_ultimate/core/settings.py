@@ -23,7 +23,9 @@ class Settings(BaseSettings):
     rate_limit_per_org: int = Field(default=120, env="RATE_LIMIT_PER_ORG")
     health_tcp_checks: list[str] = Field(default_factory=list, env="HEALTH_TCP_CHECKS")
 
-    @field_validator("cors_allow_origins", "skip_auth_paths", "health_tcp_checks", "ip_allowlist", mode="before")
+    @field_validator(
+        "cors_allow_origins", "skip_auth_paths", "health_tcp_checks", "ip_allowlist", mode="before"
+    )
     @classmethod
     def _split_csv(cls, value: str | list[str]) -> list[str]:
         if isinstance(value, str):
@@ -35,4 +37,3 @@ class Settings(BaseSettings):
 
 def load_settings() -> Settings:
     return Settings()
-

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Awaitable, Callable, Optional
+from collections.abc import Awaitable, Callable
 
 from ..tokenization import tokenize
 
@@ -10,7 +10,7 @@ Classifier = Callable[[str, str], Awaitable[float]]
 class NLI:
     """Natural language inference with optional async classifier."""
 
-    def __init__(self, classifier: Optional[Classifier] = None) -> None:
+    def __init__(self, classifier: Classifier | None = None) -> None:
         self.classifier = classifier
 
     async def classify(self, premise: str, hypothesis: str) -> float:

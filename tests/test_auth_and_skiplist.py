@@ -15,4 +15,3 @@ async def test_metrics_and_health_are_public(client):
     r2 = await client.get("/v1/healthz")
     assert r1.status_code == HTTPStatus.OK
     assert r2.status_code == HTTPStatus.OK
-

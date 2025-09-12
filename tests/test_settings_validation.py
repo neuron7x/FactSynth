@@ -40,4 +40,3 @@ def test_invalid_rate_limit_per_key(monkeypatch):
     monkeypatch.setenv("RATE_LIMIT_PER_KEY", "abc")
     with pytest.raises(ValidationError):
         load_settings()
-

@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel
 
 from factsynth_ultimate.api import verify as verify_mod

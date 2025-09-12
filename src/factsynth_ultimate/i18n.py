@@ -60,6 +60,4 @@ def choose_language(request: Request) -> str:
 
 def translate(lang: str, key: str) -> str:
     """Return localized message for given key."""
-    return MESSAGES.get(lang, MESSAGES[DEFAULT_LANG]).get(
-        key, MESSAGES[DEFAULT_LANG].get(key, key)
-    )
+    return MESSAGES.get(lang, MESSAGES[DEFAULT_LANG]).get(key, MESSAGES[DEFAULT_LANG].get(key, key))

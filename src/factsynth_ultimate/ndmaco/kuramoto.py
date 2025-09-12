@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import List, Tuple
 
 import numpy as np
 
@@ -12,7 +11,7 @@ class NDMACO:
     sigma: float = 0.0
     omega: np.ndarray = None
     alpha: np.ndarray = None
-    adjacency: List[np.ndarray] = field(default_factory=list)
+    adjacency: list[np.ndarray] = field(default_factory=list)
     theta0: np.ndarray = None
 
     def __post_init__(self):
@@ -30,15 +29,15 @@ class NDMACO:
         for i in range(self.N):
             s = 0.0
             for m in range(self.M):
-                s += np.sum(self.adjacency[m][i,:] * np.sin(theta - theta[i] - self.alpha[m]))
-            drift[i] = self.omega[i] + (self.K/self.N)*s
+                s += np.sum(self.adjacency[m][i, :] * np.sin(theta - theta[i] - self.alpha[m]))
+            drift[i] = self.omega[i] + (self.K / self.N) * s
         return drift
 
-    def simulate(self, t_max=5.0, dt=0.01) -> Tuple[np.ndarray, np.ndarray]:
+    def simulate(self, t_max=5.0, dt=0.01) -> tuple[np.ndarray, np.ndarray]:
         steps = int(t_max / dt)
         t = np.linspace(0, t_max, steps)
         theta = np.zeros((steps, self.N))
         theta[0] = self.theta0
         for s in range(1, steps):
-            theta[s] = theta[s-1] + self._drift(theta[s-1]) * dt
-        return t, (theta%(2*np.pi))
+            theta[s] = theta[s - 1] + self._drift(theta[s - 1]) * dt
+        return t, (theta % (2 * np.pi))

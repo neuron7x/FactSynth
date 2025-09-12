@@ -20,7 +20,9 @@ def test_post_callback_logs_and_retries(caplog, monkeypatch):
     caplog.set_level(logging.WARNING)
     attempts = 2
 
-    asyncio.run(routers._post_callback("http://cb", {}, attempts=attempts, base_delay=0.1, max_delay=0.2))
+    asyncio.run(
+        routers._post_callback("http://cb", {}, attempts=attempts, base_delay=0.1, max_delay=0.2)
+    )
 
     assert client.post.call_count == attempts
 
@@ -30,4 +32,3 @@ def test_post_callback_logs_and_retries(caplog, monkeypatch):
     assert len(warnings) == attempts and len(errors) == 1
     assert "fail1" in warnings[0].message and "fail2" in warnings[1].message
     assert "fail2" in errors[0].message
-

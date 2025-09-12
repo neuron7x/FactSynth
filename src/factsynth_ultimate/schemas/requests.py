@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
@@ -14,16 +14,19 @@ class IntentReq(BaseModel):
     intent: StrippedNonEmpty
     length: LimitedInt = 100
 
+
 class ScoreReq(BaseModel):
     text: NonNegativeStr = ""
-    targets: Optional[List[StrippedNonEmpty]] = None
-    callback_url: Optional[str] = None
+    targets: list[StrippedNonEmpty] | None = None
+    callback_url: str | None = None
+
 
 class ScoreBatchReq(BaseModel):
-    items: List[ScoreReq] = Field(default_factory=list)
-    callback_url: Optional[str] = None
+    items: list[ScoreReq] = Field(default_factory=list)
+    callback_url: str | None = None
     limit: LargeInt = 1000  # soft guard
+
 
 class GLRTPMReq(BaseModel):
     text: NonNegativeStr = ""
-    callback_url: Optional[str] = None
+    callback_url: str | None = None

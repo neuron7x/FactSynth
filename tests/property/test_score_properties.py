@@ -12,17 +12,19 @@ except ModuleNotFoundError:  # pragma: no cover - optional
 def _pick_score(payload):
     if isinstance(payload, dict):
         for k in ("coverage", "score"):
-            if k in payload and isinstance(payload[k], (int, float)):
+            if k in payload and isinstance(payload[k], int | float):
                 return float(payload[k])
         if "data" in payload and isinstance(payload["data"], dict):
             for k in ("coverage", "score"):
-                if k in payload["data"] and isinstance(payload["data"][k], (int, float)):
+                if k in payload["data"] and isinstance(payload["data"][k], int | float):
                     return float(payload["data"][k])
     return None
 
 
 @pytest.mark.anyio
-@settings(max_examples=40, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(
+    max_examples=40, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture]
+)
 @given(
     query=st.text(min_size=5, max_size=80),
     base=st.lists(st.text(min_size=1, max_size=30), min_size=1, max_size=4, unique=True),

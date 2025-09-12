@@ -20,4 +20,3 @@ def test_sanitize_idempotent(s: str) -> None:
 def test_ensure_period_postcondition(s: str) -> None:
     t = formatting.ensure_period(s)
     assert t.endswith(("!", "?", "."))
-

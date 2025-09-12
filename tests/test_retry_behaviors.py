@@ -21,11 +21,7 @@ def test_delay_jitter(monkeypatch):
     factor = 1.1
     monkeypatch.setattr(routers.random, "uniform", lambda _a, _b: factor)
 
-    asyncio.run(
-        routers._post_callback(
-            "http://cb", {}, attempts=2, base_delay=1.0, max_delay=2.0
-        )
-    )
+    asyncio.run(routers._post_callback("http://cb", {}, attempts=2, base_delay=1.0, max_delay=2.0))
 
     sleep_mock.assert_called_once()
     assert sleep_mock.call_args.args[0] == factor

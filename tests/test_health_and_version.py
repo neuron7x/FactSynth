@@ -16,4 +16,3 @@ async def test_version(client, base_headers):
     assert r.status_code == HTTPStatus.OK
     data = r.json()
     assert "version" in data and isinstance(data["version"], str)
-
