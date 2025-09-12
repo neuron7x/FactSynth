@@ -40,32 +40,34 @@ API_KEY = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
 ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 
-def validate_callback_url(url: str) -> bool:
+def validate_callback_url(url: str) -> None:
     """Validate that a callback URL uses an allowed scheme and host.
 
     Args:
         url: URL provided by the client.
 
-    Returns:
-        True if the scheme is HTTP(S) and, when the
-        ``CALLBACK_URL_ALLOWED_HOSTS`` environment variable is set, the host is
-        present in that allowlist.
+    Raises:
+        HTTPException: If the URL does not use an allowed scheme or host.
     """
     allowed_hosts = set(
         filter(None, os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "").split(","))
     )
     try:
         parsed = urlparse(url)
-    except Exception:  # noqa: BLE001
-        return False
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
+        ) from exc
 
     if parsed.scheme not in ALLOWED_CALLBACK_SCHEMES:
-        return False
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
+        )
 
-    if allowed_hosts:
-        return parsed.hostname in allowed_hosts
-
-    return True
+    if allowed_hosts and parsed.hostname not in allowed_hosts:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
+        )
 
 
 api = APIRouter()
@@ -95,10 +97,7 @@ def score(
     audit_event("score", request.client.host if request.client else "unknown")
     result: dict[str, float] = {"score": score_payload(req.model_dump())}
     if req.callback_url:
-        if not validate_callback_url(req.callback_url):
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
-            )
+        validate_callback_url(req.callback_url)
         background_tasks.add_task(_post_callback, req.callback_url, result)
     return result
 
@@ -115,10 +114,7 @@ def score_batch(
     results = [{"score": score_payload(it.model_dump())} for it in items]
     out: dict[str, Any] = {"results": results, "count": len(results)}
     if batch.callback_url:
-        if not validate_callback_url(batch.callback_url):
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
-            )
+        validate_callback_url(batch.callback_url)
         background_tasks.add_task(_post_callback, batch.callback_url, out)
     return out
 
