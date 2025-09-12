@@ -76,18 +76,27 @@ uvicorn factsynth_ultimate.app:app --reload
 
 ## Installation
 
-Set up a local development environment:
+Follow these steps to set up a local development environment:
 
-```bash
-git clone https://github.com/neuron7x/FactSynth.git
-cd FactSynth
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -r requirements.lock -r requirements-dev.txt
-# Or install in editable mode with extras:
-# pip install -e .[dev]
-```
+1. **Clone the repository and enter it**
+   ```bash
+   git clone https://github.com/neuron7x/FactSynth.git
+   cd FactSynth
+   ```
+2. **Create and activate a virtual environment**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+3. **Install dependencies**
+   ```bash
+   pip install -U pip
+   pip install -r requirements.lock -r requirements-dev.txt
+   ```
+4. **Optional: install in editable mode with extras**
+   ```bash
+   pip install -e .[dev]
+   ```
 
 `requests` powers the contract tests while `PyYAML` supports schema
 validation; these and other development dependencies are provided via
@@ -95,42 +104,46 @@ validation; these and other development dependencies are provided via
 
 ## Usage
 
-Run the service locally:
+Run the service locally in a few steps:
 
-```bash
-source .venv/bin/activate
-export API_KEY=change-me   # optional
-uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000 --reload
-```
+1. **Activate the virtual environment**
+   ```bash
+   source .venv/bin/activate
+   ```
+2. **Optionally set an API key**
+   ```bash
+   export API_KEY=change-me
+   ```
+3. **Start the FastAPI application**
+   ```bash
+   uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000 --reload
+   ```
+4. **Alternative: run with Docker**
+   ```bash
+   docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
+   ```
 
 Helper utilities such as the NLI classifier, simple claim evaluator, and
 in-memory fixture retriever now live under the `factsynth_ultimate.services`
 package. The legacy `app` module has been removed.
 
-You can also use Docker:
-
-```bash
-docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
-```
-
 ## Examples
 
-Request a generated summary with `curl`:
+Try the API step by step:
 
-```bash
-curl -s -X POST http://localhost:8000/v1/generate \
-  -H "x-api-key: ${API_KEY:-test-key}" \
-  -H "content-type: application/json" \
-  -d '{"prompt": "Extract facts about water."}'
-```
-
-Typical JSON response:
-
-```json
-{
-  "facts": ["Water freezes at 0°C", "Water boils at 100°C"]
-}
-```
+1. **Send a request with `curl`**
+   ```bash
+   curl -s -X POST http://localhost:8000/v1/generate \
+     -H "x-api-key: ${API_KEY:-test-key}" \
+     -H "content-type: application/json" \
+     -d '{"prompt": "Extract facts about water."}'
+   ```
+2. **Review the JSON response**
+   ```json
+   {
+     "facts": ["Water freezes at 0°C", "Water boils at 100°C"]
+   }
+   ```
 
 ## Configuration
 

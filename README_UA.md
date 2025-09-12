@@ -62,57 +62,72 @@ uvicorn factsynth_ultimate.app:app --reload
 
 ## Встановлення
 
-Налаштуйте локальне середовище розробки:
+Дотримуйтесь послідовних кроків, щоб налаштувати локальне середовище:
 
-```bash
-git clone https://github.com/neuron7x/FactSynth.git
-cd FactSynth
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -r requirements.lock -r requirements-dev.txt
-# або встановіть у режимі редагування:
-# pip install -e .[dev]
-```
+1. **Клонуйте репозиторій та перейдіть у нього**
+   ```bash
+   git clone https://github.com/neuron7x/FactSynth.git
+   cd FactSynth
+   ```
+2. **Створіть і активуйте віртуальне середовище**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+3. **Встановіть залежності**
+   ```bash
+   pip install -U pip
+   pip install -r requirements.lock -r requirements-dev.txt
+   ```
+4. **Опційно: встановіть у режимі редагування з extra**
+   ```bash
+   pip install -e .[dev]
+   ```
 
-`requests` забезпечує контрактні тести, а `PyYAML` — валідацію схем; інші залежності доступні у `requirements-dev.txt` або через extra `dev`.
+`requests` забезпечує контрактні тести, а `PyYAML` — валідацію схем; інші
+залежності доступні у `requirements-dev.txt` або через extra `dev`.
 
 ## Використання
 
-Запустіть сервіс локально:
+Щоб запустити сервіс локально, виконайте:
 
-```bash
-source .venv/bin/activate
-export API_KEY=change-me   # опційно
-uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000 --reload
-```
+1. **Активуйте віртуальне середовище**
+   ```bash
+   source .venv/bin/activate
+   ```
+2. **За потреби задайте API-ключ**
+   ```bash
+   export API_KEY=change-me
+   ```
+3. **Стартуйте застосунок FastAPI**
+   ```bash
+   uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000 --reload
+   ```
+4. **Альтернатива: запуск через Docker**
+   ```bash
+   docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
+   ```
 
-Допоміжні утиліти, такі як NLI-класифікатор та оцінювач тверджень, розміщені у пакеті `factsynth_ultimate.services`. Модуль `app` видалено.
-
-Також можна використати Docker:
-
-```bash
-docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
-```
+Допоміжні утиліти, такі як NLI-класифікатор та оцінювач тверджень,
+розміщені у пакеті `factsynth_ultimate.services`. Модуль `app` видалено.
 
 ## Приклади
 
-Запит на генерацію через `curl`:
+Спробуйте API, виконавши кроки:
 
-```bash
-curl -s -X POST http://localhost:8000/v1/generate \
-  -H "x-api-key: ${API_KEY:-test-key}" \
-  -H "content-type: application/json" \
-  -d '{"prompt": "Видобути факти про воду."}'
-```
-
-Типова відповідь JSON:
-
-```json
-{
-  "facts": ["Вода замерзає при 0°C", "Вода кипить при 100°C"]
-}
-```
+1. **Надішліть запит через `curl`**
+   ```bash
+   curl -s -X POST http://localhost:8000/v1/generate \
+     -H "x-api-key: ${API_KEY:-test-key}" \
+     -H "content-type: application/json" \
+     -d '{"prompt": "Видобути факти про воду."}'
+   ```
+2. **Перегляньте типову JSON-відповідь**
+   ```json
+   {
+     "facts": ["Вода замерзає при 0°C", "Вода кипить при 100°C"]
+   }
+   ```
 
 ## Конфігурація
 
