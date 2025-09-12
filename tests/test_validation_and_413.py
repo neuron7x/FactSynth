@@ -21,5 +21,9 @@ def test_413_large_payload() -> None:
     r = c.post("/v1/score", headers={"x-api-key": "change-me"}, json={"text": big})
     assert r.status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE
     body = r.json()
-    for field in ("type", "title", "status", "detail", "trace_id"):
-        assert field in body
+    trace_id = body.pop("trace_id")
+    assert trace_id
+    assert body["type"] == "about:blank"
+    assert body["title"] == "Payload Too Large"
+    assert body["status"] == HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+    assert "exceeds limit of 2000000 bytes" in body["detail"]

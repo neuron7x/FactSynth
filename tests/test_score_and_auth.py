@@ -15,8 +15,14 @@ def test_auth_required() -> None:
         r = client.post(url, json={"text": "x"})
         assert r.status_code == HTTPStatus.UNAUTHORIZED
         body = r.json()
-        for field in ("type", "title", "status", "detail", "trace_id"):
-            assert field in body
+        trace_id = body.pop("trace_id")
+        assert trace_id
+        assert body == {
+            "type": "about:blank",
+            "title": "Unauthorized",
+            "status": HTTPStatus.UNAUTHORIZED,
+            "detail": "Invalid or missing API key",
+        }
         assert (
             client.post(url, headers={"x-api-key": "secret"}, json={"text": "x"}).status_code
             == HTTPStatus.OK
