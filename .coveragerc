@@ -1,0 +1,8 @@
+[run]
+source = src
+omit =
+    src/factsynth_ultimate/schemas/*
+
+[report]
+exclude_lines =
+    pragma: no cover
