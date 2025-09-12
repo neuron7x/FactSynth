@@ -73,6 +73,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         if path.startswith(("/v1/healthz", "/metrics")):
             return await call_next(request)
+        if self.key_header not in request.headers:
+            return await call_next(request)
         api_key, ip, org = self._identifiers(request)
         checks: Dict[str, Tuple[str, int]] = {
             "key": (f"rl:key:{api_key}", self.per_key),
