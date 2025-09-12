@@ -1,7 +1,11 @@
 .PHONY: install test lint api docker
 
 install:
-	python -m venv .venv && . .venv/bin/activate && pip install -U pip && pip install -e .[dev,ops]
+        python -m venv .venv && \
+        . .venv/bin/activate && \
+        pip install -U pip && \
+        pip install --require-hashes -r requirements.lock && \
+        pip install -e .[dev,ops] --no-deps
 
 test:
 	. .venv/bin/activate && pytest
