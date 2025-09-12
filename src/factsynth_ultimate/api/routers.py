@@ -29,7 +29,7 @@ from ..core.secrets import read_api_key
 from ..schemas.requests import IntentReq, ScoreBatchReq, ScoreReq
 from ..services.runtime import reflect_intent, score_payload, tokenize_preview
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 API_KEY = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
 
@@ -45,13 +45,18 @@ def validate_callback_url(url: str) -> bool:
         parsed = urlparse(url)
     except Exception:  # noqa: BLE001
         return False
+
     if parsed.scheme not in ALLOWED_CALLBACK_SCHEMES:
         return False
+
     if allowed_hosts:
         return parsed.hostname in allowed_hosts
+
     return True
 
-api=APIRouter()
+
+api = APIRouter()
+
 
 @api.get("/v1/version")
 def version() -> dict[str, str]:
