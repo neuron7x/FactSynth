@@ -1,10 +1,21 @@
 # FactSynth
+[Українська](README.uk.md) | [English](README.en.md)
+
 
 [![CI](https://github.com/neuron7x/FactSynth/actions/workflows/ci.yml/badge.svg)](https://github.com/neuron7x/FactSynth/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/neuron7x/FactSynth/actions/workflows/codeql.yml/badge.svg)](https://github.com/neuron7x/FactSynth/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/neuron7x/FactSynth?style=flat)](https://github.com/neuron7x/FactSynth/stargazers)
 
+<!-- docs-index:start -->
+**Documentation:**
+
+- [Addons](docs/addons.md)
+- [Badges](docs/badges.md)
+- [CI](docs/ci.md)
+- [Testing](docs/testing.md)
+- [Merge Notes](docs/maintainers/merge-notes.md)
+<!-- docs-index:end -->
 [![GitHub issues](https://img.shields.io/github/issues/neuron7x/FactSynth)](https://github.com/neuron7x/FactSynth/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/neuron7x/FactSynth)](https://github.com/neuron7x/FactSynth/pulls)
 <!-- markdownlint-disable-next-line MD013 -->
