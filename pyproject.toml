@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "factsynth-ultimate-pro"
-version = "1.0.4"
+version = "1.0.5"
 dependencies = [
     "fastapi>=0.116,<0.117",
     "uvicorn>=0.35,<0.36",
@@ -20,8 +20,6 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.4,<8.5",
-    "httpx>=0.28,<0.29",
-    "uvicorn>=0.35,<0.36",
     "schemathesis>=4.1,<4.2",  # API contract testing
     "websockets>=15.0,<15.1",  # WebSocket test client
     "pytest-cov>=7.0,<7.1",  # coverage plugin

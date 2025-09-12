@@ -1,5 +1,7 @@
 post:
   summary: Verify claim and lock
+  description: Verify claim against provided lock
+  operationId: postVerify
   requestBody:
     required: true
     content:
