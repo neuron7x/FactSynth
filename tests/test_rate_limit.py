@@ -29,6 +29,17 @@ def _build_app(per_key=1, per_ip=100, per_org=100, window=60):
     return app, fake
 
 
+def test_first_request_not_limited():
+    app, fake = _build_app(per_key=1)
+    asyncio.run(fake.flushall())
+    with TestClient(app) as client:
+        headers = {"x-api-key": "secret"}
+        assert (
+            client.post("/v1/score", headers=headers, json={"text": "x"}).status_code
+            == HTTPStatus.OK
+        )
+
+
 def test_first_request_with_valid_key_returns_200():
     app, fake = _build_app(per_key=1)
     asyncio.run(fake.flushall())
