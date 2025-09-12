@@ -1,21 +1,18 @@
 import pytest
 
-try:
-    import diffrax
-    import jax
+diffrax = pytest.importorskip("diffrax")
+jax = pytest.importorskip("jax")
 
-    from factsynth_ultimate.isr import (
-        ISRParams,
-        dominant_freq,
-        estimate_fs,
-        gamma_spectrum,
-        simulate_isr,
-    )
+from factsynth_ultimate.isr import (  # noqa: E402
+    ISRParams,
+    dominant_freq,
+    estimate_fs,
+    gamma_spectrum,
+    simulate_isr,
+)
 
-    jnp = jax.numpy
-    _ = diffrax
-except ModuleNotFoundError as e:
-    pytest.skip(f"Missing dependency: {e}", allow_module_level=True)
+jnp = jax.numpy
+_ = diffrax
 
 MIN_DOM_FREQ = 0.0
 MAX_DOM_FREQ = 55.0

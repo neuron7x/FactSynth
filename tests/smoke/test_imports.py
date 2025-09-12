@@ -1,7 +1,5 @@
 import importlib
 
-import pytest
-
 CANDIDATES = ("factsynth_ultimate", "factsynth")
 
 
@@ -13,4 +11,4 @@ def test_import_core():
         except ImportError:
             pass
     else:
-        pytest.fail(f"Cannot import any of {CANDIDATES}")
+        raise AssertionError(f"Cannot import any of {CANDIDATES}")
