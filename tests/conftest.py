@@ -64,9 +64,7 @@ async def api_stub():
                 json={
                     "openapi": "3.1.0",
                     "info": {"title": "stub", "version": "0.1.0"},
-                    "paths": {
-                        "/v1/score": {"post": {"responses": {"200": {"description": "OK"}}}}
-                    },
+                    "paths": {"/v1/score": {"post": {"responses": {"200": {"description": "OK"}}}}},
                 },
             )
         return Response(404)
@@ -77,32 +75,26 @@ async def api_stub():
 
 
 @pytest.fixture(autouse=True)
-def _stub_external_api(monkeypatch) -> None:
+def _stub_external_api(httpx_mock) -> None:
     """Stub external HTTP calls so tests remain offline."""
 
-    original_post = AsyncClient.post
-    original_get = AsyncClient.get
-
-    async def _fake_post(self, url, *args, **kwargs):
-        if getattr(self, "_transport", None) is not None:
-            return await original_post(self, url, *args, **kwargs)
-        url_str = str(url)
-        if url_str.endswith("/v1/generate"):
-            return Response(200, json={"output": {"text": "stub"}})
-        if url_str.endswith("/v1/score"):
+    def handler(request):
+        path = request.url.path
+        if path.endswith("/v1/generate"):
+            payload = json.loads(request.content.decode() or "{}")
+            text = payload.get("text", "")
+            seed = payload.get("seed", 0)
+            rng = random.Random(seed)
+            alphabet = string.ascii_letters + string.digits + " "
+            out = "".join(rng.choice(alphabet) for _ in text)
+            return Response(200, json={"output": {"text": out}})
+        if path.endswith("/v1/score"):
             return Response(200, json={"score": 0.0})
-        return Response(200, json={"stub": True})
-
-    async def _fake_get(self, url, *args, **kwargs):
-        if getattr(self, "_transport", None) is not None:
-            return await original_get(self, url, *args, **kwargs)
-        url_str = str(url)
-        if url_str.endswith("/openapi.json"):
+        if path.endswith("/openapi.json"):
             return Response(200, json={"openapi": "3.1.0", "paths": {}})
         return Response(200, json={"stub": True})
 
-    monkeypatch.setattr(AsyncClient, "post", _fake_post)
-    monkeypatch.setattr(AsyncClient, "get", _fake_get)
+    httpx_mock.add_callback(handler)
 
 
 @pytest.fixture(autouse=True)
