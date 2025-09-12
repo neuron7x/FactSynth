@@ -5,6 +5,8 @@ from contextlib import suppress
 from typing import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
+
+from . import VERSION
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .api.routers import api
@@ -50,7 +52,7 @@ def create_app(
     settings = load_settings()
     setup_logging()
 
-    app = FastAPI()
+    app = FastAPI(title="FactSynth Ultimate Pro API", version=VERSION)
     install_handlers(app)
     try_enable_otel(app)
 

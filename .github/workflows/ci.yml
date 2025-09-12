@@ -35,6 +35,9 @@ jobs:
           # sanity for tests/streams
           pip install "pytest>=8" hypothesis anyio "httpx>=0.27" asgi_lifespan fastapi uvicorn
 
+      - name: Check version consistency
+        run: python tools/check_version.py
+
       - name: Pytest (fast)
         run: |
           if [ "${{ matrix.python-version }}" = "3.11" ]; then

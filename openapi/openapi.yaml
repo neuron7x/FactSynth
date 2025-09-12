@@ -1,125 +1,224 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: FactSynth Ultimate Pro API
-  version: '1.0.3'
+  version: 1.0.5
 paths:
-  /v1/healthz:
-    get:
-      summary: Healthz
-      responses:
-        '200':
-          description: Successful Response
-  /metrics:
-    get:
-      summary: Metrics
-      responses:
-        '200':
-          description: Successful Response
   /v1/version:
     get:
       summary: Version
+      operationId: version_v1_version_get
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                type: object
                 additionalProperties:
                   type: string
+                type: object
+                title: Response Version V1 Version Get
   /v1/intent_reflector:
     post:
       summary: Intent Reflector
+      operationId: intent_reflector_v1_intent_reflector_post
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/IntentReq'
+        required: true
       responses:
         '200':
           description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/score:
     post:
       summary: Score
+      operationId: score_v1_score_post
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ScoreReq'
+        required: true
       responses:
         '200':
           description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/score/batch:
     post:
       summary: Score Batch
+      operationId: score_batch_v1_score_batch_post
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ScoreBatchReq'
+        required: true
       responses:
         '200':
           description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /v1/stream:
     post:
       summary: Stream
+      operationId: stream_v1_stream_post
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ScoreReq'
+        required: true
       responses:
         '200':
           description: Successful Response
-  /v1/verify:
-    $ref: paths/verify.yaml
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /v1/healthz:
+    get:
+      summary: Healthz
+      operationId: healthz_v1_healthz_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Healthz V1 Healthz Get
+  /metrics:
+    get:
+      summary: Metrics
+      operationId: metrics_metrics_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
 components:
   schemas:
-    IntentReq:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
       type: object
+      title: HTTPValidationError
+    IntentReq:
       properties:
         intent:
           type: string
+          minLength: 1
+          title: Intent
+          strip_whitespace: true
         length:
           type: integer
-          minimum: 1
-          maximum: 1000
+          maximum: 1000.0
+          minimum: 1.0
+          title: Length
           default: 100
-      required:
-        - intent
-    ScoreReq:
       type: object
+      required:
+      - intent
+      title: IntentReq
+    ScoreBatchReq:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ScoreReq'
+          type: array
+          title: Items
+        callback_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Callback Url
+        limit:
+          type: integer
+          maximum: 10000.0
+          minimum: 1.0
+          title: Limit
+          default: 1000
+      type: object
+      title: ScoreBatchReq
+    ScoreReq:
       properties:
         text:
           type: string
+          minLength: 0
+          title: Text
           default: ''
+          strip_whitespace: true
         targets:
-          type: array
-          items:
-            type: string
+          anyOf:
+          - items:
+              type: string
+              minLength: 1
+              strip_whitespace: true
+            type: array
+          - type: 'null'
+          title: Targets
         callback_url:
-          type: string
-          nullable: true
-      required:
-        - text
-    ScoreBatchReq:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Callback Url
       type: object
+      title: ScoreReq
+    ValidationError:
       properties:
-        items:
-          type: array
+        loc:
           items:
-            $ref: '#/components/schemas/ScoreReq'
-        callback_url:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
           type: string
-          nullable: true
-        limit:
-          type: integer
-          minimum: 1
-          maximum: 10000
-          default: 1000
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
       required:
-        - items
+      - loc
+      - msg
+      - type
+      title: ValidationError
