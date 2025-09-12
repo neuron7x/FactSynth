@@ -150,7 +150,7 @@ curl -s -H 'x-api-key: change-me' \
 
 ## Конфігурація
 
-Змінні середовища: `API_KEY`, `RATE_LIMIT_PER_MINUTE`, `BODY_MAX_BYTES`, `IP_ALLOWLIST`, тощо.
+Змінні середовища: `API_KEY`, `RATE_LIMIT_REDIS_URL`, `RATE_LIMIT_PER_KEY`, `BODY_MAX_BYTES`, `IP_ALLOWLIST`, тощо.
 
 ---
 

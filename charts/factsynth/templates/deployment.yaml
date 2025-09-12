@@ -34,8 +34,14 @@ spec:
                   key: api_key
             - name: ENV
               value: "{{ .Values.env.ENV }}"
-            - name: RATE_LIMIT_PER_MIN
-              value: "{{ .Values.env.RATE_LIMIT_PER_MIN | quote }}"
+            - name: RATE_LIMIT_REDIS_URL
+              value: "{{ .Values.env.RATE_LIMIT_REDIS_URL }}"
+            - name: RATE_LIMIT_PER_KEY
+              value: "{{ .Values.env.RATE_LIMIT_PER_KEY | quote }}"
+            - name: RATE_LIMIT_PER_IP
+              value: "{{ .Values.env.RATE_LIMIT_PER_IP | quote }}"
+            - name: RATE_LIMIT_PER_ORG
+              value: "{{ .Values.env.RATE_LIMIT_PER_ORG | quote }}"
             {{- if .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "{{ .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT }}"
