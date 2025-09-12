@@ -1,9 +1,0 @@
-type: object
-required:
-  - claim
-  - lock
-properties:
-  claim:
-    type: string
-  lock:
-    $ref: FactSynthLock_v1_1.yaml

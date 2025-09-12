@@ -115,7 +115,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: './components/schemas/VerifyRequest.yaml'
+              $ref: '#/components/schemas/VerifyRequest'
             examples:
               sample:
                 value:
@@ -130,7 +130,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './components/schemas/FactSynthLock_v1_1.yaml'
+                $ref: '#/components/schemas/FactSynthLock_v1_1'
               examples:
                 sample:
                   value:
@@ -254,3 +254,28 @@ components:
       - msg
       - type
       title: ValidationError
+    FactSynthLock_v1_1:
+      type: object
+      required:
+        - version
+        - nonce
+        - api_guard
+      properties:
+        version:
+          type: string
+          enum: ["1.1"]
+        nonce:
+          type: string
+        api_guard:
+          type: string
+          enum: ["factsynth-lock/v1.1"]
+    VerifyRequest:
+      type: object
+      required:
+        - claim
+        - lock
+      properties:
+        claim:
+          type: string
+        lock:
+          $ref: '#/components/schemas/FactSynthLock_v1_1'
