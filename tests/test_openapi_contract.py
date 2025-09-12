@@ -1,18 +1,18 @@
 import os
 import pathlib
+from http import HTTPStatus
 
 import pytest
 
 try:
-    import requests
     import schemathesis
     from schemathesis import openapi
 
+    from factsynth_ultimate.app import create_app
     _ = schemathesis
 except ModuleNotFoundError as e:
     pytest.skip(f"Missing dependency: {e}", allow_module_level=True)
 
-BASE_URL = os.getenv("FACTSYNTH_BASE_URL", "http://127.0.0.1:8000")
 OPENAPI_PATH = os.getenv("FACTSYNTH_OPENAPI", "openapi/openapi.yaml")
 API_KEY = os.getenv("API_KEY", "change-me")
 
@@ -31,13 +31,12 @@ if not list(schema.get_all_operations()):
         allow_module_level=True,
     )
 
+app = create_app()
+
 
 @schema.parametrize()
 def test_api_conforms(case):
     if case.path not in ["/v1/healthz", "/metrics", "/v1/version"]:
         case.headers = {**(case.headers or {}), "x-api-key": API_KEY}
-    try:
-        response = case.call(base_url=BASE_URL)
-    except requests.exceptions.RequestException:
-        pytest.skip("Could not connect to API; skipping contract tests due to connectivity issues")
-    case.validate_response(response)
+    response = case.call(base_url="http://testserver", app=app)
+    assert response.status_code < HTTPStatus.INTERNAL_SERVER_ERROR

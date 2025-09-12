@@ -1,0 +1,6 @@
+# Development-only Python packages
+numpy==1.26.4
+hypothesis==6.138.15
+diffrax==0.7.0
+jax==0.4.38
+schemathesis==4.1.4
