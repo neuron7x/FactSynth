@@ -140,7 +140,7 @@ A Redis instance is required for rate limiting; set `RATE_LIMIT_REDIS_URL` to th
 | -------- | ------- | ----------- |
 | `ENV` | `dev` | Environment name. |
 | `HTTPS_REDIRECT` | `false` | Redirect HTTP to HTTPS. |
-| `CORS_ALLOW_ORIGINS` | *(empty)* | Comma-separated origins. |
+| `CORS_ALLOW_ORIGINS` | *(empty)* | Comma-separated origins. Defaults to denying all; set explicitly to allow specific domains. |
 | `AUTH_HEADER_NAME` | `x-api-key` | Header carrying API key. |
 | `IP_ALLOWLIST` | *(empty)* | Allowed IPs, comma-separated. |
 | `RATE_LIMIT_REDIS_URL` | *(none)* | Redis connection URL for rate limiting. |
@@ -153,8 +153,8 @@ A Redis instance is required for rate limiting; set `RATE_LIMIT_REDIS_URL` to th
 | `VAULT_TOKEN` | *(empty)* | Authentication token for Vault. |
 | `VAULT_PATH` | *(empty)* | Secret path in Vault. |
 
-To permit cross-origin requests, set `CORS_ALLOW_ORIGINS` to a comma-separated
-list of allowed origins, for example:
+By default, no cross-origin requests are permitted. Administrators must set
+`CORS_ALLOW_ORIGINS` to a comma-separated list of allowed origins, for example:
 
 ```bash
 export CORS_ALLOW_ORIGINS="https://example.com,https://another.example"
