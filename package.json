@@ -2,6 +2,6 @@
   "name": "factsynth",
   "private": true,
   "devDependencies": {
-    "@stoplight/spectral-cli": "6.5.0"
+    "@stoplight/spectral-cli": "6.15.0"
   }
 }
