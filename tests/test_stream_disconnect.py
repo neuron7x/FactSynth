@@ -1,3 +1,5 @@
+"""Ensure SSE disconnects do not inflate token counters."""
+
 import asyncio
 
 from fastapi.testclient import TestClient
