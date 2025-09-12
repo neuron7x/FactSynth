@@ -5,14 +5,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 
 def _defaults(hsts: bool) -> dict[str, str]:
-    # X-XSS-Protection is omitted as modern browsers ignore it and it can
-    # inadvertently create security issues when enabled. The remaining headers
-    # reflect current best practices for protecting API responses.
+    # Headers based on OWASP Secure Headers recommendations for protecting API responses.
     base = {
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",
         "Referrer-Policy": "no-referrer",
-        "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+        "Permissions-Policy": "geolocation=(), microphone=(), camera=(), interest-cohort=()",
         # API без UI: жорсткий CSP
         "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
     }
