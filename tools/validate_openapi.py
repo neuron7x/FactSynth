@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 try:
-    import yaml  # type: ignore
+    import yaml
     from openapi_spec_validator import validate_spec
 except ImportError:
     yaml = None

@@ -2,7 +2,7 @@
 
 import os
 
-import requests  # type: ignore[import-untyped]
+import requests
 
 API = os.getenv("FACTSYNTH_API", "http://localhost:8000")
 

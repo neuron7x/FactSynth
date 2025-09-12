@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 IFS=$'\n\t'
-trap 'code=$?; echo "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit ${code})" >&2' ERR
+trap 'echo "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit $?)" >&2' ERR
 
-repo_root="$(git rev-parse --show-toplevel 2>/dev/null || echo "$(pwd)")"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "${repo_root}"
 
 PYVER=$(
@@ -44,7 +44,7 @@ cat >"${PKGDIR}/quickstart/run.sh" <<'SH'
 #!/usr/bin/env bash
 set -Eeuo pipefail
 IFS=$'\n\t'
-trap 'code=$?; echo "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit ${code})" >&2' ERR
+trap 'echo "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit $?)" >&2' ERR
 python -m venv .venv && . .venv/bin/activate
 pip install -U pip
 pip install -e .[ops]

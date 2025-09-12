@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 IFS=$'\n\t'
-trap 'code=$?; echo "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit ${code})" >&2' ERR
+trap 'echo "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit $?)" >&2' ERR
 
 python tools/make_badge.py --xml coverage.xml --out site/badges/coverage.svg || python - <<'PY'
 import xml.etree.ElementTree as ET, pathlib

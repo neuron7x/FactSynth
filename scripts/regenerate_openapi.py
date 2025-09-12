@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 root = Path(__file__).resolve().parents[1]
 sys.path.append(str(root / "src"))
 from factsynth_ultimate import VERSION  # noqa: E402
-from factsynth_ultimate.app import app  # type: ignore  # noqa: E402
+from factsynth_ultimate.app import app  # noqa: E402
 
 
 def main() -> None:
