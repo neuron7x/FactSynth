@@ -92,9 +92,9 @@ docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
 | -------- | ------- | ----------- |
 | `ENV` | `dev` | Environment name. |
 | `HTTPS_REDIRECT` | `false` | Redirect HTTP to HTTPS. |
-| `CORS_ALLOW_ORIGINS` | `*` | Comma-separated origins. |
+| `CORS_ALLOWED_ORIGINS` | `["http://localhost"]` | JSON array of origins. |
 | `AUTH_HEADER_NAME` | `x-api-key` | Header carrying API key. |
-| `IP_ALLOWLIST` | *(empty)* | Allowed IPs, comma-separated. |
+| `IP_ALLOWLIST` | `["127.0.0.1/32"]` | JSON array of CIDRs. |
 | `RATE_LIMIT_PER_MINUTE` | `120` | Requests per minute. |
 | `RATE_LIMIT_BUCKET_TTL` | `300` | Seconds to keep rate data. |
 | `RATE_LIMIT_CLEANUP_INTERVAL` | `60` | Seconds between cleanup. |

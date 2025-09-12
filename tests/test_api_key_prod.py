@@ -8,6 +8,8 @@ from factsynth_ultimate.core.secrets import read_api_key
 def test_prod_env_requires_real_api_key(monkeypatch, api_key):
     monkeypatch.setenv("ENV", "prod")
     monkeypatch.delenv("API_KEY_FILE", raising=False)
+    monkeypatch.setenv("CORS_ALLOWED_ORIGINS", '["http://localhost"]')
+    monkeypatch.setenv("IP_ALLOWLIST", '["127.0.0.1/32"]')
     if api_key is None:
         monkeypatch.delenv("API_KEY", raising=False)
     else:

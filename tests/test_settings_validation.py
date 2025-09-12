@@ -7,7 +7,7 @@ from factsynth_ultimate.core.settings import Settings, load_settings
 @pytest.mark.parametrize(
     "field",
     [
-        "cors_allow_origins",
+        "cors_allowed_origins",
         "skip_auth_paths",
         "ip_allowlist",
         "health_tcp_checks",

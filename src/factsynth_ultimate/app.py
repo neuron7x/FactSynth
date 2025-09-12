@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import os
 import time
 from contextlib import suppress
 from typing import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .api.routers import api
@@ -49,10 +51,28 @@ def create_app(
     """Application factory used by tests and ASGI server."""
     settings = load_settings()
     setup_logging()
+    if settings.env == "prod":
+        missing = [
+            var
+            for var in ("CORS_ALLOWED_ORIGINS", "IP_ALLOWLIST")
+            if var not in os.environ
+        ]
+        if missing:
+            raise RuntimeError(
+                "Missing required env vars: " + ", ".join(missing)
+            )
 
     app = FastAPI()
     install_handlers(app)
     try_enable_otel(app)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     # core routes
     app.include_router(api)
@@ -67,7 +87,7 @@ def create_app(
 
     # middleware stack (order matters: last added runs first)
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.https_redirect)
-    if settings.ip_allowlist:
+    if "IP_ALLOWLIST" in os.environ:
         app.add_middleware(
             IPAllowlistMiddleware, cidrs=settings.ip_allowlist
         )
