@@ -42,7 +42,7 @@ jobs:
         run: |
           if [ "${{ matrix.python-version }}" = "3.11" ]; then
             set -o pipefail
-            pytest -q -m "not slow" --maxfail=1 --cov=src --cov-report=xml || status=$?
+            pytest -q -m "not slow" --maxfail=1 --cov=src --cov-report=xml --cov-report=term-missing || status=$?
             touch coverage.xml
             exit ${status:-0}
           else

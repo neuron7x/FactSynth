@@ -1,0 +1,6 @@
+[run]
+source = src
+omit =
+    */schemas/models.py
+    */vendor/*
+    */node_modules/*
