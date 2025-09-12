@@ -4,11 +4,20 @@ on:
     paths: ['**']
   push:
     branches: ['main','feat/**','fix/**','chore/**']
+permissions:
+  contents: read
+  security-events: write
+  packages: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 env:
   PY_FALLBACK: "3.12"
   COV_MIN: "85"
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  IMAGE: ghcr.io/${{ github.repository }}
+  TAG: ${{ github.sha }}
 
 jobs:
   spectral:
@@ -88,44 +97,44 @@ RC
   build:
     runs-on: ubuntu-latest
     needs: test
-    outputs:
-      image: ${{ steps.meta.outputs.image }}
-      tags:  ${{ steps.meta.outputs.tags }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - id: meta
-        uses: docker/metadata-action@v5
+      - name: Login to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=sha
-            type=ref,event=branch
-      - uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - id: build
+      - name: Build image
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          file: ./Dockerfile
+          tags: |
+            ${{ env.IMAGE }}:${{ env.TAG }}
+            ${{ env.IMAGE }}:latest
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          load: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
   scan:
     runs-on: ubuntu-latest
     needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: aquasecurity/trivy-action@0.20.0
         with:
-          image-ref: ${{ needs.build.outputs.tags }}
-          format: 'sarif'
-          output: 'trivy.sarif'
+          image-ref: ${{ env.IMAGE }}:${{ env.TAG }}
+          format: sarif
+          output: trivy.sarif
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH,MEDIUM'
       - uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy.sarif'
+          sarif_file: trivy.sarif
   release:
     runs-on: ubuntu-latest
     needs: [build, scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - run: echo "Release gating passed — image tags=${{ needs.build.outputs.tags }}"
+      - run: echo "Release gating passed — image=${{ env.IMAGE }}:${{ env.TAG }}"
