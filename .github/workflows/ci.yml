@@ -32,6 +32,7 @@ jobs:
           python -m pip install -U pip wheel setuptools
           pip install --require-hashes -r requirements.lock
           pip install -e . --no-deps
+          npm install -g @stoplight/spectral-cli@6
 
       - name: Check version consistency
         run: python tools/check_version.py
@@ -55,7 +56,7 @@ jobs:
           path: coverage.xml
 
       - name: Spectral lint
-        run: npx --yes @stoplight/spectral-cli@6 lint openapi/openapi.yaml
+        run: spectral lint openapi/openapi.yaml
 
       - name: Dependency audit
         run: pip-audit -r requirements.lock
