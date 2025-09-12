@@ -10,3 +10,7 @@ ui/dist
 mypy-report.txt
 ruff-report.txt
 pip-audit.json
+
+# Coverage reports
+coverage.xml
+htmlcov/
