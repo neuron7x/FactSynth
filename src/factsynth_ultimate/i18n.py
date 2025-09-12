@@ -1,3 +1,5 @@
+"""Simple helpers for language negotiation and translation."""
+
 from __future__ import annotations
 
 from fastapi import Request
@@ -59,7 +61,8 @@ def choose_language(request: Request) -> str:
 
 
 def translate(lang: str, key: str) -> str:
-    """Return localized message for given key."""
+    """Return a localized message for ``key`` in the desired language."""
+
     return MESSAGES.get(lang, MESSAGES[DEFAULT_LANG]).get(
         key, MESSAGES[DEFAULT_LANG].get(key, key)
     )

@@ -33,8 +33,21 @@ jobs:
           pip install --require-hashes -r requirements.lock
           # Install testing/dev extras
           pip install -r requirements-dev.txt
+          pip install mypy==1.9.0
           pip install -e . --no-deps
           npm install -g @stoplight/spectral-cli@6
+
+      - name: Type check
+        run: |
+          mypy --strict \
+            src/factsynth_ultimate/core/ratelimit.py \
+            src/factsynth_ultimate/glrtpm/pipeline.py \
+            src/factsynth_ultimate/api_glrtpm.py \
+            src/factsynth_ultimate/api_llm_ifc.py \
+            src/factsynth_ultimate/api_isr.py \
+            src/factsynth_ultimate/api_akpshi.py \
+            src/factsynth_ultimate/i18n.py \
+            src/factsynth_ultimate/app.py
 
       - name: Check version consistency
         run: python tools/check_version.py

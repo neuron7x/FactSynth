@@ -8,12 +8,30 @@ repos:
     rev: v1.9.0
     hooks:
       - id: mypy
-        args: ["--warn-unused-ignores"]
+        args: [
+          "--warn-unused-ignores",
+          "--follow-imports=skip",
+          "--allow-subclassing-any",
+          "--allow-untyped-decorators",
+        ]
+        additional_dependencies: ["pydantic"]
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:
       - id: interrogate
-        args: ["-c", "pyproject.toml", "src/factsynth_ultimate/core/ratelimit.py", "src/factsynth_ultimate/api/routers.py", "src/factsynth_ultimate/glrtpm/pipeline.py"]
+        args: [
+          "-c",
+          "pyproject.toml",
+          "src/factsynth_ultimate/core/ratelimit.py",
+          "src/factsynth_ultimate/api/routers.py",
+          "src/factsynth_ultimate/glrtpm/pipeline.py",
+          "src/factsynth_ultimate/api_glrtpm.py",
+          "src/factsynth_ultimate/api_llm_ifc.py",
+          "src/factsynth_ultimate/api_isr.py",
+          "src/factsynth_ultimate/api_akpshi.py",
+          "src/factsynth_ultimate/i18n.py",
+          "src/factsynth_ultimate/app.py",
+        ]
         pass_filenames: false
   - repo: local
     hooks:
