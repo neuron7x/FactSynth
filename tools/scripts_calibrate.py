@@ -16,11 +16,12 @@ PY_SHEBANG = "#!/usr/bin/env python3\n"
 BASH_HEADER = r"""#!/usr/bin/env bash
 set -Eeuo pipefail
 IFS=$'\n\t'
-trap 'code=$?; echo "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit $code)" >&2' ERR
+trap 'code=$?\necho "ERR at ${BASH_SOURCE[0]}:${LINENO} (exit $code)" >&2' ERR
 """
 
 LOGGING_SNIPPET = (
-    "import logging, os\n"
+    "import logging\n"
+    "import os\n"
     'LOG_LEVEL = os.getenv("LOG_LEVEL", "WARNING").upper()\n'
     'logging.basicConfig(level=LOG_LEVEL, format="%(levelname)s %(message)s")\n'
     "log = logging.getLogger(__name__)\n"
@@ -100,7 +101,8 @@ def maybe_argparse_shim(src: str) -> str:
         return src
     shim = textwrap.dedent(
         """
-    import argparse as _argparse, sys as _sys
+    import argparse as _argparse
+    import sys as _sys
     def _parse_args(argv=None):
         p=_argparse.ArgumentParser(add_help=True, description="(shim) preserves defaults/positionals")
         # NOTE: Not redefining defaults; this shim enables --help without altering behavior.
