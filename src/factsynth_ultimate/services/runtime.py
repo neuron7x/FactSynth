@@ -1,3 +1,5 @@
+"""Runtime scoring and tokenization utilities."""
+
 from __future__ import annotations
 
 import math
@@ -11,18 +13,10 @@ from ..schemas.requests import ScoreReq
 
 _WORD_RE = re.compile(r"\w+", re.UNICODE)
 
+
 def _text_stats(text: str) -> Dict[str, float]:
-    """Compute character-based metrics for *text*.
+    """Compute character-based metrics for *text*."""
 
-    Returns a dictionary with:
-
-    - ``len``: total number of characters.
-    - ``uniq_ratio``: proportion of unique characters.
-    - ``alpha_ratio``: fraction of alphabetic characters.
-    - ``digit_ratio``: fraction of digit characters.
-    - ``whitespace_ratio``: fraction of whitespace characters.
-    - ``entropy``: Shannon entropy of character distribution in bits.
-    """
     n = len(text)
     if n == 0:
         return {
@@ -49,11 +43,17 @@ def _text_stats(text: str) -> Dict[str, float]:
         "entropy": entropy,
     }
 
+
 def reflect_intent(intent: str, length: int) -> str:
-    intent = re.sub(r"\s+"," ", intent).strip()
-    return intent[:max(0,length)]
+    """Return a truncated version of ``intent``."""
+
+    intent = re.sub(r"\s+", " ", intent).strip()
+    return intent[: max(0, length)]
+
 
 def _coverage(text: str, targets: Iterable[str]) -> float:
+    """Compute coverage ratio of ``targets`` within ``text``."""
+
     if not targets:
         return 0.0
     words = set(_WORD_RE.findall(text.lower()))
@@ -63,22 +63,31 @@ def _coverage(text: str, targets: Iterable[str]) -> float:
     found = sum(1 for t in toks if t in words)
     return found / len(toks)
 
+
 def _score_impl(req: ScoreReq) -> float:
+    """Compute a heuristic score for a request."""
+
     s = _text_stats(req.text)
     cov = _coverage(req.text, req.targets or [])
-    length_sat = min(1.0, s["len"]/500.0)
+    length_sat = min(1.0, s["len"] / 500.0)
     alpha = s["alpha_ratio"]
-    ent = min(1.0, s["entropy"]/8.0)
-    score = 0.4*cov + 0.3*length_sat + 0.2*alpha + 0.1*ent
-    return round(float(score),4)
+    ent = min(1.0, s["entropy"] / 8.0)
+    score = 0.4 * cov + 0.3 * length_sat + 0.2 * alpha + 0.1 * ent
+    return round(float(score), 4)
+
 
 def score_payload(payload: Dict[str, Any]) -> float:
+    """Validate *payload* and return a score."""
+
     req = ScoreReq(**(payload or {}))
     t0 = time.perf_counter()
     val = _score_impl(req)
     SCORING_TIME.observe(max(0.0, time.perf_counter() - t0))
     return val
 
+
 def tokenize_preview(text: str, max_tokens: int = 256) -> list[str]:
+    """Tokenize ``text`` and truncate to ``max_tokens`` tokens."""
+
     toks = _WORD_RE.findall(text)
     return toks[:max_tokens]

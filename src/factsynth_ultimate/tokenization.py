@@ -1,8 +1,4 @@
-"""Minimal text normalization and tokenization utilities.
-
-These helpers are intentionally lightweight so they can be reused by the API,
-CLI and other parts of the project without pulling in heavy dependencies.
-"""
+"""Lightweight text normalisation and tokenization helpers."""
 
 from __future__ import annotations
 

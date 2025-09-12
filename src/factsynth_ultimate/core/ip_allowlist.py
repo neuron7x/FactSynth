@@ -1,20 +1,40 @@
+"""Middleware enforcing an IP allowlist."""
+
 from __future__ import annotations
 
 import ipaddress
+from typing import Awaitable, Callable
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 from ..i18n import choose_language, translate
 
 
 class IPAllowlistMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, cidrs: list[str] | None = None, skip: tuple[str, ...] = ("/v1/healthz","/metrics")):
+    """Permit requests only from configured networks."""
+
+    def __init__(
+        self,
+        app,
+        cidrs: list[str] | None = None,
+        skip: tuple[str, ...] = ("/v1/healthz", "/metrics"),
+    ) -> None:
+        """Parse CIDR rules and store skip prefixes."""
+
         super().__init__(app)
-        self.networks = [ipaddress.ip_network(c.strip(), strict=False) for c in (cidrs or [])]
+        self.networks = [
+            ipaddress.ip_network(c.strip(), strict=False) for c in (cidrs or [])
+        ]
         self.skip = skip
-    async def dispatch(self, request: Request, call_next):
+
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        """Check the client IP against the allowlist."""
+
         path = request.url.path
         if any(path.startswith(s) for s in self.skip) or not self.networks:
             return await call_next(request)

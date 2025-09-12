@@ -1,6 +1,14 @@
+"""Prometheus metrics helpers."""
+
 from __future__ import annotations
 
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 
 REQUESTS = Counter(
     "factsynth_requests_total",
@@ -21,11 +29,16 @@ SSE_TOKENS = Counter(
     "Number of SSE tokens streamed",
 )
 
+
 def metrics_bytes() -> bytes:
+    """Return all metrics in Prometheus text format."""
+
     return generate_latest()
 
 
 def metrics_content_type() -> str:
+    """Return the Content-Type header for :func:`metrics_bytes`."""
+
     return CONTENT_TYPE_LATEST
 
 

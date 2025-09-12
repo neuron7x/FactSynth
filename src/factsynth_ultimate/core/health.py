@@ -1,3 +1,5 @@
+"""Helpers for performing basic TCP health checks."""
+
 from __future__ import annotations
 
 import re
@@ -18,6 +20,8 @@ _HOST_RE = re.compile(
 
 
 def _parse(item: str) -> tuple[str, int] | None:
+    """Return ``(host, port)`` extracted from ``item`` or ``None``."""
+
     m = _HOST_RE.match(item.strip())
     if not m:
         return None
@@ -29,13 +33,18 @@ def _parse(item: str) -> tuple[str, int] | None:
 
 
 def tcp_check(host: str, port: int, timeout: float = 1.5) -> bool:
+    """Attempt a TCP connection to ``host:port``."""
+
     try:
         with socket.create_connection((host, port), timeout=timeout):
             return True
     except OSError:
         return False
 
+
 def multi_tcp_check(items: Iterable[str]) -> dict[str, bool]:
+    """Perform :func:`tcp_check` for each entry in ``items``."""
+
     results: dict[str, bool] = {}
     for raw in items:
         parsed = _parse(raw)

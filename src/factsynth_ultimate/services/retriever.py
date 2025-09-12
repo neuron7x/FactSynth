@@ -1,3 +1,5 @@
+"""Small in-memory text retriever used for testing."""
+
 from __future__ import annotations
 
 import re
@@ -44,6 +46,8 @@ class LocalFixtureRetriever:
         self.fixtures = list(fixtures)
 
     def _translate_query(self, query: str) -> str:
+        """Translate common Ukrainian keywords to English."""
+
         q = query.lower()
         for ua, en in self._UA_TO_EN.items():
             q = re.sub(rf"\b{ua}\b", en, q)

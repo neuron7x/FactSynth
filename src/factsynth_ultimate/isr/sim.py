@@ -1,15 +1,20 @@
+"""Numerical simulation primitives for ISR models."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import jax.numpy as jnp
 from diffrax import ODETerm, SaveAt, Tsit5, diffeqsolve
 
 GAMMA_FREQ = 40.0
 
+
 @dataclass
 class ISRParams:
+    """Parameters governing the ISR differential equation."""
+
     alpha: float = 1.0
     beta: float = 0.4
     gamma_param: float = 1.2
@@ -18,48 +23,87 @@ class ISRParams:
     t1: float = 10.0
     steps: int = 1000
 
+
 def _compute_rs(S: jnp.ndarray) -> jnp.ndarray:
+    """Compute resistance signal from state vector ``S``."""
+
     return 0.12 * S
 
+
 def _compute_irs(RS: jnp.ndarray) -> jnp.ndarray:
+    """Compute inverse resistance signal."""
+
     return -RS
 
+
 def _compute_es(S: jnp.ndarray) -> jnp.ndarray:
+    """Estimate energy signal."""
+
     grad_norm = jnp.linalg.norm(jnp.ones_like(S))
-    return 0.5 * grad_norm ** 2
+    return 0.5 * grad_norm**2
+
 
 def _compute_as_star(IRS: jnp.ndarray, S: jnp.ndarray) -> jnp.ndarray:
+    """Compute activation signal ``A*S*``."""
+
     return jnp.exp(-jnp.sum((IRS - S) ** 2))
 
+
 def _compute_gamma(t: float) -> float:
+    """Gamma oscillation component at time ``t``."""
+
     return jnp.sin(2.0 * jnp.pi * GAMMA_FREQ * t)
 
-def _ds_dt(t, S, args):
+
+def _ds_dt(t: float, S: jnp.ndarray, args: Tuple[float, float, float, float]) -> jnp.ndarray:
+    """Differential equation defining the ISR system."""
+
     alpha, beta, gamma_param, delta = args
     RS = _compute_rs(S)
     IRS = _compute_irs(RS)
     ES = _compute_es(S)
     AS_star = _compute_as_star(IRS, S)
-    Gamma = _compute_gamma(t)
-    return alpha * IRS - beta * ES + gamma_param * AS_star + delta * Gamma
+    gamma_val = _compute_gamma(t)
+    return alpha * IRS - beta * ES + gamma_param * AS_star + delta * gamma_val
 
-def simulate_isr(S0: jnp.ndarray | None = None,
-                 params: ISRParams | None = None) -> Dict[str, jnp.ndarray]:
+
+def simulate_isr(
+    S0: jnp.ndarray | None = None, params: ISRParams | None = None
+) -> Dict[str, jnp.ndarray]:
+    """Integrate the ISR system and return time points and states."""
+
     if S0 is None:
         S0 = jnp.array([1.0, 0.8, 0.5, 0.3, 0.2, 0.1, 0.05])
     if params is None:
         params = ISRParams()
-    term = ODETerm(lambda t, y, _: _ds_dt(t, y, (params.alpha, params.beta, params.gamma_param, params.delta)))
+    term = ODETerm(
+        lambda t, y, _: _ds_dt(
+            t, y, (params.alpha, params.beta, params.gamma_param, params.delta)
+        )
+    )
     solver = Tsit5()
     ts = jnp.linspace(params.t0, params.t1, params.steps)
-    sol = diffeqsolve(term, solver, t0=params.t0, t1=params.t1, dt0=0.01, y0=S0, saveat=SaveAt(ts=ts))
-    return {'t': ts, 'y': sol.ys}
+    sol = diffeqsolve(
+        term, solver, t0=params.t0, t1=params.t1, dt0=0.01, y0=S0, saveat=SaveAt(ts=ts)
+    )
+    return {"t": ts, "y": sol.ys}
+
 
 def estimate_fs(ts: jnp.ndarray) -> float:
+    """Estimate sample rate from time vector ``ts``."""
+
     dt = float(ts[1] - ts[0])
     return 1.0 / dt
 
-def gamma_spectrum(y: jnp.ndarray, idx: int = 5, fs: Optional[float]=None, ts: Optional[jnp.ndarray]=None) -> jnp.ndarray:
+
+def gamma_spectrum(
+    y: jnp.ndarray,
+    idx: int = 5,
+    fs: Optional[float] = None,
+    ts: Optional[jnp.ndarray] = None,
+) -> jnp.ndarray:
+    """Return magnitude spectrum for channel ``idx``."""
+
     sig = y[:, idx]
     if fs is None:
         if ts is None:
@@ -68,8 +112,11 @@ def gamma_spectrum(y: jnp.ndarray, idx: int = 5, fs: Optional[float]=None, ts: O
     spec = jnp.abs(jnp.fft.fft(sig))
     return spec
 
+
 def dominant_freq(spec: jnp.ndarray, fs: float) -> float:
+    """Return the dominant frequency in ``spec`` given ``fs``."""
+
     n = spec.shape[0]
-    freqs = jnp.fft.fftfreq(n, d=1.0/fs)
+    freqs = jnp.fft.fftfreq(n, d=1.0 / fs)
     idx = int(jnp.argmax(spec))
     return float(jnp.abs(freqs[idx]))

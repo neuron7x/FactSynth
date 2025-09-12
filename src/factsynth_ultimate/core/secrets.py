@@ -1,4 +1,4 @@
-"""Utilities for reading API keys from various backends."""
+"""Helpers for resolving API keys and secrets from multiple sources."""
 
 from __future__ import annotations
 
