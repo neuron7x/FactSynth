@@ -106,6 +106,10 @@ docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
 
 Secrets are supplied via GitHub Secrets or environment variables.
 
+## Deployment
+
+Refer to the [production runbook](docs/prod-runbook.md) for recommended CPU and memory limits, `uvicorn` worker counts, timeout values, and `ulimit` settings.
+
 ## Demo & OpenAPI
 
 View the [OpenAPI docs](https://neuron7x.github.io/FactSynth/).
