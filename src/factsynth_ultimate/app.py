@@ -71,15 +71,6 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
             IPAllowlistMiddleware, cidrs=settings.ip_allowlist
         )
     app.add_middleware(BodySizeLimitMiddleware)
-    api_key = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
-    if settings.env == "prod" and api_key in {"", "change-me"}:
-        raise RuntimeError("API key must be set in production")
-    app.add_middleware(
-        APIKeyAuthMiddleware,
-        api_key=api_key,
-        header_name=settings.auth_header_name,
-        skip=tuple(settings.skip_auth_paths),
-    )
     redis_client = redis_from_url(settings.rate_limit_redis_url, decode_responses=True)
 
     @app.on_event("shutdown")
@@ -94,6 +85,15 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
         per_org=settings.rate_limit_per_org,
         key_header=settings.auth_header_name,
         window=rate_limit_window or 60,
+    )
+    api_key = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
+    if settings.env == "prod" and api_key in {"", "change-me"}:
+        raise RuntimeError("API key must be set in production")
+    app.add_middleware(
+        APIKeyAuthMiddleware,
+        api_key=api_key,
+        header_name=settings.auth_header_name,
+        skip=tuple(settings.skip_auth_paths),
     )
     app.add_middleware(_MetricsMiddleware)
     app.add_middleware(RequestIDMiddleware)

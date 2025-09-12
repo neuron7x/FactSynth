@@ -1,3 +1,4 @@
+import asyncio
 import importlib
 import os
 import time
@@ -5,8 +6,8 @@ from concurrent.futures import ThreadPoolExecutor
 from http import HTTPStatus
 from unittest.mock import patch
 
-from fastapi.testclient import TestClient
 from fakeredis.aioredis import FakeRedis
+from fastapi.testclient import TestClient
 
 from factsynth_ultimate.app import create_app
 from factsynth_ultimate.core import settings as settings_module
@@ -14,6 +15,7 @@ from factsynth_ultimate.core import settings as settings_module
 
 def _build_app(per_key=1, per_ip=100, per_org=100, window=60):
     fake = FakeRedis()
+    asyncio.run(fake.flushall())
     env = {
         "API_KEY": "secret",
         "RATE_LIMIT_REDIS_URL": "redis://test",
@@ -23,7 +25,7 @@ def _build_app(per_key=1, per_ip=100, per_org=100, window=60):
     }
     with patch.dict(os.environ, env, clear=True):
         importlib.reload(settings_module)
-        with patch("redis.asyncio.from_url", return_value=fake):
+        with patch("factsynth_ultimate.app.redis_from_url", return_value=fake):
             app = create_app(rate_limit_window=window)
     return app, fake
 
@@ -67,3 +69,17 @@ def test_rate_limit_concurrency_safety():
         with ThreadPoolExecutor(max_workers=2) as pool:
             results = list(pool.map(lambda _: _request(), range(2)))
         assert sorted(results) == [HTTPStatus.OK, HTTPStatus.TOO_MANY_REQUESTS]
+
+
+def test_first_authorized_request_not_rate_limited():
+    app, _ = _build_app(per_key=100, per_ip=1)
+    with TestClient(app) as client:
+        assert (
+            client.post("/v1/score", json={"text": "x"}).status_code
+            == HTTPStatus.UNAUTHORIZED
+        )
+        headers = {"x-api-key": "secret"}
+        assert (
+            client.post("/v1/score", headers=headers, json={"text": "x"}).status_code
+            == HTTPStatus.OK
+        )
