@@ -15,6 +15,7 @@ from factsynth_ultimate.core import settings as settings_module
 
 def _build_app(per_key=1, per_ip=100, per_org=100, window=60):
     fake = FakeRedis()
+    # Ensure redis has no stale keys before each scenario
     asyncio.run(fake.flushall())
     env = {
         "API_KEY": "secret",
@@ -28,6 +29,16 @@ def _build_app(per_key=1, per_ip=100, per_org=100, window=60):
         with patch("factsynth_ultimate.app.redis_from_url", return_value=fake):
             app = create_app(rate_limit_window=window)
     return app, fake
+
+
+def test_first_request_with_valid_key_returns_200():
+    app, _ = _build_app(per_key=1)
+    with TestClient(app) as client:
+        headers = {"x-api-key": "secret"}
+        assert (
+            client.post("/v1/score", headers=headers, json={"text": "x"}).status_code
+            == HTTPStatus.OK
+        )
 
 
 def test_rate_limit_exceeded_returns_429():
