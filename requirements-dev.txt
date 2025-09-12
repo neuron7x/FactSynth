@@ -1,7 +1,7 @@
 # Development and test dependencies not captured in requirements.lock
 fakeredis==2.23.1   # Redis mock for tests
 hypothesis==6.138.15  # Property-based testing
-numpy==1.26.4       # Numerical computations in tests
+numpy==2.0.2       # Numerical computations in tests
 jax==0.4.38         # JAX core for diffrax
 jaxlib==0.4.38      # JAX runtime
 diffrax==0.7.0      # Differential equation solver used in tests

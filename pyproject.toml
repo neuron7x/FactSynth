@@ -28,7 +28,7 @@ dev = [
     "spectral==0.24",  # OpenAPI linting utility
     "fakeredis==2.23.0",  # Redis mock for tests
     "hypothesis==6.138.15",  # Property-based testing
-    "numpy==1.26.4",  # Numerical computations in tests
+    "numpy==2.0.2",  # Numerical computations in tests
     "jax==0.4.38",  # JAX core for diffrax
     "diffrax==0.7.0",  # Differential equation solver used in tests
 ]
@@ -36,7 +36,7 @@ ops = [
     "prometheus-client==0.22.1",
 ]
 cognition = [
-    "numpy==1.26.4",
+    "numpy==2.0.2",
     "fastapi==0.116.1",
     "pydantic==2.11.7",
 ]
@@ -46,7 +46,7 @@ isr = [
     "typer==0.17.4",
 ]
 numpy = [
-    "numpy==1.26.4",
+    "numpy==2.0.2",
 ]
 
 [project.scripts]
