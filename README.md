@@ -153,15 +153,18 @@ A Redis instance is required for rate limiting; set `RATE_LIMIT_REDIS_URL` to th
 | `VAULT_TOKEN` | *(empty)* | Authentication token for Vault. |
 | `VAULT_PATH` | *(empty)* | Secret path in Vault. |
 
-By default, no cross-origin requests are permitted. Administrators must set
-`CORS_ALLOW_ORIGINS` to a comma-separated list of allowed origins, for example:
+### Allowed origins
+
+By default, no cross-origin requests are permitted. To enable cross-origin
+access, set `CORS_ALLOW_ORIGINS` to a comma-separated list of allowed origins,
+for example:
 
 ```bash
 export CORS_ALLOW_ORIGINS="https://example.com,https://another.example"
 ```
 
-Use `CORS_ALLOW_ORIGINS=*` to allow all origins (not recommended for
-production).
+To permit any origin (not recommended for production), use
+`CORS_ALLOW_ORIGINS="*"`.
 
 Secrets are supplied via GitHub Secrets or environment variables.
 
