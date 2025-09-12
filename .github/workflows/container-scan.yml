@@ -9,30 +9,53 @@ name: Container Scan
 permissions:
   contents: read
   security-events: write
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   scan:
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+      TAG: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build image
-        if: github.event_name != 'pull_request'
-        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
-          provenance: false
-      - name: Scan image
-        uses: aquasecurity/trivy-action@0.24.0
+          file: ./Dockerfile
+          tags: |
+            ${{ env.IMAGE }}:${{ env.TAG }}
+            ${{ env.IMAGE }}:latest
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          load: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.20.0
         with:
-          image-ref: ${{ steps.build.outputs.imageid }}
-          ignore-unfixed: true
-          format: 'sarif'
-          output: 'trivy.sarif'
+          image-ref: ${{ env.IMAGE }}:${{ env.TAG }}
+          format: sarif
+          output: trivy-results.sarif
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: trivy.sarif
+          sarif_file: trivy-results.sarif

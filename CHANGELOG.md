@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.5] - 2025-09-11
+
+- Ensure SSE disconnect test runs without pytest-asyncio dependency.
+
 ## [1.0.4] - 2025-09-10
 
 - Pin runtime dependencies with explicit version ranges.
