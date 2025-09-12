@@ -24,6 +24,9 @@ Language: EN · [Українська](./README_UA.md)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Examples](#examples)
 - [Configuration](#configuration)
 - [Demo & OpenAPI](#demo--openapi)
 - [Observability](#observability)
@@ -71,18 +74,62 @@ pip install -U pip && pip install -r requirements.lock -r requirements-dev.txt
 uvicorn factsynth_ultimate.app:app --reload
 ```
 
+## Installation
+
+Set up a local development environment:
+
+```bash
+git clone https://github.com/neuron7x/FactSynth.git
+cd FactSynth
+python -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -r requirements.lock -r requirements-dev.txt
+# Or install in editable mode with extras:
+# pip install -e .[dev]
+```
+
 `requests` powers the contract tests while `PyYAML` supports schema
 validation; these and other development dependencies are provided via
 `requirements-dev.txt` or the `dev` extra.
+
+## Usage
+
+Run the service locally:
+
+```bash
+source .venv/bin/activate
+export API_KEY=change-me   # optional
+uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000 --reload
+```
 
 Helper utilities such as the NLI classifier, simple claim evaluator, and
 in-memory fixture retriever now live under the `factsynth_ultimate.services`
 package. The legacy `app` module has been removed.
 
-Docker:
+You can also use Docker:
 
 ```bash
 docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
+```
+
+## Examples
+
+Request a generated summary with `curl`:
+
+```bash
+curl -s -X POST http://localhost:8000/v1/generate \
+  -H "x-api-key: ${API_KEY:-test-key}" \
+  -H "content-type: application/json" \
+  -d '{"prompt": "Extract facts about water."}'
+```
+
+Typical JSON response:
+
+```json
+{
+  "facts": ["Water freezes at 0°C", "Water boils at 100°C"]
+}
 ```
 
 ## Configuration

@@ -1,201 +1,179 @@
-# FactSynth Ultimate Pro — 1.0.3 (2025-09-07)
+# FactSynth
 
-Захищений, спостережуваний сервіс **FastAPI** для рефлексії наміру,
-скорингу, екстрактивної генерації, стримінгу (SSE/WebSocket) та
-демонстраційного конвеєра GLRTPM.
+[![CI](https://github.com/neuron7x/FactSynth/actions/workflows/ci.yml/badge.svg)](https://github.com/neuron7x/FactSynth/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/neuron7x/FactSynth/actions/workflows/codeql.yml/badge.svg)](https://github.com/neuron7x/FactSynth/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/neuron7x/FactSynth?style=flat)](https://github.com/neuron7x/FactSynth/stargazers)
 
-> **EN short:** production-ready API with API-key auth, Prometheus metrics,
-> SSE/WS streaming, noise filtering, batch scoring and Problem+JSON errors.
+![FactSynth service banner](./assets/banner.svg)
 
----
+Швидкий мікросервіс **FastAPI** для відображення наміру та екстрактивної генерації з потоковою передачею SSE/WebSocket, помилками у форматі Problem+JSON, лімітами запитів і розширеною спостережуваністю.
+
+Мова: [English](README.md) · Українська
 
 ## Зміст
 
-* [Можливості](#можливості)
-* [Швидкий старт](#швидкий-старт)
-* [Кінцеві точки](#кінцеві-точки)
-* [Авторизація та ліміти](#авторизація-та-ліміти)
-* [Помилки (Problem+JSON)](#помилки-problemjson)
-* [Спостережуваність](#спостережуваність)
-* [Конфігурація](#конфігурація)
-* [Docker](#docker)
-* [Postman та OpenAPI](#postman-та-openapi)
-* [Тестування](#тестування)
-* [Безпека](#безпека)
-* [Дорожня карта](#дорожня-карта)
-* [Ліцензія](#ліцензія)
+- [Про проєкт](#про-проєкт)
+- [Можливості](#можливості)
+- [Технології](#технології)
+- [Швидкий старт](#швидкий-старт)
+- [Встановлення](#встановлення)
+- [Використання](#використання)
+- [Приклади](#приклади)
+- [Конфігурація](#конфігурація)
+- [Демо та OpenAPI](#демо-та-openapi)
+- [Спостережуваність](#спостережуваність)
+- [Безпека](#безпека)
+- [Дорожня карта](#дорожня-карта)
+- [Внесок](#внесок)
+- [Ліцензія](#ліцензія)
+- [Подяки](#подяки)
 
----
+## Про проєкт
+
+FactSynth — це мікросервіс FastAPI для екстрактивної генерації тексту. Він призначений для команд, які потребують безпечних та прозорих API з потоковими відповідями через Server-Sent Events або WebSocket. Клієнти отримують помилки у стандартизованому форматі Problem+JSON, а оператори мають метрики, структуровані логи та гачки трасування.
 
 ## Можливості
 
-* **API-ключ** у заголовку `x-api-key` (пропускає `/v1/healthz`, `/metrics`, `/v1/version`).
-* **Лімітування запитів** (за замовчуванням 120/хв) з заголовками `X-RateLimit-*`.
-* **Стрімінг SSE та WebSocket** для токеноподібних оновлень.
-* **Екстрактивна генерація**: `title`, `summary`, `keywords` з тексту.
-* **Евристики скорингу**: coverage, length saturation, alpha density, entropy; фільтр гібберіш.
-* **Фільтрація шуму**: видаляє HTML/URL/електронну пошту, дедуплікує цілі, зупиняє UA/EN стоп-слова.
-* **Пакетний скоринг** та необов'язкові **webhook**-колбеки (з повторами).
-* **Структуровані помилки** у форматі Problem+JSON.
-* **Метрики Prometheus** + **JSON-логи**; за бажанням OpenTelemetry.
-* **HSTS/CSP** заголовки безпеки; обмеження розміру тіла; необов'язковий список дозволених IP.
+- Екстрактивна генерація через кінцеві точки FastAPI.
+- Потокові відповіді — підтримка SSE та WebSocket.
+- Контроль доступу — заголовок API-ключа та списки дозволених IP.
+- Лімітування запитів — ковзне вікно на кожного клієнта.
+- Помилки у форматі Problem+JSON (RFC 9457).
+- Спостережуваність — метрики Prometheus, структуровані логи та OpenTelemetry.
 
----
+## Технології
+
+[![Python](assets/python.svg)](https://www.python.org/)
+[![FastAPI](assets/fastapi.svg)](https://fastapi.tiangolo.com/)
+[![Uvicorn](assets/uvicorn.svg)](https://www.uvicorn.org/)
+
+Python 3.10+ · FastAPI 0.116 · Uvicorn 0.35
 
 ## Швидкий старт
 
 ```bash
-python -m venv .venv && . .venv/bin/activate
-pip install -U pip && pip install -e .[dev,ops]
-export API_KEY=change-me        # у продакшені використайте секрет або Vault
-uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000
+git clone https://github.com/neuron7x/FactSynth.git
+cd FactSynth
+python -m venv .venv && source .venv/bin/activate
+pip install -U pip && pip install -r requirements.lock -r requirements-dev.txt
+uvicorn factsynth_ultimate.app:app --reload
 ```
 
-Допоміжні утиліти, такі як класифікатор NLI, простий оцінювач тверджень та
-локальний пошук фікстур, тепер знаходяться в пакеті
-`factsynth_ultimate.services`. Попередній модуль `app` видалено.
+## Встановлення
 
-### Перевірка
+Налаштуйте локальне середовище розробки:
 
 ```bash
-curl -s http://127.0.0.1:8000/v1/healthz
+git clone https://github.com/neuron7x/FactSynth.git
+cd FactSynth
+python -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -r requirements.lock -r requirements-dev.txt
+# або встановіть у режимі редагування:
+# pip install -e .[dev]
 ```
 
----
+`requests` забезпечує контрактні тести, а `PyYAML` — валідацію схем; інші залежності доступні у `requirements-dev.txt` або через extra `dev`.
 
-## Кінцеві точки
+## Використання
 
-### Версія
+Запустіть сервіс локально:
 
 ```bash
-curl -s http://127.0.0.1:8000/v1/version
+source .venv/bin/activate
+export API_KEY=change-me   # опційно
+uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### Відображення наміру
+Допоміжні утиліти, такі як NLI-класифікатор та оцінювач тверджень, розміщені у пакеті `factsynth_ultimate.services`. Модуль `app` видалено.
+
+Також можна використати Docker:
 
 ```bash
-curl -s -H 'x-api-key: change-me' \
-  -H 'content-type: application/json' \
-  -d '{"intent":"Summarize Q4 plan","length":48}' \
-  http://127.0.0.1:8000/v1/intent_reflector
+docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
 ```
 
-### Скоринг
+## Приклади
+
+Запит на генерацію через `curl`:
 
 ```bash
-curl -s -H 'x-api-key: change-me' \
-  -H 'content-type: application/json' \
-  -d '{"text":"hello world","targets":["hello"]}' \
-  http://127.0.0.1:8000/v1/score
+curl -s -X POST http://localhost:8000/v1/generate \
+  -H "x-api-key: ${API_KEY:-test-key}" \
+  -H "content-type: application/json" \
+  -d '{"prompt": "Видобути факти про воду."}'
 ```
 
-### Пакетний скоринг
+Типова відповідь JSON:
 
-```bash
-curl -s -H 'x-api-key: change-me' \
-  -H 'content-type: application/json' \
-  -d '{"items":[{"text":"a"},{"text":"hello doc","targets":["doc"]}]}' \
-  http://127.0.0.1:8000/v1/score/batch
+```json
+{
+  "facts": ["Вода замерзає при 0°C", "Вода кипить при 100°C"]
+}
 ```
-
-### SSE Стрім
-
-```bash
-curl -N -H 'x-api-key: change-me' \
-  -H 'content-type: application/json' \
-  -d '{"text":"stream this text"}' \
-  http://127.0.0.1:8000/v1/stream
-```
-
-### WebSocket Стрім
-
-```text
-WS /ws/stream
-Header: x-api-key: change-me
-Send: "your text"
-Recv: {"t":"token"...} ... {"end":true}
-```
-
-### Конвеєр GLRTPM (демо)
-
-```bash
-curl -s -H 'x-api-key: change-me' \
-  -H 'content-type: application/json' \
-  -d '{"text":"pipeline test"}' \
-  http://127.0.0.1:8000/v1/glrtpm/run
-```
-
----
-
-## Авторизація та ліміти
-
-* Передайте API-ключ у заголовку `x-api-key`.
-* Ліміти: 120 запитів на хвилину на ключ або IP. Заголовок `Retry-After` у секундах.
-
----
-
-## Помилки (Problem+JSON)
-
-Усі помилки повертаються у форматі [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
-
----
-
-## Спостережуваність
-
-* Метрики доступні за `/metrics`.
-* Логи у форматі JSON.
-* За бажанням інтегрується з OpenTelemetry.
-
----
 
 ## Конфігурація
 
-Змінні середовища: `API_KEY`, `RATE_LIMIT_REDIS_URL`, `RATE_LIMIT_PER_KEY`, `BODY_MAX_BYTES`, `IP_ALLOWLIST`, тощо.
+Потрібен екземпляр Redis для лімітування запитів; встановіть `RATE_LIMIT_REDIS_URL` на відповідний URL.
 
----
+| Змінна | За замовчуванням | Опис |
+| ------ | ---------------- | ---- |
+| `ENV` | `dev` | Назва середовища |
+| `HTTPS_REDIRECT` | `false` | Перенаправлення HTTP на HTTPS |
+| `CORS_ALLOW_ORIGINS` | *(порожньо)* | Допустимі origin через кому |
+| `AUTH_HEADER_NAME` | `x-api-key` | Заголовок з API-ключем |
+| `IP_ALLOWLIST` | *(порожньо)* | Дозволені IP, розділені комами |
+| `RATE_LIMIT_REDIS_URL` | *(немає)* | URL Redis для лімітування |
+| `RATE_LIMIT_PER_KEY` | `120` | Запитів на хвилину на API-ключ |
+| `RATE_LIMIT_PER_IP` | `120` | Запитів на хвилину на IP |
+| `RATE_LIMIT_PER_ORG` | `120` | Запитів на хвилину на організацію |
+| `SKIP_AUTH_PATHS` | `/v1/healthz,/metrics` | Шляхи без автентифікації |
+| `LOG_LEVEL` | `INFO` | Рівень логування |
+| `VAULT_ADDR` | *(порожньо)* | URL сервера Vault |
+| `VAULT_TOKEN` | *(порожньо)* | Токен аутентифікації Vault |
+| `VAULT_PATH` | *(порожньо)* | Шлях до секрету у Vault |
 
-## Docker
+Щоб дозволити крос-доменні запити, встановіть `CORS_ALLOW_ORIGINS`:
 
 ```bash
-docker build -t factsynth .
-docker run -p 8000:8000 -e API_KEY=change-me factsynth
+export CORS_ALLOW_ORIGINS="https://example.com,https://another.example"
 ```
 
----
+Використовуйте `CORS_ALLOW_ORIGINS=*` лише у тестових середовищах.
 
-## Postman та OpenAPI
+## Демо та OpenAPI
 
-Файл Postman та OpenAPI схему шукайте у директорії `openapi/`.
+Перегляньте [документацію OpenAPI](https://neuron7x.github.io/FactSynth/).
 
----
+## Спостережуваність
 
-## Тестування
-
-```bash
-pytest
-```
-
----
+- Метрики Prometheus доступні на `/metrics`.
+- Структуровані логи з ідентифікаторами запитів.
+- Гачки трасування готові до OpenTelemetry.
 
 ## Безпека
 
-* Використовуйте HTTPS у продакшені.
-* Зберігайте секрети поза репозиторієм.
-* Мінімізуйте дозволені IP.
-* Розташуйте CDN/WAF перед ingress для захисту та rate limiting.
-* Примусово обмежуйте розмір тіла запиту 1 МБ через `MAX_BODY_BYTES` та проксі.
-* Кешуйте легкі ендпоїнти (`/v1/version`, `/metrics`) на edge.
-
----
+Див. [SECURITY.md](SECURITY.md) для приватного повідомлення про вразливості. CodeQL та Dependabot контролюють залежності та код.
 
 ## Дорожня карта
 
-* Інтеграція з повноцінною LLM.
-* Більше локалізацій.
-* Розширені метрики.
+Плановані функції відстежуються у [issues](https://github.com/neuron7x/FactSynth/issues).
 
----
+## Внесок
+
+Див. [CONTRIBUTING.md](CONTRIBUTING.md). Проєкт дотримується [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Ліцензія
 
-Проєкт поширюється за ліцензією MIT. Див. файл [LICENSE](LICENSE).
+[MIT](LICENSE)
+
+## Подяки
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+Цей проєкт використовує специфікацію all-contributors.
+
