@@ -10,14 +10,10 @@
 <!-- markdownlint-disable-next-line MD013 -->
 [![docs](https://img.shields.io/badge/docs-OpenAPI%20Pages-0D1117.svg)](https://neuron7x.github.io/FactSynth/)
 
-<img
-  src="./assets/banner.svg"
-  alt="FactSynth FastAPI service for secure extractive generation with streaming and observability"
-  width="100%"
-  loading="lazy"
->
+![FactSynth service banner](./assets/banner.svg)
 
-FastAPI service for intent reflection and extractive generation with SSE/WebSocket streaming,
+FastAPI service for intent reflection and extractive generation with
+SSE/WebSocket streaming,
 Problem+JSON errors, rate limits, and rich observability.
 
 Language: EN · [Українська](./README_UA.md)
@@ -56,9 +52,9 @@ structured logs, and tracing hooks.
 
 ## Tech Stack
 
-[<img src="assets/python.svg" alt="Python" width="48" height="48">](https://www.python.org/)
-[<img src="assets/fastapi.svg" alt="FastAPI" width="48" height="48">](https://fastapi.tiangolo.com/)
-[<img src="assets/uvicorn.svg" alt="Uvicorn" width="48" height="48">](https://www.uvicorn.org/)
+[![Python](assets/python.svg)](https://www.python.org/)
+[![FastAPI](assets/fastapi.svg)](https://fastapi.tiangolo.com/)
+[![Uvicorn](assets/uvicorn.svg)](https://www.uvicorn.org/)
 
 Python 3.10+ · FastAPI 0.116 · Uvicorn 0.35  
 See full [dependency graph](https://github.com/neuron7x/FactSynth/network/dependencies).
@@ -105,6 +101,11 @@ docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
 | `VAULT_PATH` | *(empty)* | Secret path in Vault. |
 
 Secrets are supplied via GitHub Secrets or environment variables.
+
+## Deployment
+
+Refer to the [production runbook](docs/prod-runbook.md) for recommended CPU and
+memory limits, `uvicorn` worker counts, timeout values, and `ulimit` settings.
 
 ## Demo & OpenAPI
 

@@ -12,7 +12,7 @@ COPY src ./src
 FROM python:3.12-slim
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UVICORN_WORKERS=2
-RUN apt-get update && apt-get install -y --no-install-recommends tini \
+RUN apt-get update && apt-get install -y --no-install-recommends tini curl \
     && rm -rf /var/lib/apt/lists/*
 COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
@@ -24,6 +24,7 @@ RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8000
 VOLUME ["/tmp"]
+HEALTHCHECK CMD curl -f http://localhost:8000/v1/healthz || exit 1
 ENTRYPOINT ["/usr/bin/tini","--"]
 CMD [
     "uvicorn",
