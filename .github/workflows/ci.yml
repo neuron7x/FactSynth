@@ -34,7 +34,7 @@ jobs:
           # Install testing/dev extras
           pip install -r requirements-dev.txt
           pip install -e . --no-deps
-          npm install -g @stoplight/spectral-cli@6
+          npm ci
 
       - name: Pre-commit
         run: pre-commit run --all-files
@@ -53,7 +53,7 @@ jobs:
           path: coverage.xml
 
       - name: Spectral lint
-        run: spectral lint openapi/openapi.yaml
+        run: npx spectral lint openapi/openapi.yaml
 
       - name: Dependency audit
         run: pip-audit -r requirements.lock

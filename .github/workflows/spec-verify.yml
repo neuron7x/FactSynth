@@ -15,21 +15,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node (Spectral)
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install Spectral
-        run: npm i -g @stoplight/spectral-cli
+      - name: Install dependencies
+        run: npm ci
 
       - name: Run Spectral (emit JUnit & JSON)
         continue-on-error: true
         run: |
           mkdir -p artifacts
-          spectral lint openapi/openapi.yaml -f junit \
+          npx spectral lint openapi/openapi.yaml -f junit \
             -o artifacts/spectral.junit.xml
-          spectral lint openapi/openapi.yaml -f json \
+          npx spectral lint openapi/openapi.yaml -f json \
             -o artifacts/spectral.json
 
       - name: Setup Python (Schemathesis)
