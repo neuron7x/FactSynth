@@ -40,15 +40,32 @@ async def client():
 
 
 @pytest.fixture(autouse=True)
-def _stub_external_post(monkeypatch) -> None:
+def _stub_external_api(monkeypatch) -> None:
+    """Stub external HTTP calls so tests remain offline."""
+
     original_post = AsyncClient.post
+    original_get = AsyncClient.get
 
     async def _fake_post(self, url, *args, **kwargs):
         if getattr(self, "_transport", None) is not None:
             return await original_post(self, url, *args, **kwargs)
+        url_str = str(url)
+        if url_str.endswith("/v1/generate"):
+            return Response(200, json={"output": {"text": "stub"}})
+        if url_str.endswith("/v1/score"):
+            return Response(200, json={"score": 0.0})
+        return Response(200, json={"stub": True})
+
+    async def _fake_get(self, url, *args, **kwargs):
+        if getattr(self, "_transport", None) is not None:
+            return await original_get(self, url, *args, **kwargs)
+        url_str = str(url)
+        if url_str.endswith("/openapi.json"):
+            return Response(200, json={"openapi": "3.1.0", "paths": {}})
         return Response(200, json={"stub": True})
 
     monkeypatch.setattr(AsyncClient, "post", _fake_post)
+    monkeypatch.setattr(AsyncClient, "get", _fake_get)
 
 
 @pytest.fixture(autouse=True)
