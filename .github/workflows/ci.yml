@@ -36,6 +36,10 @@ jobs:
           pip install numpy hypothesis diffrax jax schemathesis
           pip install -e . --no-deps
           npm install -g @stoplight/spectral-cli@6
+          pip install pre-commit
+
+      - name: Pre-commit
+        run: pre-commit run --all-files
 
       - name: Check version consistency
         run: python tools/check_version.py
