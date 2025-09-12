@@ -1,7 +1,10 @@
 
 import pytest
 
-pytest.importorskip("numpy")
+try:
+    import numpy  # noqa: F401
+except ModuleNotFoundError:
+    pytest.skip("numpy not installed", allow_module_level=True)
 
 from factsynth_ultimate.ndmaco.kuramoto import NDMACO
 
