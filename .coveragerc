@@ -2,6 +2,9 @@
 source = src
 omit =
     src/factsynth_ultimate/schemas/*
+    */generated/*
+    */vendor/*
+    */vendored/*
 
 [report]
 exclude_lines =
