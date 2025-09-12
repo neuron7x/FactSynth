@@ -1,4 +1,4 @@
-name: Pages (OpenAPI)
+name: Pages
 on:
   push:
     branches: [ "main" ]
@@ -18,16 +18,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
       - uses: actions/setup-node@v5
         with:
           node-version: "20"
+      - name: Build docs
+        run: |
+          pip install mkdocs mkdocs-material
+          mkdocs build --strict
       - name: Build ReDoc
         run: |
-          mkdir -p site
           if [ -f openapi/openapi.yaml ]; then
-            npx --yes redoc-cli@0.13.23 bundle openapi/openapi.yaml -o site/index.html
+            mkdir -p site/openapi
+            npx --yes redoc-cli@0.13.23 bundle openapi/openapi.yaml -o site/openapi/index.html
           else
-            echo "<!doctype html><title>No OpenAPI</title><p>No openapi/openapi.yaml</p>" > site/index.html
+            mkdir -p site/openapi
+            echo "<!doctype html><title>No OpenAPI</title><p>No openapi/openapi.yaml</p>" > site/openapi/index.html
           fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
