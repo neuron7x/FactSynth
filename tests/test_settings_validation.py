@@ -30,8 +30,9 @@ def test_split_csv_edge_cases(raw, expected):
     assert Settings._split_csv(raw) == expected
 
 
-def test_invalid_rate_limit_per_minute(monkeypatch):
-    monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", "abc")
+def test_invalid_rate_limit_per_key(monkeypatch):
+    monkeypatch.setenv("RATE_LIMIT_REDIS_URL", "redis://localhost:6379/0")
+    monkeypatch.setenv("RATE_LIMIT_PER_KEY", "abc")
     with pytest.raises(ValidationError):
         load_settings()
 

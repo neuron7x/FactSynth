@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from collections import defaultdict, deque
 from contextlib import suppress
-from time import monotonic
-from typing import DefaultDict, Deque
+from typing import Dict, Tuple
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from redis.asyncio import Redis
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
@@ -18,26 +17,37 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        per_minute: int = 120,
+        *,
+        redis: Redis,
+        per_key: int = 120,
+        per_ip: int = 120,
+        per_org: int = 120,
         key_header: str = "x-api-key",
-        bucket_ttl: float = 300.0,
-        cleanup_interval: float = 60.0,
+        org_header: str = "x-organization",
+        window: int = 60,
     ) -> None:
         super().__init__(app)
-        if bucket_ttl <= 0 or cleanup_interval <= 0:
-            raise ValueError("bucket_ttl and cleanup_interval must be positive")
-        self.per_minute = per_minute
+        self.redis = redis
+        self.per_key = per_key
+        self.per_ip = per_ip
+        self.per_org = per_org
         self.key_header = key_header
-        self.bucket_ttl = bucket_ttl
-        self.cleanup_interval = cleanup_interval
-        self.buckets: DefaultDict[str, Deque[float]] = defaultdict(deque)
-        self._next_cleanup = monotonic() + cleanup_interval
+        self.org_header = org_header
+        self.window = window
 
-    def _key(self, request: Request) -> str:
-        return request.headers.get(self.key_header) or (request.client.host if request.client else "anon")
+    def _identifiers(self, request: Request) -> Tuple[str, str, str]:
+        api_key = request.headers.get(self.key_header) or "anon"
+        ip = request.client.host if request.client else "anon"
+        org = request.headers.get(self.org_header) or "anon"
+        return api_key, ip, org
 
-    def _set_headers(self, response, used: int) -> None:
-        limit = self.per_minute
+    async def _check(self, redis_key: str, limit: int) -> Tuple[bool, int]:
+        count = await self.redis.incr(redis_key)
+        if count == 1:
+            await self.redis.expire(redis_key, self.window)
+        return count <= limit, count
+
+    def _set_headers(self, response, limit: int, used: int) -> None:
         response.headers.setdefault("X-RateLimit-Limit", str(limit))
         response.headers.setdefault("X-RateLimit-Remaining", str(max(0, limit - used)))
 
@@ -45,40 +55,40 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         if path.startswith(("/v1/healthz", "/metrics")):
             return await call_next(request)
-        key = self._key(request)
-        now = monotonic()
-        if now >= self._next_cleanup:
-            cutoff = now - self.bucket_ttl
-            for k, dq in list(self.buckets.items()):
-                if dq and dq[-1] < cutoff:
-                    del self.buckets[k]
-            self._next_cleanup = now + self.cleanup_interval
-        window_start = now - 60.0
-        q = self.buckets[key]
-        while q and q[0] < window_start:
-            q.popleft()
-        if len(q) >= self.per_minute:
-            with suppress(Exception):
-                REQUESTS.labels(request.method, path, "429").inc()
-            lang = choose_language(request)
-            title = translate(lang, "too_many_requests")
-            detail = "Request rate limit exceeded"
-            problem = {
-                "type": "about:blank",
-                "title": title,
-                "status": 429,
-                "detail": detail,
-                "trace_id": getattr(request.state, "request_id", ""),
-            }
-            resp = JSONResponse(
-                problem,
-                status_code=429,
-                media_type="application/problem+json",
-            )
-            resp.headers["Retry-After"] = "60"
-            self._set_headers(resp, used=len(q))
-            return resp
-        q.append(now)
+        api_key, ip, org = self._identifiers(request)
+        checks: Dict[str, Tuple[str, int]] = {
+            "key": (f"rl:key:{api_key}", self.per_key),
+            "ip": (f"rl:ip:{ip}", self.per_ip),
+            "org": (f"rl:org:{org}", self.per_org),
+        }
+        counts: Dict[str, int] = {}
+        for name, (redis_key, limit) in checks.items():
+            if limit <= 0:
+                continue
+            ok, count = await self._check(redis_key, limit)
+            counts[name] = count
+            if not ok:
+                with suppress(Exception):
+                    REQUESTS.labels(request.method, path, "429").inc()
+                lang = choose_language(request)
+                title = translate(lang, "too_many_requests")
+                detail = "Request rate limit exceeded"
+                problem = {
+                    "type": "about:blank",
+                    "title": title,
+                    "status": 429,
+                    "detail": detail,
+                    "trace_id": getattr(request.state, "request_id", ""),
+                }
+                resp = JSONResponse(
+                    problem,
+                    status_code=429,
+                    media_type="application/problem+json",
+                )
+                resp.headers["Retry-After"] = str(self.window)
+                self._set_headers(resp, limit, count)
+                return resp
         response = await call_next(request)
-        self._set_headers(response, used=len(q))
+        if self.per_key > 0 and "key" in counts:
+            self._set_headers(response, self.per_key, counts.get("key", 0))
         return response

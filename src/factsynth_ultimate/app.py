@@ -42,10 +42,7 @@ class _MetricsMiddleware(BaseHTTPMiddleware):
         return response
 
 
-def create_app(
-    bucket_ttl: int | None = None,
-    cleanup_interval: int | None = None,
-) -> FastAPI:
+def create_app(rate_limit_window: int | None = None) -> FastAPI:
     """Application factory used by tests and ASGI server."""
     settings = load_settings()
     setup_logging()
@@ -81,16 +78,17 @@ def create_app(
         header_name=settings.auth_header_name,
         skip=tuple(settings.skip_auth_paths),
     )
+    from redis.asyncio import from_url as redis_from_url
+
+    redis_client = redis_from_url(settings.rate_limit_redis_url, decode_responses=True)
     app.add_middleware(
         RateLimitMiddleware,
-        per_minute=settings.rate_limit_per_minute,
+        redis=redis_client,
+        per_key=settings.rate_limit_per_key,
+        per_ip=settings.rate_limit_per_ip,
+        per_org=settings.rate_limit_per_org,
         key_header=settings.auth_header_name,
-        bucket_ttl=bucket_ttl
-        if bucket_ttl is not None
-        else settings.rate_limit_bucket_ttl,
-        cleanup_interval=cleanup_interval
-        if cleanup_interval is not None
-        else settings.rate_limit_cleanup_interval,
+        window=rate_limit_window or 60,
     )
     app.add_middleware(_MetricsMiddleware)
     app.add_middleware(RequestIDMiddleware)

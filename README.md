@@ -88,6 +88,8 @@ docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
 
 ## Configuration
 
+A Redis instance is required for rate limiting; set `RATE_LIMIT_REDIS_URL` to the connection URL.
+
 | Variable | Default | Description |
 | -------- | ------- | ----------- |
 | `ENV` | `dev` | Environment name. |
@@ -95,9 +97,10 @@ docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
 | `CORS_ALLOW_ORIGINS` | `*` | Comma-separated origins. |
 | `AUTH_HEADER_NAME` | `x-api-key` | Header carrying API key. |
 | `IP_ALLOWLIST` | *(empty)* | Allowed IPs, comma-separated. |
-| `RATE_LIMIT_PER_MINUTE` | `120` | Requests per minute. |
-| `RATE_LIMIT_BUCKET_TTL` | `300` | Seconds to keep rate data. |
-| `RATE_LIMIT_CLEANUP_INTERVAL` | `60` | Seconds between cleanup. |
+| `RATE_LIMIT_REDIS_URL` | *(none)* | Redis connection URL for rate limiting. |
+| `RATE_LIMIT_PER_KEY` | `120` | Requests per API key per minute. |
+| `RATE_LIMIT_PER_IP` | `120` | Requests per IP per minute. |
+| `RATE_LIMIT_PER_ORG` | `120` | Requests per organization per minute. |
 | `SKIP_AUTH_PATHS` | `/v1/healthz,/metrics` | Paths that skip auth. |
 | `LOG_LEVEL` | `INFO` | Logging verbosity level. |
 | `VAULT_ADDR` | *(empty)* | URL of Vault server. |

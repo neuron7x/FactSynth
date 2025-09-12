@@ -57,7 +57,10 @@ ingress:
 
 env:
   ENV: prod
-  RATE_LIMIT_PER_MIN: 240
+  RATE_LIMIT_REDIS_URL: redis://redis:6379/0
+  RATE_LIMIT_PER_KEY: 240
+  RATE_LIMIT_PER_IP: 240
+  RATE_LIMIT_PER_ORG: 240
   OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
   OTEL_SERVICE_NAME: factsynth
 networkPolicy:
