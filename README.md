@@ -78,16 +78,27 @@ uvicorn factsynth_ultimate.app:app --reload
 
 Set up a local development environment:
 
-```bash
-git clone https://github.com/neuron7x/FactSynth.git
-cd FactSynth
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -r requirements.lock -r requirements-dev.txt
-# Or install in editable mode with extras:
-# pip install -e .[dev]
-```
+1. **Clone and enter the repository**
+
+   ```bash
+   git clone https://github.com/neuron7x/FactSynth.git
+   cd FactSynth
+   ```
+
+2. **Create a virtual environment**
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+
+3. **Install dependencies**
+
+   ```bash
+   pip install -U pip
+   pip install -r requirements.lock -r requirements-dev.txt
+   # Optional: pip install -e .[dev]
+   ```
 
 `requests` powers the contract tests while `PyYAML` supports schema
 validation; these and other development dependencies are provided via
@@ -97,17 +108,29 @@ validation; these and other development dependencies are provided via
 
 Run the service locally:
 
-```bash
-source .venv/bin/activate
-export API_KEY=change-me   # optional
-uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000 --reload
-```
+1. **Activate the environment**
+
+   ```bash
+   source .venv/bin/activate
+   ```
+
+2. **Set an optional API key**
+
+   ```bash
+   export API_KEY=change-me
+   ```
+
+3. **Start the server**
+
+   ```bash
+   uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000 --reload
+   ```
 
 Helper utilities such as the NLI classifier, simple claim evaluator, and
 in-memory fixture retriever now live under the `factsynth_ultimate.services`
 package. The legacy `app` module has been removed.
 
-You can also use Docker:
+Or run with Docker:
 
 ```bash
 docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
@@ -115,22 +138,24 @@ docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
 
 ## Examples
 
-Request a generated summary with `curl`:
+Perform a request and observe the response:
 
-```bash
-curl -s -X POST http://localhost:8000/v1/generate \
-  -H "x-api-key: ${API_KEY:-test-key}" \
-  -H "content-type: application/json" \
-  -d '{"prompt": "Extract facts about water."}'
-```
+1. **Send a generation request**
 
-Typical JSON response:
+   ```bash
+   curl -s -X POST http://localhost:8000/v1/generate \
+     -H "x-api-key: ${API_KEY:-test-key}" \
+     -H "content-type: application/json" \
+     -d '{"prompt": "Extract facts about water."}'
+   ```
 
-```json
-{
-  "facts": ["Water freezes at 0°C", "Water boils at 100°C"]
-}
-```
+2. **Typical JSON response**
+
+   ```json
+   {
+     "facts": ["Water freezes at 0°C", "Water boils at 100°C"]
+   }
+   ```
 
 ## Configuration
 

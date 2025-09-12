@@ -64,32 +64,55 @@ uvicorn factsynth_ultimate.app:app --reload
 
 Налаштуйте локальне середовище розробки:
 
-```bash
-git clone https://github.com/neuron7x/FactSynth.git
-cd FactSynth
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -r requirements.lock -r requirements-dev.txt
-# або встановіть у режимі редагування:
-# pip install -e .[dev]
-```
+1. **Клонуйте репозиторій та перейдіть у каталог**
 
-`requests` забезпечує контрактні тести, а `PyYAML` — валідацію схем; інші залежності доступні у `requirements-dev.txt` або через extra `dev`.
+   ```bash
+   git clone https://github.com/neuron7x/FactSynth.git
+   cd FactSynth
+   ```
+
+2. **Створіть віртуальне середовище**
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+
+3. **Встановіть залежності**
+
+   ```bash
+   pip install -U pip
+   pip install -r requirements.lock -r requirements-dev.txt
+   # опційно: pip install -e .[dev]
+   ```
+
+`requests` забезпечує контрактні тести, а `PyYAML` — валідацію схем; ці та інші залежності доступні у `requirements-dev.txt` або через extra `dev`.
 
 ## Використання
 
 Запустіть сервіс локально:
 
-```bash
-source .venv/bin/activate
-export API_KEY=change-me   # опційно
-uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000 --reload
-```
+1. **Активуйте середовище**
+
+   ```bash
+   source .venv/bin/activate
+   ```
+
+2. **Задайте опційний API-ключ**
+
+   ```bash
+   export API_KEY=change-me
+   ```
+
+3. **Стартуйте сервер**
+
+   ```bash
+   uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000 --reload
+   ```
 
 Допоміжні утиліти, такі як NLI-класифікатор та оцінювач тверджень, розміщені у пакеті `factsynth_ultimate.services`. Модуль `app` видалено.
 
-Також можна використати Docker:
+Або запустіть через Docker:
 
 ```bash
 docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
@@ -97,22 +120,24 @@ docker run --rm -p 8000:8000 ghcr.io/neuron7x/factsynth:latest
 
 ## Приклади
 
-Запит на генерацію через `curl`:
+Зробіть запит і отримайте відповідь:
 
-```bash
-curl -s -X POST http://localhost:8000/v1/generate \
-  -H "x-api-key: ${API_KEY:-test-key}" \
-  -H "content-type: application/json" \
-  -d '{"prompt": "Видобути факти про воду."}'
-```
+1. **Надішліть запит генерації**
 
-Типова відповідь JSON:
+   ```bash
+   curl -s -X POST http://localhost:8000/v1/generate \
+     -H "x-api-key: ${API_KEY:-test-key}" \
+     -H "content-type: application/json" \
+     -d '{"prompt": "Видобути факти про воду."}'
+   ```
 
-```json
-{
-  "facts": ["Вода замерзає при 0°C", "Вода кипить при 100°C"]
-}
-```
+2. **Типова відповідь JSON**
+
+   ```json
+   {
+     "facts": ["Вода замерзає при 0°C", "Вода кипить при 100°C"]
+   }
+   ```
 
 ## Конфігурація
 
