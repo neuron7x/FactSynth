@@ -33,6 +33,7 @@ Language: EN · [Українська](./README_UA.md)
 - [Security](#security)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
+- [Maintainers](#maintainers)
 - [License](#license)
 - [Acknowledgements](#-acknowledgements)
 
@@ -198,8 +199,14 @@ Planned features and fixes are tracked in
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).  
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 This project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Maintainers
+
+- [Yaroslav (neuron7x)](https://github.com/neuron7x)
+
+For guidelines on contributing, see the [contributing guide](CONTRIBUTING.md).
 
 ## License
 
