@@ -5,10 +5,10 @@ from contextlib import suppress
 from typing import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
-
-from . import VERSION
+from redis.asyncio import from_url as redis_from_url
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from . import VERSION
 from .api.routers import api
 from .core.auth import APIKeyAuthMiddleware
 from .core.body_limit import BodySizeLimitMiddleware
@@ -80,9 +80,12 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
         header_name=settings.auth_header_name,
         skip=tuple(settings.skip_auth_paths),
     )
-    from redis.asyncio import from_url as redis_from_url
-
     redis_client = redis_from_url(settings.rate_limit_redis_url, decode_responses=True)
+
+    @app.on_event("shutdown")
+    async def shutdown() -> None:
+        await redis_client.close()
+
     app.add_middleware(
         RateLimitMiddleware,
         redis=redis_client,
