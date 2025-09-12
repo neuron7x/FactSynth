@@ -5,8 +5,10 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
-COPY pyproject.toml README.md LICENSE ./
-RUN pip install -U pip && pip install .[dev,ops]
+COPY pyproject.toml requirements.lock README.md LICENSE ./
+RUN pip install -U pip \
+    && pip install --require-hashes -r requirements.lock \
+    && pip install .[dev,ops] --no-deps
 COPY src ./src
 
 FROM python:3.12-slim
@@ -14,11 +16,13 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UVICORN_WORKERS=2
 RUN apt-get update && apt-get install -y --no-install-recommends tini \
     && rm -rf /var/lib/apt/lists/*
-COPY pyproject.toml README.md LICENSE ./
+COPY pyproject.toml requirements.lock README.md LICENSE ./
 COPY src ./src
 ARG ENV=dev
 ENV ENV=${ENV}
-RUN pip install -U pip && pip install .[ops]
+RUN pip install -U pip \
+    && pip install --require-hashes -r requirements.lock \
+    && pip install .[ops] --no-deps
 # Create non-root user
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
