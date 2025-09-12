@@ -122,7 +122,7 @@ curl -s -X POST http://localhost:8000/v1/generate \
 | ------ | ---------------- | ---- |
 | `ENV` | `dev` | Назва середовища |
 | `HTTPS_REDIRECT` | `false` | Перенаправлення HTTP на HTTPS |
-| `CORS_ALLOW_ORIGINS` | *(порожньо)* | Допустимі origin через кому |
+| `CORS_ALLOW_ORIGINS` | *(порожньо)* | Допустимі origin через кому. За замовчуванням усі блокуються; вкажіть явні домени. |
 | `AUTH_HEADER_NAME` | `x-api-key` | Заголовок з API-ключем |
 | `IP_ALLOWLIST` | *(порожньо)* | Дозволені IP, розділені комами |
 | `RATE_LIMIT_REDIS_URL` | *(немає)* | URL Redis для лімітування |
@@ -135,7 +135,8 @@ curl -s -X POST http://localhost:8000/v1/generate \
 | `VAULT_TOKEN` | *(порожньо)* | Токен аутентифікації Vault |
 | `VAULT_PATH` | *(порожньо)* | Шлях до секрету у Vault |
 
-Щоб дозволити крос-доменні запити, встановіть `CORS_ALLOW_ORIGINS`:
+За замовчуванням крос-доменні запити не дозволені. Адміністратори мають
+встановити `CORS_ALLOW_ORIGINS`:
 
 ```bash
 export CORS_ALLOW_ORIGINS="https://example.com,https://another.example"
