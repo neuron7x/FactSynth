@@ -28,12 +28,16 @@ def _pick_score(payload):
     base=st.lists(st.text(min_size=1, max_size=30), min_size=1, max_size=4, unique=True),
     extra=st.lists(st.text(min_size=1, max_size=30), min_size=1, max_size=3, unique=True),
 )
-async def test_score_monotonic_coverage(client, base_headers, query, base, extra):
+async def test_score_monotonic_coverage(api_stub, base_headers, query, base, extra):
     A = base
     B = base + [e for e in extra if e not in base]
 
-    r1 = await client.post("/v1/score", headers=base_headers, json={"query": query, "facts": A})
-    r2 = await client.post("/v1/score", headers=base_headers, json={"query": query, "facts": B})
+    r1 = await api_stub.post(
+        "/v1/score", headers=base_headers, json={"query": query, "facts": A}
+    )
+    r2 = await api_stub.post(
+        "/v1/score", headers=base_headers, json={"query": query, "facts": B}
+    )
 
     if HTTPStatus.NOT_FOUND in {r1.status_code, r2.status_code}:
         pytest.skip("score endpoint not available")

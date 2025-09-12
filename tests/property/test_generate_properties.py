@@ -35,9 +35,13 @@ def _entropy_bits_per_char(s: str) -> float:
 @pytest.mark.anyio
 @settings(max_examples=30, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(text=st.text(alphabet=st.characters(blacklist_categories=("Cs",)), min_size=5, max_size=120))
-async def test_generate_entropy_and_length_stability(client, base_headers, text):
-    r1 = await client.post("/v1/generate", headers=base_headers, json={"text": text, "seed": 42})
-    r2 = await client.post("/v1/generate", headers=base_headers, json={"text": text, "seed": 42})
+async def test_generate_entropy_and_length_stability(api_stub, base_headers, text):
+    r1 = await api_stub.post(
+        "/v1/generate", headers=base_headers, json={"text": text, "seed": 42}
+    )
+    r2 = await api_stub.post(
+        "/v1/generate", headers=base_headers, json={"text": text, "seed": 42}
+    )
 
     if HTTPStatus.NOT_FOUND in {r1.status_code, r2.status_code}:
         pytest.skip("generate endpoint not available")
@@ -57,8 +61,8 @@ async def test_generate_entropy_and_length_stability(client, base_headers, text)
 @pytest.mark.anyio
 @settings(max_examples=20, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(text=st.text(min_size=10, max_size=200))
-async def test_generate_nonempty_output(client, base_headers, text):
-    r = await client.post("/v1/generate", headers=base_headers, json={"text": text})
+async def test_generate_nonempty_output(api_stub, base_headers, text):
+    r = await api_stub.post("/v1/generate", headers=base_headers, json={"text": text})
     if r.status_code == HTTPStatus.NOT_FOUND:
         pytest.skip("generate endpoint not available")
     assert r.status_code < HTTPStatus.INTERNAL_SERVER_ERROR
