@@ -10,7 +10,11 @@ def _defaults(hsts: bool) -> dict[str, str]:
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",
         "Referrer-Policy": "no-referrer",
-        "Permissions-Policy": "geolocation=(), microphone=(), camera=(), interest-cohort=()",
+        # Intentionally omit deprecated X-XSS-Protection header
+        "Permissions-Policy": (
+            "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
+            "magnetometer=(), microphone=(), payment=(), usb=()"
+        ),
         # API без UI: жорсткий CSP
         "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
     }
