@@ -243,6 +243,18 @@ For guidelines on contributing, see the [contributing guide](CONTRIBUTING.md).
 ## 🙏 Acknowledgements
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="12.5%"><a href="https://github.com/neuron7x"><img src="https://avatars.githubusercontent.com/u/206596321?v=4?s=80" width="80px;" alt="Yaroslav Vasylenko"/><br /><sub><b>Yaroslav Vasylenko</b></sub></a><br /><a href="https://github.com/neuron7x/FactSynth/commits?author=neuron7x" title="Code">💻</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
