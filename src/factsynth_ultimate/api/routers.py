@@ -1,3 +1,5 @@
+"""HTTP API routers exposing scoring and streaming endpoints."""
+
 from __future__ import annotations
 
 import asyncio
@@ -8,6 +10,7 @@ import random
 import time
 from collections.abc import AsyncGenerator
 from http import HTTPStatus
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -37,7 +40,16 @@ ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 
 def validate_callback_url(url: str) -> bool:
-    """Validate that the callback URL uses an allowed scheme and host."""
+    """Validate that a callback URL uses an allowed scheme and host.
+
+    Args:
+        url: URL provided by the client.
+
+    Returns:
+        True if the scheme is HTTP(S) and, when the
+        ``CALLBACK_URL_ALLOWED_HOSTS`` environment variable is set, the host is
+        present in that allowlist.
+    """
     allowed_hosts = set(
         filter(None, os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "").split(","))
     )
@@ -60,17 +72,27 @@ api = APIRouter()
 
 @api.get("/v1/version")
 def version() -> dict[str, str]:
+    """Return package name and semantic version."""
+
     return {"name": "factsynth-ultimate-pro", "version": VERSION}
 
-@api.post('/v1/intent_reflector')
-def intent_reflector(req: IntentReq, request: Request):
-    audit_event("intent_reflector", request.client.host if request.client else "unknown")
-    return {'insight': reflect_intent(req.intent, req.length)}
+@api.post("/v1/intent_reflector")
+def intent_reflector(req: IntentReq, request: Request) -> dict[str, str]:
+    """Reflect user intent into a concise insight string."""
 
-@api.post('/v1/score')
-def score(req: ScoreReq, request: Request, background_tasks: BackgroundTasks):
+    audit_event("intent_reflector", request.client.host if request.client else "unknown")
+    return {"insight": reflect_intent(req.intent, req.length)}
+
+@api.post("/v1/score")
+def score(
+    req: ScoreReq,
+    request: Request,
+    background_tasks: BackgroundTasks,
+) -> dict[str, float]:
+    """Calculate a score for the provided request body."""
+
     audit_event("score", request.client.host if request.client else "unknown")
-    result = {'score': score_payload(req.model_dump())}
+    result: dict[str, float] = {"score": score_payload(req.model_dump())}
     if req.callback_url:
         if not validate_callback_url(req.callback_url):
             raise HTTPException(
@@ -79,12 +101,18 @@ def score(req: ScoreReq, request: Request, background_tasks: BackgroundTasks):
         background_tasks.add_task(_post_callback, req.callback_url, result)
     return result
 
-@api.post('/v1/score/batch')
-def score_batch(batch: ScoreBatchReq, request: Request, background_tasks: BackgroundTasks):
+@api.post("/v1/score/batch")
+def score_batch(
+    batch: ScoreBatchReq,
+    request: Request,
+    background_tasks: BackgroundTasks,
+) -> dict[str, Any]:
+    """Score multiple payloads in a single request."""
+
     audit_event("score_batch", request.client.host if request.client else "unknown")
-    items = batch.items[:batch.limit]
-    results = [{'score': score_payload(it.model_dump())} for it in items]
-    out = {'results': results, 'count': len(results)}
+    items = batch.items[: batch.limit]
+    results = [{"score": score_payload(it.model_dump())} for it in items]
+    out: dict[str, Any] = {"results": results, "count": len(results)}
     if batch.callback_url:
         if not validate_callback_url(batch.callback_url):
             raise HTTPException(
@@ -93,8 +121,10 @@ def score_batch(batch: ScoreBatchReq, request: Request, background_tasks: Backgr
         background_tasks.add_task(_post_callback, batch.callback_url, out)
     return out
 
-@api.post('/v1/stream')
+@api.post("/v1/stream")
 async def stream(req: ScoreReq, request: Request) -> StreamingResponse:
+    """Stream tokenized preview of ``req.text`` using Server-Sent Events."""
+
     tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
     resources: list[object] = []
     for obj in (
@@ -106,16 +136,18 @@ async def stream(req: ScoreReq, request: Request) -> StreamingResponse:
             resources.append(obj)
 
     async def event_stream() -> AsyncGenerator[str, None]:
+        """Yield SSE events for each produced token."""
+
         sent = 0
         try:
-            yield 'event: start\n' + 'data: {}\n\n'
+            yield "event: start\n" + "data: {}\n\n"
             for t in tokens:
                 await asyncio.sleep(0.002)
                 if await request.is_disconnected():
                     break
                 sent += 1
-                yield 'event: token\n' + 'data: ' + json.dumps({'t': t, 'n': sent}) + '\n\n'
-            yield 'event: end\n' + 'data: {}\n\n'
+                yield "event: token\n" + "data: " + json.dumps({"t": t, "n": sent}) + "\n\n"
+            yield "event: end\n" + "data: {}\n\n"
         except asyncio.CancelledError:
             logger.info("SSE stream cancelled after %d tokens", sent)
             raise
@@ -133,19 +165,12 @@ async def stream(req: ScoreReq, request: Request) -> StreamingResponse:
                 except Exception:  # noqa: BLE001
                     logger.debug("Error closing resource", exc_info=True)
 
-    return StreamingResponse(event_stream(), media_type='text/event-stream')
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 @api.websocket("/ws/stream")
-async def ws_stream(ws: WebSocket):
-    """Stream tokenization results over WebSocket.
+async def ws_stream(ws: WebSocket) -> None:
+    """Stream tokenization results over WebSocket with API-key auth."""
 
-    The client establishes a WebSocket connection and the server first checks
-    the ``x-api-key`` header before completing the handshake. If the header is
-    missing or does not match the configured key, the connection is closed with
-    code ``4401`` and reason ``"Unauthorized"`` without accepting. Once the key
-    is verified, the connection is accepted and incoming text messages are
-    tokenized and each token is emitted back to the client as JSON messages.
-    """
     key = ws.headers.get("x-api-key")
     if key != API_KEY:
         await ws.close(code=4401, reason="Unauthorized")
@@ -167,7 +192,9 @@ async def _post_callback(  # noqa: PLR0913
     base_delay: float = 0.2,
     max_delay: float = 5.0,
     max_elapsed: float = 15.0,
-):
+) -> None:
+    """POST ``data`` to ``url`` using exponential backoff."""
+
     delay = base_delay
     last_err = None
     start = time.monotonic()
@@ -197,6 +224,7 @@ async def _post_callback(  # noqa: PLR0913
     if last_err is not None:
         logger.error("Callback failed after %d attempts: %s", attempt_num, last_err)
 
-async def _sleep(s: float):
-    # виділено для тестів/патчу
+async def _sleep(s: float) -> None:
+    """Async sleep exposed for tests and patching."""
+
     await asyncio.sleep(s)

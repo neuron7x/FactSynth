@@ -1,4 +1,6 @@
 
+"""Simple pipeline orchestrating GLRTPM role interactions."""
+
 import json
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List
@@ -9,13 +11,19 @@ from .roles import Aesthete, Critic, Integrator, Observer, Rationalist
 
 @dataclass
 class GLRTPMConfig:
-    steps: List[str] = field(default_factory=lambda: ["R","I","P","Omega"])
+    """Configuration specifying which GLRTPM steps to execute."""
+
+    steps: List[str] = field(default_factory=lambda: ["R", "I", "P", "Omega"])
 
 @dataclass
 class GLRTPMPipeline:
+    """Pipeline executing configured GLRTPM roles in sequence."""
+
     config: GLRTPMConfig = field(default_factory=GLRTPMConfig)
+
     def run(self, thesis: str) -> Dict[str, Any]:
-        """Execute the configured GLRTPM steps for the given thesis."""
+        """Execute all configured steps for *thesis* and compute metrics."""
+
         handlers: Dict[str, Callable[[str, Dict[str, str]], str]] = {
             "R": lambda t, _: Critic().respond(t),
             "I": lambda t, _: " | ".join(

@@ -67,3 +67,9 @@ line_length = 100
 [tool.pytest.ini_options]
 addopts = "-q"
 
+[tool.interrogate]
+fail-under = 60
+ignore-init-module = true
+ignore-semiprivate = true
+style = "google"
+
