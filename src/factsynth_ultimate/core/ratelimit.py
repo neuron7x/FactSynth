@@ -1,9 +1,11 @@
+"""Middleware for enforcing simple Redis-backed rate limits."""
+
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import Dict, Tuple
+from typing import Awaitable, Callable, Dict, Tuple
 
-from fastapi import Request
+from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from redis.asyncio import Redis
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -14,7 +16,9 @@ from .metrics import REQUESTS
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    def __init__(
+    """Rate limiting middleware using Redis to count requests per key/IP/org."""
+
+    def __init__(  # noqa: PLR0913
         self,
         app: ASGIApp,
         *,
@@ -26,6 +30,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         org_header: str = "x-organization",
         window: int = 60,
     ) -> None:
+        """Initialize rate limiter configuration."""
+
         super().__init__(app)
         self.redis = redis
         self.per_key = per_key
@@ -36,22 +42,34 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.window = window
 
     def _identifiers(self, request: Request) -> Tuple[str, str, str]:
+        """Return API key, IP and organization identifiers for a request."""
+
         api_key = request.headers.get(self.key_header) or "anon"
         ip = request.client.host if request.client else "anon"
         org = request.headers.get(self.org_header) or "anon"
         return api_key, ip, org
 
     async def _check(self, redis_key: str, limit: int) -> Tuple[bool, int]:
+        """Increment the counter and determine if the limit was exceeded."""
+
         count = await self.redis.incr(redis_key)
         if count == 1:
             await self.redis.expire(redis_key, self.window)
         return count <= limit, count
 
-    def _set_headers(self, response, limit: int, used: int) -> None:
+    def _set_headers(self, response: Response, limit: int, used: int) -> None:
+        """Populate standard rate limit headers on *response*."""
+
         response.headers.setdefault("X-RateLimit-Limit", str(limit))
         response.headers.setdefault("X-RateLimit-Remaining", str(max(0, limit - used)))
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
+        """Apply rate limits before delegating to the next middleware."""
+
         path = request.url.path
         if path.startswith(("/v1/healthz", "/metrics")):
             return await call_next(request)

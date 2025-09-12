@@ -1,3 +1,5 @@
+"""Utilities for reading API keys from various backends."""
+
 from __future__ import annotations
 
 import os
@@ -5,7 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 try:
-    import hvac  # type: ignore[import]
+    import hvac
 except ImportError:  # pragma: no cover - optional dependency
     hvac = None
 
