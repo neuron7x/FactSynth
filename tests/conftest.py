@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 from fakeredis.aioredis import FakeRedis
-from httpx import ASGITransport, AsyncClient
+from httpx import ASGITransport, AsyncClient, Response
 
 # Global Redis patch so tests don't require a real server
 _FAKE_REDIS = FakeRedis()
@@ -37,6 +37,18 @@ async def client():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture(autouse=True)
+def _stub_external_post(monkeypatch) -> None:
+    original_post = AsyncClient.post
+
+    async def _fake_post(self, url, *args, **kwargs):
+        if getattr(self, "_transport", None) is not None:
+            return await original_post(self, url, *args, **kwargs)
+        return Response(200, json={"stub": True})
+
+    monkeypatch.setattr(AsyncClient, "post", _fake_post)
 
 
 @pytest.fixture(autouse=True)

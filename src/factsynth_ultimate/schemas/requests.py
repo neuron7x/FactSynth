@@ -27,3 +27,8 @@ class ScoreBatchReq(BaseModel):
 class GLRTPMReq(BaseModel):
     text: NonNegativeStr = ""
     callback_url: Optional[str] = None
+
+
+class GenerateReq(BaseModel):
+    text: NonNegativeStr = ""
+    seed: Optional[int] = None
