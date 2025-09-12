@@ -178,7 +178,7 @@ components:
           type: string
           minLength: 1
           title: Intent
-          strip_whitespace: true
+          x-strip-whitespace: true
         length:
           type: integer
           maximum: 1000.0
@@ -216,13 +216,13 @@ components:
           minLength: 0
           title: Text
           default: ''
-          strip_whitespace: true
+          x-strip-whitespace: true
         targets:
           anyOf:
           - items:
               type: string
               minLength: 1
-              strip_whitespace: true
+              x-strip-whitespace: true
             type: array
           - type: 'null'
           title: Targets
