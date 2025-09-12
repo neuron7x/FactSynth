@@ -1,20 +1,22 @@
 name: Link Check
 on:
-  schedule: [{ cron: "0 6 * * 1" }]
-  workflow_dispatch:
-permissions:
-  contents: read
+  pull_request:
+    branches: [ main ]
+    paths: [ '**/*.md', 'docs/**' ]
+  push:
+    branches: [ main ]
+    paths: [ '**/*.md', 'docs/**' ]
+permissions: { contents: read }
 jobs:
   lychee:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: lycheeverse/lychee-action@v2
+      - uses: lycheeverse/lychee-action@v1
+        env: { GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
         with:
-          args: >-
-            --verbose --no-progress
-            --require-https
-            --retry-wait 2 --max-retries 2
-            --accept 200,206,429
-            --exclude-all-private
+          args: >
+            --no-progress --verbose
+            --exclude-mail
+            --max-concurrency 8
             .

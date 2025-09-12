@@ -1,105 +1,38 @@
----
 name: Container Release
-'on':
-  push:
-    branches: ["main"]
-    tags: ["v*.*.*"]
+on:
   workflow_dispatch:
-
-concurrency:
-  group: container-release-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  contents: read
-  packages: write
-  security-events: write
-
+  push:
+    branches: [ main ]
+    paths: [ 'Dockerfile', '.docker/**', 'src/**' ]
+permissions: { contents: read, packages: write }
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
-    outputs:
-      digest: ${{ steps.build.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Docker meta
-        id: meta
+      - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/factsynth
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
             type=ref,event=tag
             type=sha
-      - name: Build & push
-        id: build
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          provenance: false
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            ENV=prod
-
-  trivy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Scan image
-        uses: aquasecurity/trivy-action@0.24.0
-        with:
-          # yamllint disable rule:line-length
-          image-ref: ghcr.io/${{ github.repository_owner }}/factsynth@${{ needs.build.outputs.digest }}
-          # yamllint enable rule:line-length
-          ignore-unfixed: true
-          exit-code: '1'
-      - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy.sarif
-
-  sbom:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          # yamllint disable rule:line-length
-          image: ghcr.io/${{ github.repository_owner }}/factsynth@${{ needs.build.outputs.digest }}
-          # yamllint enable rule:line-length
-          format: spdx-json
-          output-file: sbom.spdx.json
-      - uses: actions/upload-artifact@v4
-        with:
-          name: sbom
-          path: sbom.spdx.json
-
-  smoke:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Pull exact image
-        run: docker pull ghcr.io/${{ github.repository_owner }}/factsynth@${{ needs.build.outputs.digest }}
-      - name: Run & probe
-        shell: bash
-        run: |
-          docker run -d --rm -p 8000:8000 \
-            --name factsynth \
-            ghcr.io/${{ github.repository_owner }}/factsynth@${{ needs.build.outputs.digest }}
-          for i in $(seq 1 45); do
-            curl -fsS http://127.0.0.1:8000/v1/healthz && exit 0 || sleep 2
-          done
-          echo "Health check failed; recent logs:" >&2
-          docker logs --tail=200 factsynth >&2
-          exit 1

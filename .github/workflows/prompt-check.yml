@@ -1,23 +1,26 @@
-name: Prompt Quality Gate
+name: Prompt Check
 on:
-  pull_request:
-    paths:
-      - 'prompts/**'
-      - 'docs/PromptPack.md'
-      - 'tools/prompt_lint.py'
-      - 'tests/golden_12.yaml'
-  push:
-    branches: [ feat/**, fix/**, chore/** ]
-    paths:
-      - 'prompts/**'
-      - 'docs/PromptPack.md'
-      - 'tools/prompt_lint.py'
-      - 'tests/golden_12.yaml'
+  pull_request: { branches: [ main ], paths: [ 'prompts/**' ] }
+  push: { branches: [ main ], paths: [ 'prompts/**' ] }
+permissions: { contents: read }
 jobs:
-  lint:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - run: python tools/prompt_lint.py
+
+      - name: Validate YAML (if any)
+        if: hashFiles('prompts/**/*.yml','prompts/**/*.yaml') != ''
+        uses: ibiqlik/action-yamllint@v3
+        with: { file_or_dir: "prompts" }
+
+      - name: Validate JSON (if any)
+        if: hashFiles('prompts/**/*.json') != ''
+        run: |
+          set -e
+          find prompts -type f -name '*.json' -print0 | xargs -0 -I{} sh -c 'jq -e . "{}" >/dev/null'
+
+      - name: Check trailing spaces/CRLF
+        run: |
+          set -e
+          git ls-files 'prompts/**' | xargs -I{} bash -c 'grep -nI $'\'' \r\?$'\'' "{}" && exit 1 || true'

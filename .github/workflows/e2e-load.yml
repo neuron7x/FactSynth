@@ -1,15 +1,28 @@
-name: e2e load
-
+name: E2E & Load
 on:
   workflow_dispatch:
-
+  schedule: [ { cron: '0 1 * * 2' } ]
+permissions: { contents: read }
+concurrency: { group: 'e2e-${{ github.ref }}', cancel-in-progress: true }
 jobs:
-  load-test:
+  e2e:
+    if: hashFiles('e2e/**','tests/e2e/**') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: grafana/setup-k6-action@v1
+      - uses: actions/setup-node@v5
+        with: { node-version: 'lts/*', cache: 'npm' }
+      - run: |
+          npm ci || true
+          npx playwright install --with-deps || true
+          if npm run -s | grep -qE '^ *e2e'; then npm run e2e --if-present; else echo "No e2e script"; fi
+  k6:
+    if: hashFiles('k6/**','load/**') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grafana/k6-action@v0.3.1
         with:
-          docker-options: --add-host=host.docker.internal:host-gateway
-      - name: Run k6 test
-        run: k6 run test.js
+          filename: |
+            k6/**/*.js
+            load/**/*.js

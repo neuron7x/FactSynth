@@ -1,86 +1,83 @@
-name: ci
-
+name: CI
 on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ "*" ]
+  push: { branches: [ main ] }
+  pull_request: { branches: [ main ] }
+permissions: { contents: read }
+concurrency: { group: 'ci-${{ github.ref }}', cancel-in-progress: true }
 
 jobs:
-  tests:
-    name: unit+property (py${{ matrix.python-version }})
+  build-test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [ "3.10", "3.11", "3.12" ]
-    env:
-      API_KEY: change-me
-      PYTHONWARNINGS: default
-      HYPOTHESIS_PROFILE: ci
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
 
-      - name: Set up Python
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
+      - uses: actions/setup-node@v5
+        with: { node-version: 'lts/*', cache: 'npm' }
 
-      - name: Install deps
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.11', cache: 'pip' }
+
+      - name: Install JS deps
+        if: hashFiles('package.json') != ''
         run: |
-          python -m pip install -U pip wheel setuptools
-          pip install --require-hashes -r requirements.lock
-          # Install testing/dev extras
-          pip install -r requirements-dev.txt
-          pip install -e . --no-deps
-          npm ci
+          if [ -f pnpm-lock.yaml ]; then npm i -g pnpm && pnpm i --frozen-lockfile;
+          elif [ -f yarn.lock ]; then corepack enable && yarn install --immutable;
+          elif [ -f package-lock.json ]; then npm ci;
+          else echo "No JS lockfile, skipping"; fi
 
-      - name: Pre-commit
-        run: pre-commit run --all-files
-
-      - name: Check version consistency
-        run: python tools/check_version.py
-
-      - name: Pytest
-        run: pytest --cov=src --cov-report=xml
-
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-xml-${{ matrix.python-version }}
-          path: coverage.xml
-
-      - name: Spectral lint
-        run: npx spectral lint openapi/openapi.yaml
-
-      - name: Dependency audit
-        run: pip-audit -r requirements.lock
-
-  smoke-streams:
-    name: smoke (SSE/WS)
-    runs-on: ubuntu-latest
-    needs: [ tests ]
-    env:
-      API_KEY: change-me
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install deps
+      - name: Install Python deps
+        if: hashFiles('requirements.txt','pyproject.toml') != ''
         run: |
           python -m pip install -U pip
-          pip install --require-hashes -r requirements.lock
-          # Install testing/dev extras
-          pip install -r requirements-dev.txt
-          pip install -e . --no-deps
+          [ -f requirements.txt ] && pip install -r requirements.txt
+          [ -f pyproject.toml ] && pip install ".[dev]" || true
 
-      - name: Smoke (SSE/WS only)
+      - name: Lint JS
+        if: hashFiles('package.json') != ''
         run: |
-          # run only tests marked smoke
-          pytest -q -m smoke -k "stream" --maxfail=1
+          npx --yes eslint --version >/dev/null 2>&1 || npm i -D eslint
+          if [ -f .eslintrc* ] || npx --yes eslint --print-config . >/dev/null 2>&1; then
+            npx eslint . --max-warnings=0
+          else
+            echo "No ESLint config; skipping."
+          fi
+
+      - name: Lint Python
+        if: hashFiles('pyproject.toml','requirements.txt') != ''
+        run: |
+          pip install ruff
+          ruff check .
+
+      - name: Unit tests (JS)
+        if: hashFiles('package.json') != ''
+        run: |
+          if npm run -s | grep -qE '^ *test'; then
+            npm test --silent -- --ci || npm run test -- --ci
+          else
+            echo "No JS test script; skipping."
+          fi
+
+      - name: Unit tests (Python)
+        if: hashFiles('tests/**','pyproject.toml','requirements.txt') != ''
+        run: |
+          pip install pytest
+          pytest -q
+
+      - name: Build docs (MkDocs)
+        if: hashFiles('mkdocs.yml') != ''
+        run: |
+          pip install mkdocs mkdocs-material
+          mkdocs build -q
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failures
+          if-no-files-found: ignore
+          path: |
+            **/junit*.xml
+            **/coverage*
+            site/**

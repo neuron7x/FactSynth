@@ -1,38 +1,25 @@
----
 name: Container Scan
-'on':
-  push:
-    branches: ["main"]
-  pull_request:
+on:
+  schedule: [ { cron: '11 4 * * 1' } ]
   workflow_dispatch:
-
+  push:
+    branches: [ main ]
+    paths: [ 'Dockerfile', '.docker/**' ]
 permissions:
   contents: read
   security-events: write
-
 jobs:
-  scan:
-    if: github.event_name != 'pull_request'
+  trivy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - name: Build image
-        if: github.event_name != 'pull_request'
-        id: build
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v5
+        with: { context: ., load: true, tags: factsynth:ci }
+      - uses: aquasecurity/trivy-action@0.33.1
         with:
-          context: .
-          push: true
-          provenance: false
-      - name: Scan image
-        uses: aquasecurity/trivy-action@0.24.0
-        with:
-          image-ref: ${{ steps.build.outputs.imageid }}
-          ignore-unfixed: true
-          format: 'sarif'
-          output: 'trivy.sarif'
-      - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy.sarif
+          image-ref: factsynth:ci
+          format: sarif
+          output: trivy.sarif
+          severity: HIGH,CRITICAL
+      - uses: github/codeql-action/upload-sarif@v3
+        with: { sarif_file: trivy.sarif }

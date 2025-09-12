@@ -1,14 +1,16 @@
-name: scripts-quality
-on: [push, pull_request]
+name: Scripts Quality
+on:
+  pull_request: { branches: [ main ], paths: [ '**/*.sh' ] }
+  push: { branches: [ main ], paths: [ '**/*.sh' ] }
+permissions: { contents: read }
 jobs:
-  scripts:
+  shellcheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-      - run: pip install black ruff isort
-      - run: python tools/scripts_calibrate.py --root scripts --write
-      - run: make scripts.fmt
-      - run: make scripts.lint
-
+      - uses: reviewdog/action-shellcheck@v1
+        with:
+          reporter: github-pr-check
+          level: error
+          path: "."
+          pattern: "**/*.sh"

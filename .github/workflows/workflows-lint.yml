@@ -1,0 +1,14 @@
+name: Workflows Lint
+on:
+  pull_request: { paths: [ '.github/workflows/**' ] }
+  push: { paths: [ '.github/workflows/**' ] }
+permissions: { contents: read }
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: reviewdog/action-actionlint@v1
+        with:
+          reporter: github-pr-check
+          level: error

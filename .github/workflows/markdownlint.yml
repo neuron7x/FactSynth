@@ -1,23 +1,7 @@
-name: Markdown Lint
+name: Markdown Lint (legacy)
 on:
-  pull_request:
-  push:
-    paths: ["**/*.md"]
-permissions:
-  contents: read
+  pull_request: { branches: [ main ], paths: [ '**/*.md', '.markdownlint.json' ] }
+  push: { branches: [ main ], paths: [ '**/*.md', '.markdownlint.json' ] }
 jobs:
-  mdlint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('.markdownlint.jsonc') }}
-          restore-keys: ${{ runner.os }}-node-
-      - run: >-
-          npx markdownlint-cli2 --config .markdownlint.jsonc README.md
-          .github/PULL_REQUEST_TEMPLATE.md
+  use-reusable:
+    uses: ./.github/workflows/docs-quality.yml

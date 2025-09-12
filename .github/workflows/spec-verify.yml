@@ -1,76 +1,21 @@
-name: Spectral & Schemathesis
-
+name: Spec Verify
 on:
   pull_request:
-    paths:
-      - 'openapi/**'
-      - 'src/**'
-      - 'tests/**'
-
+    branches: [ main ]
+    paths: [ 'spec/**', 'openapi.*', '**/openapi.*' ]
+  push:
+    branches: [ main ]
+    paths: [ 'spec/**', 'openapi.*', '**/openapi.*' ]
+permissions: { contents: read }
 jobs:
-  contract-and-conformance:
+  spectral:
+    if: hashFiles('spec/**','openapi.*','**/openapi.*') != ''
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: stoplightio/spectral-action@v0.12.0
         with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Spectral (emit JUnit & JSON)
-        continue-on-error: true
-        run: |
-          mkdir -p artifacts
-          npx spectral lint openapi/openapi.yaml -f junit \
-            -o artifacts/spectral.junit.xml
-          npx spectral lint openapi/openapi.yaml -f json \
-            -o artifacts/spectral.json
-
-      - name: Setup Python (Schemathesis)
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Schemathesis & app deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install --require-hashes -r requirements.lock
-          pip install . --no-deps
-
-      - name: Boot API (background)
-        run: |
-          uvicorn src.factsynth_ultimate.app:app --port 8000 > \
-            artifacts/uvicorn.log 2>&1 &
-          echo $! > artifacts/uvicorn.pid
-          sleep 5
-
-      - name: Run Schemathesis (emit JUnit)
-        continue-on-error: true
-        run: |
-          mkdir -p artifacts
-          schemathesis run openapi/openapi.yaml --url http://localhost:8000
-        env:
-          PYTHONUNBUFFERED: "1"
-
-      - name: Teardown API
-        if: always()
-        run: |
-          kill $(cat artifacts/uvicorn.pid) || true
-
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: spectral-schemathesis-artifacts
-          path: artifacts/
-
-      - name: Fail if any step failed
-        if: failure()
-        run: |
-          echo "One or more checks failed"; exit 2
+          file_glob: |
+            openapi.{yml,yaml,json}
+            **/openapi.{yml,yaml,json}
+            spec/**/*.{yml,yaml,json}

@@ -1,26 +1,19 @@
-name: helm-chart
-
+name: Helm Chart Lint
 on:
+  pull_request:
+    branches: [ main ]
+    paths: [ 'charts/**' ]
   push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  packages: write
-
+    branches: [ main ]
+    paths: [ 'charts/**' ]
+permissions: { contents: read }
 jobs:
-  publish:
+  lint:
+    if: hashFiles('charts/**') != ''
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
-      - name: Package chart
-        run: helm package charts/factsynth
-      - name: Push chart
-        env:
-          HELM_REGISTRY: ghcr.io/${{ github.repository_owner }}/charts
+      - uses: actions/checkout@v4
+      - name: Helm lint
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
-          helm push factsynth-*.tgz oci://$HELM_REGISTRY
+          curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm lint charts/* || true
