@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.12-slim AS build
+FROM python:3.12-slim@sha256:31551bd80310d95ed82a4a14dba8c908c85098f07457e8a5b6a946385cfd86c8 AS build
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential=12.9 \
     && rm -rf /var/lib/apt/lists/*
 COPY pyproject.toml requirements.lock README.md LICENSE ./
 RUN pip install -U pip \
@@ -11,10 +11,10 @@ RUN pip install -U pip \
     && pip install .[dev,ops] --no-deps
 COPY src ./src
 
-FROM python:3.12-slim
+FROM python:3.12-slim@sha256:31551bd80310d95ed82a4a14dba8c908c85098f07457e8a5b6a946385cfd86c8
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UVICORN_WORKERS=2
-RUN apt-get update && apt-get install -y --no-install-recommends tini curl \
+RUN apt-get update && apt-get install -y --no-install-recommends tini=0.19.0-1+b3 curl=7.88.1-10+deb12u14 \
     && rm -rf /var/lib/apt/lists/*
 COPY pyproject.toml requirements.lock README.md LICENSE ./
 COPY src ./src

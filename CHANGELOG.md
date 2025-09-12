@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- Pin Python and Node dependencies, Docker base image, and apt packages to exact versions for reproducible builds.
+
 ## [1.0.5] - 2025-09-11
 
 - Ensure SSE disconnect test runs without pytest-asyncio dependency.
