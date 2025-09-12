@@ -39,6 +39,12 @@ jobs:
         run: |
           pytest -q -m "not slow" --maxfail=1
 
+      - name: Spectral lint
+        run: npx --yes @stoplight/spectral-cli@6 lint openapi/openapi.yaml
+
+      - name: Dependency audit
+        run: pip-audit -r requirements.lock
+
   smoke-streams:
     name: smoke (SSE/WS)
     runs-on: ubuntu-latest

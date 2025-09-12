@@ -55,7 +55,7 @@ def ensure_py_docstring(src: str, rel: str) -> str:
     m = re.match(r'^(?:#!.*\n)?\s*(?:"""|\'\'\')', src)
     if m:
         return src
-    doc = f'"""{rel} — auto-added docstring (logic unchanged)."""\n'
+    doc = f'"""{rel} - auto-added docstring (logic unchanged)."""\n'
     return (
         src.splitlines(keepends=True)[0]
         + doc
