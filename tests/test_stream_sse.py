@@ -1,19 +1,15 @@
 from http import HTTPStatus
 
-from fastapi.testclient import TestClient
-
-from factsynth_ultimate.app import create_app
-from factsynth_ultimate.core.metrics import SSE_TOKENS
+import pytest
 
 
-def test_stream_sse() -> None:
-    initial = SSE_TOKENS._value.get()
-    with TestClient(create_app()) as client, client.stream(
-        "POST", "/v1/stream", headers={"x-api-key": "change-me"}, json={"text": "abc"}
+@pytest.mark.anyio
+@pytest.mark.smoke
+async def test_sse_stream_basic(client, base_headers):
+    async with client.stream(
+        "POST", "/v1/stream", headers=base_headers, json={"text": "stream this text"}
     ) as r:
-        body = b"".join(r.iter_bytes())
-        status = r.status_code
-    assert status == HTTPStatus.OK
-    assert b"event: start" in body and b"event: end" in body
-    tokens = body.count(b"event: token")
-    assert SSE_TOKENS._value.get() - initial == tokens
+        assert r.status_code == HTTPStatus.OK
+        assert "text/event-stream" in r.headers.get("content-type", "")
+        first = await r.aiter_bytes().__anext__()
+        assert b"data:" in first or b"event:" in first

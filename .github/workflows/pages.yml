@@ -21,18 +21,25 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: "20"
-      - name: Build ReDoc
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-xml-3.11
+          path: coverage
+          if-no-files-found: error
+      - name: Build OpenAPI HTML (ReDocly)
         run: |
+          set -euo pipefail
           mkdir -p site
           if [ -f openapi/openapi.yaml ]; then
-            npx --yes redoc-cli@0.13.23 bundle openapi/openapi.yaml -o site/index.html
+            npx --yes @redocly/cli@1.15.0 build-docs openapi/openapi.yaml -o site/index.html
           else
-            echo "<!doctype html><title>No OpenAPI</title><p>No openapi/openapi.yaml</p>" > site/index.html
+            printf '%s\n' '<!doctype html><title>No OpenAPI</title><p>No openapi/openapi.yaml</p>' > site/index.html
           fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site
+          if-no-files-found: error
 
   deploy:
     needs: build

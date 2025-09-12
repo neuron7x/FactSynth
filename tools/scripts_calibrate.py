@@ -6,7 +6,10 @@ Calibrate all scripts/ without changing behavior.
 Idempotent; dry-run by default.
 """
 from __future__ import annotations
-import argparse, os, re, sys, textwrap
+
+import argparse
+import re
+import textwrap
 from pathlib import Path
 
 PY_SHEBANG = "#!/usr/bin/env python3\n"
@@ -52,7 +55,7 @@ def ensure_py_docstring(src: str, rel: str) -> str:
     m = re.match(r'^(?:#!.*\n)?\s*(?:"""|\'\'\')', src)
     if m:
         return src
-    doc = f'"""{rel} — auto-added docstring (logic unchanged)."""\n'
+    doc = f'"""{rel} - auto-added docstring (logic unchanged)."""\n'
     return (
         src.splitlines(keepends=True)[0]
         + doc
