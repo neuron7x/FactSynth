@@ -81,8 +81,10 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
     if settings.env == "prod" and api_key in {"", "change-me"}:
         raise RuntimeError("API key must be set in production")
 
-    # Add RateLimitMiddleware before APIKeyAuthMiddleware so authentication
-    # executes first and unauthorized requests do not consume the rate limit.
+    # Ensure APIKeyAuthMiddleware runs before RateLimitMiddleware so
+    # unauthorized requests do not consume the rate limit. Middleware added
+    # later executes earlier in FastAPI, hence APIKeyAuthMiddleware is added
+    # after RateLimitMiddleware.
     app.add_middleware(
         RateLimitMiddleware,
         redis=redis_client,

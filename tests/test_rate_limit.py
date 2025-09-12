@@ -15,6 +15,7 @@ from factsynth_ultimate.core import settings as settings_module
 
 def _build_app(per_key=1, per_ip=100, per_org=100, window=60):
     fake = FakeRedis()
+    asyncio.run(fake.flushall())
     env = {
         "API_KEY": "secret",
         "RATE_LIMIT_REDIS_URL": "redis://test",
@@ -31,7 +32,6 @@ def _build_app(per_key=1, per_ip=100, per_org=100, window=60):
 
 def test_first_request_with_valid_key_returns_200():
     app, fake = _build_app(per_key=1)
-    asyncio.run(fake.flushall())
     with TestClient(app) as client:
         headers = {"x-api-key": "secret"}
         assert (
@@ -42,7 +42,6 @@ def test_first_request_with_valid_key_returns_200():
 
 def test_rate_limit_exceeded_returns_429():
     app, fake = _build_app(per_key=1)
-    asyncio.run(fake.flushall())
     with TestClient(app) as client:
         headers = {"x-api-key": "secret"}
         assert client.post("/v1/score", headers=headers, json={"text": "x"}).status_code == HTTPStatus.OK
@@ -61,7 +60,6 @@ def test_rate_limit_exceeded_returns_429():
 
 def test_rate_limit_resets_after_window():
     app, fake = _build_app(per_key=1, window=1)
-    asyncio.run(fake.flushall())
     with TestClient(app) as client:
         headers = {"x-api-key": "secret"}
         assert client.post("/v1/score", headers=headers, json={"text": "x"}).status_code == HTTPStatus.OK
@@ -72,7 +70,6 @@ def test_rate_limit_resets_after_window():
 
 def test_rate_limit_concurrency_safety():
     app, fake = _build_app(per_key=1)
-    asyncio.run(fake.flushall())
     with TestClient(app) as client:
         headers = {"x-api-key": "secret"}
 
@@ -84,9 +81,8 @@ def test_rate_limit_concurrency_safety():
         assert sorted(results) == [HTTPStatus.OK, HTTPStatus.TOO_MANY_REQUESTS]
 
 
-def test_first_authorized_request_not_rate_limited():
+def test_authorized_request_after_unauthorized_returns_200():
     app, fake = _build_app(per_key=100, per_ip=1)
-    asyncio.run(fake.flushall())
     with TestClient(app) as client:
         assert (
             client.post("/v1/score", json={"text": "x"}).status_code
