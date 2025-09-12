@@ -37,7 +37,21 @@ jobs:
 
       - name: Pytest (fast)
         run: |
-          pytest -q -m "not slow" --maxfail=1
+          if [ "${{ matrix.python-version }}" = "3.11" ]; then
+            set -o pipefail
+            pytest -q -m "not slow" --maxfail=1 --cov=src --cov-report=xml || status=$?
+            touch coverage.xml
+            exit ${status:-0}
+          else
+            pytest -q -m "not slow" --maxfail=1
+          fi
+
+      - name: Upload coverage report
+        if: ${{ matrix.python-version == '3.11' && always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml-3.11
+          path: coverage.xml
 
       - name: Spectral lint
         run: npx --yes @stoplight/spectral-cli@6 lint openapi/openapi.yaml
