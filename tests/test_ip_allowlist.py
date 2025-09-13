@@ -3,10 +3,15 @@ import os
 from http import HTTPStatus
 from unittest.mock import patch
 
+import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from factsynth_ultimate.app import create_app
 from factsynth_ultimate.core import settings as settings_module
+from factsynth_ultimate.core.ip_allowlist import IPAllowlistMiddleware
+
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
 
 def test_forbidden_ip_returns_403():
@@ -25,3 +30,16 @@ def test_forbidden_ip_returns_403():
                 "status": HTTPStatus.FORBIDDEN,
                 "detail": "IP testclient not allowed",
             }
+
+
+def test_empty_allowlist_blocks_request():
+    app = FastAPI()
+    app.add_middleware(IPAllowlistMiddleware, cidrs=[])
+
+    @app.get("/")
+    def root() -> dict[str, str]:  # pragma: no cover - trivial
+        return {"status": "ok"}
+
+    with TestClient(app) as client:
+        r = client.get("/")
+        assert r.status_code == HTTPStatus.FORBIDDEN
