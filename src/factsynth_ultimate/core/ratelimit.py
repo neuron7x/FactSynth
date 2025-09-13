@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from contextlib import suppress
-from typing import Awaitable, Callable, Dict, Tuple
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -12,6 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from ..i18n import choose_language, translate
+from .config import load_config
 from .metrics import REQUESTS
 
 
@@ -23,25 +24,26 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         app: ASGIApp,
         *,
         redis: Redis,
-        per_key: int = 120,
-        per_ip: int = 120,
-        per_org: int = 120,
-        key_header: str = "x-api-key",
+        per_key: int | None = None,
+        per_ip: int | None = None,
+        per_org: int | None = None,
+        key_header: str | None = None,
         org_header: str = "x-organization",
         window: int = 60,
     ) -> None:
         """Initialize rate limiter configuration."""
 
         super().__init__(app)
+        cfg = load_config()
         self.redis = redis
-        self.per_key = per_key
-        self.per_ip = per_ip
-        self.per_org = per_org
-        self.key_header = key_header
+        self.per_key = per_key if per_key is not None else cfg.rate_limit_per_key
+        self.per_ip = per_ip if per_ip is not None else cfg.rate_limit_per_ip
+        self.per_org = per_org if per_org is not None else cfg.rate_limit_per_org
+        self.key_header = key_header or cfg.auth_header_name
         self.org_header = org_header
         self.window = window
 
-    def _identifiers(self, request: Request) -> Tuple[str, str, str]:
+    def _identifiers(self, request: Request) -> tuple[str, str, str]:
         """Return API key, IP and organization identifiers for a request."""
 
         api_key = request.headers.get(self.key_header) or "anon"
@@ -49,7 +51,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         org = request.headers.get(self.org_header) or "anon"
         return api_key, ip, org
 
-    async def _check(self, redis_key: str, limit: int) -> Tuple[bool, int]:
+    async def _check(self, redis_key: str, limit: int) -> tuple[bool, int]:
         """Increment the counter and determine if the limit was exceeded."""
 
         count = await self.redis.incr(redis_key)
@@ -76,12 +78,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if self.key_header not in request.headers:
             return await call_next(request)
         api_key, ip, org = self._identifiers(request)
-        checks: Dict[str, Tuple[str, int]] = {
+        checks: dict[str, tuple[str, int]] = {
             "key": (f"rl:key:{api_key}", self.per_key),
             "ip": (f"rl:ip:{ip}", self.per_ip),
             "org": (f"rl:org:{org}", self.per_org),
         }
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         for name, (redis_key, limit) in checks.items():
             if limit <= 0:
                 continue
