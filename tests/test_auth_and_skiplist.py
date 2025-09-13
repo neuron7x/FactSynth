@@ -1,6 +1,10 @@
 from http import HTTPStatus
 
+from http import HTTPStatus
+
 import pytest
+
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
 
 @pytest.mark.anyio

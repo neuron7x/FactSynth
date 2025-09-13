@@ -7,8 +7,10 @@ from collections.abc import Awaitable, Callable
 from contextlib import suppress
 
 from fastapi import FastAPI, Request, Response
-from redis.asyncio import from_url as redis_from_url
 from starlette.middleware.base import BaseHTTPMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from . import VERSION
 from .api.routers import api
@@ -19,7 +21,6 @@ from .core.errors import install_handlers
 from .core.ip_allowlist import IPAllowlistMiddleware
 from .core.logging import setup_logging
 from .core.metrics import LATENCY, REQUESTS, metrics_bytes, metrics_content_type
-from .core.ratelimit import RateLimitMiddleware
 from .core.request_id import RequestIDMiddleware
 from .core.security_headers import SecurityHeadersMiddleware
 from .core.settings import load_settings
@@ -56,15 +57,28 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
     install_handlers(app)
     try_enable_otel(app)
 
+    window = rate_limit_window or 60
+    limiter = Limiter(
+        key_func=lambda request: request.headers.get(cfg.auth_header_name, ""),
+        default_limits=[f"{cfg.rate_limit_per_key}/{window} second"],
+        storage_uri=cfg.rate_limit_redis_url,
+        headers_enabled=True,
+    )
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_middleware(SlowAPIMiddleware)
+
     # core routes
     app.include_router(api)
 
+    @limiter.exempt
     @app.get("/v1/healthz")
     def healthz() -> dict[str, str]:
         """Simple liveness probe."""
 
         return {"status": "ok"}
 
+    @limiter.exempt
     @app.get("/metrics")
     def metrics() -> Response:
         """Expose Prometheus metrics."""
@@ -76,31 +90,16 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
     if cfg.ip_allowlist:
         app.add_middleware(IPAllowlistMiddleware, cidrs=cfg.ip_allowlist)
     app.add_middleware(BodySizeLimitMiddleware)
-    redis_client = redis_from_url(cfg.rate_limit_redis_url, decode_responses=True)
 
-    @app.on_event("shutdown")
-    async def shutdown() -> None:
-        """Close underlying Redis connection on shutdown."""
-
-        await redis_client.close()
-
-    if settings.env == "prod" and cfg.api_key in {"", "change-me"}:
+    allowed_keys = cfg.allowed_api_keys or [cfg.api_key]
+    if settings.env == "prod" and any(k in {"", "change-me"} for k in allowed_keys):
         raise RuntimeError("API key must be set in production")
 
-    # Ensure API key authentication happens before rate limiting so
-    # unauthenticated requests do not consume the rate limit. Middleware
-    # added last runs first in FastAPI when using ``add_middleware``,
-    # therefore RateLimitMiddleware is added after APIKeyAuthMiddleware.
     app.add_middleware(
         APIKeyAuthMiddleware,
-        api_key=cfg.api_key,
+        api_keys=allowed_keys,
         header_name=cfg.auth_header_name,
         skip=tuple(settings.skip_auth_paths),
-    )
-    app.add_middleware(
-        RateLimitMiddleware,
-        redis=redis_client,
-        window=rate_limit_window or 60,
     )
     app.add_middleware(_MetricsMiddleware)
     app.add_middleware(RequestIDMiddleware)

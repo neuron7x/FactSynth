@@ -1,40 +1,37 @@
 import time
 
 import pytest
-from fakeredis.aioredis import FakeRedis
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
-from factsynth_ultimate.core.ratelimit import RateLimitMiddleware
+
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
 
-def _build_app(limit: int = 2, window: int = 1):
-    redis = FakeRedis()
+def _build_app(limit: str = "2/1 second") -> FastAPI:
     app = FastAPI()
-    app.add_middleware(
-        RateLimitMiddleware,
-        redis=redis,
-        per_key=limit,
-        per_ip=0,
-        per_org=0,
-        window=window,
+    limiter = Limiter(
+        key_func=lambda request: request.headers.get("x-api-key", ""),
+        default_limits=[limit],
+        storage_uri="memory://",
+        headers_enabled=True,
     )
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_middleware(SlowAPIMiddleware)
 
     @app.get("/route")
     async def route():
         return {"ok": True}
 
-    return app, redis
+    return app
 
 
-@pytest.fixture(autouse=True)
-def _set_api_key(monkeypatch):
-    monkeypatch.setenv("API_KEY", "k")
-
-
-@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 def test_burst_limit_exceeded():
-    app, _ = _build_app(limit=2, window=1)
+    app = _build_app()
     with TestClient(app) as client:
         headers = {"x-api-key": "k"}
         assert client.get("/route", headers=headers).status_code == 200
@@ -43,13 +40,11 @@ def test_burst_limit_exceeded():
         assert resp.status_code == 429
         assert resp.headers["X-RateLimit-Limit"] == "2"
         assert resp.headers["X-RateLimit-Remaining"] == "0"
-        assert resp.headers["Retry-After"] == "1"
-        assert "X-RateLimit-Reset" in resp.headers
+        assert "Retry-After" in resp.headers
 
 
-@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 def test_limit_resets_after_window():
-    app, _ = _build_app(limit=2, window=1)
+    app = _build_app()
     with TestClient(app) as client:
         headers = {"x-api-key": "k"}
         client.get("/route", headers=headers)
@@ -61,13 +56,11 @@ def test_limit_resets_after_window():
         assert resp.headers["X-RateLimit-Remaining"] == "1"
 
 
-@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 def test_headers_on_success():
-    app, _ = _build_app(limit=2, window=1)
+    app = _build_app()
     with TestClient(app) as client:
         headers = {"x-api-key": "k"}
         resp = client.get("/route", headers=headers)
         assert resp.status_code == 200
         assert resp.headers["X-RateLimit-Limit"] == "2"
         assert resp.headers["X-RateLimit-Remaining"] == "1"
-        assert resp.headers["X-RateLimit-Reset"] == "1"
