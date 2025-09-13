@@ -9,17 +9,17 @@ from factsynth_ultimate.core.factsynth_lock import (
     Verdict,
 )
 
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
-def test_verdict_enforces_enum_and_no_extra(httpx_mock):
-    httpx_mock.reset(assert_all_responses_were_requested=False)
+
+def test_verdict_enforces_enum_and_no_extra():
     with pytest.raises(ValidationError):
         Verdict(decision="maybe")
     with pytest.raises(ValidationError):
         Verdict(decision="supported", unknown="field")
 
 
-def test_lock_rejects_unknown_fields(httpx_mock):
-    httpx_mock.reset(assert_all_responses_were_requested=False)
+def test_lock_rejects_unknown_fields():
     v = Verdict(decision="supported")
     ss = SourceSynthesis(summary="s")
     tr = Traceability()
