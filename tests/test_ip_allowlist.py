@@ -1,4 +1,5 @@
 import importlib
+import logging
 import os
 from http import HTTPStatus
 from unittest.mock import patch
@@ -43,3 +44,20 @@ def test_empty_allowlist_blocks_request():
     with TestClient(app) as client:
         r = client.get("/")
         assert r.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_invalid_ip_logs_warning(caplog):
+    app = FastAPI()
+    app.add_middleware(IPAllowlistMiddleware, cidrs=["127.0.0.1/32"])
+
+    @app.get("/")
+    def root() -> dict[str, str]:  # pragma: no cover - trivial
+        return {"status": "ok"}
+
+    with TestClient(app) as client, caplog.at_level(logging.WARNING):
+        r = client.get("/")
+        assert r.status_code == HTTPStatus.FORBIDDEN
+    assert any(
+        rec.levelno == logging.WARNING and "Invalid IP address" in rec.getMessage()
+        for rec in caplog.records
+    )
