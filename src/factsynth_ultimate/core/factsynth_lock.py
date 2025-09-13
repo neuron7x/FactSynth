@@ -1,16 +1,15 @@
 """Pydantic models describing a FactSynth lock document.
 
-The original implementation used ``dataclasses``; this module replaces those
-structures with Pydantic models that offer validation and serialization
-support. Unknown fields are forbidden to ensure the schema is followed
-strictly.
+A lock bundles the final verdict of a claim evaluation together with the
+evidence used to reach it.  The models defined here are strict – unknown
+fields are rejected to ensure the contract stays stable.
 """
 
 from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class _StrictModel(BaseModel):
@@ -32,84 +31,37 @@ class Verdict(_StrictModel):
     """Outcome of the claim evaluation."""
 
     decision: Decision = Field(..., description="Assessment of the claim")
-    confidence: float | None = Field(None, description="Confidence score for the assessment")
+    confidence: float | None = Field(
+        None,
+        ge=0,
+        le=1,
+        description="Optional confidence score in range [0, 1]",
+    )
 
 
+class Evidence(_StrictModel):
+    """A single piece of evidence supporting the verdict."""
 
-class Citation(_StrictModel):
-    """A citation supporting the evaluation."""
-
-    source: str = Field(..., description="Identifier or URL of the source")
-    content: str = Field(..., description="Excerpt taken from the source")
-
-
-
-class SourceSynthesis(_StrictModel):
-    """Synthesis derived from multiple citations."""
-
-    summary: str = Field(..., description="Summary of the gathered sources")
-    citations: list[Citation] = Field(default_factory=list)
-
-
-
-class Traceability(_StrictModel):
-    """Information enabling reproduction of the verdict."""
-
-    steps: list[str] = Field(default_factory=list)
-    sources: list[str] = Field(default_factory=list)
-
-
-
-class Recommendations(_StrictModel):
-    """Follow-up actions suggested by the evaluation."""
-
-    actions: list[str] = Field(default_factory=list)
-
-
-
-class QualityReport(_StrictModel):
-    """Optional quality metrics for the evaluation."""
-
-    metrics: dict[str, float] = Field(default_factory=dict)
-
-
-
-class Provenance(_StrictModel):
-    """Optional provenance information for sources."""
-
-    sources: list[str] = Field(default_factory=list)
-
-
-
-class PolicySnapshot(_StrictModel):
-    """Optional snapshot of policies in effect during evaluation."""
-
-    policies: dict[str, str] = Field(default_factory=dict)
-
+    source: str = Field(..., min_length=1, description="Identifier or URL of the source")
+    content: str = Field(..., min_length=1, description="Excerpt taken from the source")
 
 
 class FactSynthLock(_StrictModel):
-    """Container bundling all FactSynth evaluation artefacts."""
+    """Container bundling verdict and evidence."""
 
     verdict: Verdict
-    source_synthesis: SourceSynthesis
-    traceability: Traceability
-    recommendations: Recommendations
-    quality_report: QualityReport | None = None
-    provenance: Provenance | None = None
-    policy_snapshot: PolicySnapshot | None = None
+    evidence: list[Evidence] = Field(
+        default_factory=list,
+        description="Evidence items underpinning the verdict",
+    )
+
+    @field_validator("evidence")
+    @classmethod
+    def _require_evidence(cls, v: list[Evidence]) -> list[Evidence]:
+        if not v:
+            raise ValueError("evidence must not be empty")
+        return v
 
 
+__all__ = ["Decision", "Evidence", "FactSynthLock", "Verdict"]
 
-__all__ = [
-    "Citation",
-    "FactSynthLock",
-    "PolicySnapshot",
-    "Provenance",
-    "QualityReport",
-    "Recommendations",
-    "SourceSynthesis",
-    "Traceability",
-    "Verdict",
-    "Decision",
-]
