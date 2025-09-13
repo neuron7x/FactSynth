@@ -1,26 +1,8 @@
 site_name: FactSynth
-site_url: https://neuron7x.github.io/FactSynth/
-repo_url: https://github.com/neuron7x/FactSynth/
-
-theme:
-  name: material
-
-plugins:
-  - search
-  - redirects
-  - minify
-  - git-revision-date-localized
-
+theme: { name: material, features: [navigation.tabs, content.code.copy] }
+plugins: [search, mermaid2]
 nav:
-  - Home: index.md
-  - Production Runbook: prod-runbook.md
-  - UI Deployment: ui-deployment.md
-  - Prompt Pack: PromptPack.md
-  - Incubation Co-Dev UA: INCUBATION_CO_DEV_UA.md
-  - FactSynth Lock: FACTSYNTH_LOCK.md
-  - Models:
-      - NLI Token Overlap: models/nli.md
-      - LLM Candidate Arbitrator: models/llm_arbitrator.md
-  - Datasets:
-      - Golden FactSynth: datasets/golden_factsynth.md
-      - Golden 12: datasets/golden_12.md
+  - Home: docs/index.md
+  - Architecture: docs/architecture.md
+  - API: docs/api.md
+  - Runbook: docs/runbook.md

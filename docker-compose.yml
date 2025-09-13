@@ -1,19 +1,11 @@
-version: "3.9"
 services:
-  app:
+  api:
     build: .
-    image: factsynth:local
-    ports:
-      - "8000:8000"
-    read_only: true
-    tmpfs:
-      - /tmp
-    deploy:
-      resources:
-        limits:
-          cpus: "0.50"
-          memory: 512M
-        reservations:
-          cpus: "0.25"
-          memory: 256M
-
+    ports: ["8000:8000"]
+    environment:
+      - FACTSYNTH_DATABASE_URL=sqlite+aiosqlite:///./data.db
+      - FACTSYNTH_RATE_LIMIT=60/minute
+    depends_on: [redis]
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]

@@ -1,0 +1,9 @@
+{
+  "name": "FactSynth Dev",
+  "image": "mcr.microsoft.com/devcontainers/python:3.10",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {}
+  },
+  "postCreateCommand": "pip install -r requirements-dev.txt -e . && pre-commit install"
+}

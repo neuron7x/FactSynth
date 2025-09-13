@@ -1,5 +1,3 @@
 * @neuron7x
-.github/** @neuron7x
-ui/** @neuron7x
-src/** @neuron7x
-src/factsynth_ultimate/** @neuron7x
+/docs/ @neuron7x
+/factsynth_ultimate/ @neuron7x

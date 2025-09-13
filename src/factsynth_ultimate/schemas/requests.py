@@ -13,6 +13,14 @@ LargeInt = Annotated[int, Field(ge=1, le=10000)]
 Percent = Annotated[float, Field(ge=0.0, le=1.0)]
 
 
+class DomainMetadata(BaseModel):
+    """Domain attributes describing region, language and time span."""
+
+    region: StrippedNonEmpty
+    language: StrippedNonEmpty
+    time_range: StrippedNonEmpty
+
+
 class IntentReq(BaseModel):
     """Intent reflection request payload."""
 
@@ -26,6 +34,7 @@ class ScoreReq(BaseModel):
     text: NonNegativeStr = ""
     targets: list[StrippedNonEmpty] | None = None
     callback_url: str | None = None
+    domain: DomainMetadata | None = None
 
 
 class ScoreBatchReq(BaseModel):

@@ -1,0 +1,6 @@
+- id: sky-blue
+  claim: "The sky is blue"
+  expected_min_score: 0.1
+- id: water-wet
+  claim: "Water is wet"
+  expected_min_score: 0.1

@@ -1,21 +1,9 @@
-name: CodeQL
+name: codeql
 on:
-  push: { branches: [ main ] }
-  pull_request: { branches: [ main ] }
-  schedule: [ { cron: '19 3 * * 5' } ]
-permissions:
-  contents: read
-  security-events: write
+  push: {branches: [main]}
+  pull_request:
+permissions: {security-events: write, actions: read, contents: read}
 jobs:
   analyze:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ javascript, python ]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
-        with: { languages: ${{ matrix.language }} }
-      - uses: github/codeql-action/analyze@v3
+    uses: github/codeql-action/.github/workflows/codeql-analysis.yml@v3
+    with: { languages: python }

@@ -7,7 +7,9 @@
 
 [![GitHub issues](https://img.shields.io/github/issues/neuron7x/FactSynth)](https://github.com/neuron7x/FactSynth/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/neuron7x/FactSynth)](https://github.com/neuron7x/FactSynth/pulls)
+
 <!-- markdownlint-disable-next-line MD013 -->
+
 [![docs](https://img.shields.io/badge/docs-OpenAPI%20Pages-0D1117.svg)](https://neuron7x.github.io/FactSynth/)
 
 ![FactSynth service banner](./assets/banner.svg)
@@ -84,14 +86,14 @@ Set up a local development environment:
    cd FactSynth
    ```
 
-2. **Create a virtual environment**
+1. **Create a virtual environment**
 
    ```bash
    python -m venv .venv
    source .venv/bin/activate
    ```
 
-3. **Install dependencies**
+1. **Install dependencies**
 
    ```bash
      pip install -U pip
@@ -126,13 +128,13 @@ Run the service locally:
    source .venv/bin/activate
    ```
 
-2. **Set an optional API key**
+1. **Set an optional API key**
 
    ```bash
    export API_KEY=change-me
    ```
 
-3. **Start the server**
+1. **Start the server**
 
    ```bash
    uvicorn factsynth_ultimate.app:app --host 0.0.0.0 --port 8000 --reload
@@ -161,7 +163,7 @@ Perform a request and observe the response:
      -d '{"prompt": "Extract facts about water."}'
    ```
 
-2. **Typical JSON response**
+1. **Typical JSON response**
 
    ```json
    {
@@ -173,23 +175,23 @@ Perform a request and observe the response:
 
 A Redis instance is required for rate limiting; set `RATE_LIMIT_REDIS_URL` to the connection URL.
 
-| Variable | Default | Description |
-| -------- | ------- | ----------- |
-| `ENV` | `dev` | Environment name. |
-| `HTTPS_REDIRECT` | `false` | Redirect HTTP to HTTPS. |
-| `CORS_ORIGINS` | *(empty)* | Comma-separated origins. Defaults to denying all; set explicitly to allow specific domains. |
-| `API_KEY` | *(none)* | Secret key required for authentication. |
-| `AUTH_HEADER_NAME` | `x-api-key` | Header carrying API key. |
-| `IP_ALLOWLIST` | *(empty)* | Allowed IPs, comma-separated. |
-| `RATE_LIMIT_REDIS_URL` | *(none)* | Redis connection URL for rate limiting. |
-| `RATE_LIMIT_PER_KEY` | `120` | Requests per API key per minute. |
-| `RATE_LIMIT_PER_IP` | `120` | Requests per IP per minute. |
-| `RATE_LIMIT_PER_ORG` | `120` | Requests per organization per minute. |
-| `SKIP_AUTH_PATHS` | `/v1/healthz,/metrics` | Paths that skip auth. |
-| `LOG_LEVEL` | `INFO` | Logging verbosity level. |
-| `VAULT_ADDR` | *(empty)* | URL of Vault server. |
-| `VAULT_TOKEN` | *(empty)* | Authentication token for Vault. |
-| `VAULT_PATH` | *(empty)* | Secret path in Vault. |
+| Variable               | Default                | Description                                                                                 |
+| ---------------------- | ---------------------- | ------------------------------------------------------------------------------------------- |
+| `ENV`                  | `dev`                  | Environment name.                                                                           |
+| `HTTPS_REDIRECT`       | `false`                | Redirect HTTP to HTTPS.                                                                     |
+| `CORS_ORIGINS`         | *(empty)*              | Comma-separated origins. Defaults to denying all; set explicitly to allow specific domains. |
+| `API_KEY`              | *(none)*               | Secret key required for authentication.                                                     |
+| `AUTH_HEADER_NAME`     | `x-api-key`            | Header carrying API key.                                                                    |
+| `IP_ALLOWLIST`         | *(empty)*              | Allowed IPs, comma-separated.                                                               |
+| `RATE_LIMIT_REDIS_URL` | *(none)*               | Redis connection URL for rate limiting.                                                     |
+| `RATE_LIMIT_PER_KEY`   | `120`                  | Requests per API key per minute.                                                            |
+| `RATE_LIMIT_PER_IP`    | `120`                  | Requests per IP per minute.                                                                 |
+| `RATE_LIMIT_PER_ORG`   | `120`                  | Requests per organization per minute.                                                       |
+| `SKIP_AUTH_PATHS`      | `/v1/healthz,/metrics` | Paths that skip auth.                                                                       |
+| `LOG_LEVEL`            | `INFO`                 | Logging verbosity level.                                                                    |
+| `VAULT_ADDR`           | *(empty)*              | URL of Vault server.                                                                        |
+| `VAULT_TOKEN`          | *(empty)*              | Authentication token for Vault.                                                             |
+| `VAULT_PATH`           | *(empty)*              | Secret path in Vault.                                                                       |
 
 ### Allowed origins
 
@@ -258,8 +260,11 @@ For guidelines on contributing, see the [contributing guide](CONTRIBUTING.md).
 ## 🙏 Acknowledgements
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+
 <!-- prettier-ignore-start -->
+
 <!-- markdownlint-disable -->
+
 <table>
   <tbody>
     <tr>
@@ -269,8 +274,25 @@ For guidelines on contributing, see the [contributing guide](CONTRIBUTING.md).
 </table>
 
 <!-- markdownlint-restore -->
+
 <!-- prettier-ignore-end -->
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the all-contributors specification.
+
+## Status
+
+[![CI](https://github.com/neuron7x/FactSynth/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml) [![Docs](https://github.com/neuron7x/FactSynth/actions/workflows/docs.yml/badge.svg)](../../actions/workflows/docs.yml) [![CodeQL](https://github.com/neuron7x/FactSynth/actions/workflows/codeql.yml/badge.svg)](../../actions/workflows/codeql.yml) [![SBOM](https://github.com/neuron7x/FactSynth/actions/workflows/sbom.yml/badge.svg)](../../actions/workflows/sbom.yml)
+
+## Quickstart
+```bash
+pip install -e .[dev]
+uvicorn factsynth_ultimate.app:app --reload
+# CLI
+factsynth init
+factsynth claim "Example"
+```
+
+## Status
+[![CI](https://github.com/neuron7x/FactSynth/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml) [![Docs](https://github.com/neuron7x/FactSynth/actions/workflows/docs.yml/badge.svg)](../../actions/workflows/docs.yml) [![CodeQL](https://github.com/neuron7x/FactSynth/actions/workflows/codeql.yml/badge.svg)](../../actions/workflows/codeql.yml) [![SBOM](https://github.com/neuron7x/FactSynth/actions/workflows/sbom.yml/badge.svg)](../../actions/workflows/sbom.yml)

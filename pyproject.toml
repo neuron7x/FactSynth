@@ -1,83 +1,72 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
 
 [project]
-name = "factsynth-ultimate-pro"
-version = "1.0.5"
+name = "factsynth-ultimate"
+version = "0.1.0"
+description = "FactSynth — verifiable fact-checking engine"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name="neuron7x"}]
+license = {text="MIT"}
 dependencies = [
-    "fastapi==0.116.1",
-    "uvicorn==0.35.0",
-    "httpx==0.28.1",
-    "redis==6.4.0",
-    "pydantic==2.11.7",
-    "pydantic-settings==2.10.1",
-    "prometheus-client==0.22.1",
-    "pyyaml==6.0.2",
-    "regex==2025.9.1",
+  "fastapi>=0.114",
+  "uvicorn[standard]>=0.30",
+  "sqlmodel>=0.0.22",
+  "aiosqlite>=0.20",
+  "alembic>=1.13",
+  "pydantic-settings>=2.4",
+  "structlog>=24.1",
+  "python-json-logger>=2.0",
+  "tenacity>=9.0",
+  "redis>=5.0",
+  "rq>=1.16",
+  "slowapi>=0.1.9",
+  "typer>=0.12",
+  "httpx>=0.27"
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest==8.4.2",
-    "schemathesis==4.1.4",  # API contract testing
-    "websockets==15.0.1",  # WebSocket test client
-    "pytest-cov==7.0.0",  # coverage plugin
-    "requests==2.32.5",  # HTTP client for contract tests (dev)
-    "pip-audit==2.9.0",  # Python dependency vulnerability scanner
-    "spectral==0.24",  # OpenAPI linting utility
-    "fakeredis==2.23.1",  # Redis mock for tests
-    "hypothesis==6.138.15",  # Property-based testing
-    "numpy==1.26.4",  # Numerical computations in tests
-    "jax==0.4.38",  # JAX core for diffrax
-    "jaxlib==0.4.38",  # JAX runtime
-    "diffrax==0.7.0",  # Differential equation solver used in tests
-    "pre-commit==4.3.0",  # Git hooks runner
-    "pytest-httpx==0.35.0",  # HTTPX mocking for tests
-    "pip-tools==7.5.0",  # requirements management
-]
-ops = [
-    "prometheus-client==0.22.1",
-]
-cognition = [
-    "numpy==1.26.4",
-    "fastapi==0.116.1",
-    "pydantic==2.11.7",
-]
-isr = [
-    "jax==0.4.38",
-    "diffrax==0.7.0",
-    "typer==0.17.4",
-]
-numpy = [
-    "numpy==1.26.4",
+  "pytest>=8.3",
+  "pytest-asyncio>=0.23",
+  "pytest-cov>=5.0",
+  "mypy>=1.11",
+  "ruff>=0.6.5",
+  "codespell>=2.3.0",
+  "types-redis",
+  "types-requests",
+  "hypothesis>=6.112",
 ]
 
 [project.scripts]
-fsu-api = "factsynth_ultimate.app:create_app"
-fsu-glrtpm = "factsynth_ultimate.glrtpm.pipeline:GLRTPMPipeline"
-fsu-isr = "factsynth_ultimate.cli_isr:app"
+factsynth = "factsynth_ultimate.cli:app"
 
-[tool.black]
-line-length = 100
-target-version = ["py310", "py311"]
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unused_ignores = true
+warn_return_any = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100
-select = ["E","F","I","UP","B","Q","C90"]
-ignore = ["E203","E266","E501"]
 target-version = "py310"
-
-[tool.isort]
-profile = "black"
-line_length = 100
+lint.select = ["E","F","I","N","UP","B","SIM","S","C4","PIE","Q","RUF"]
+lint.ignore = ["E501"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-q --maxfail=1 --disable-warnings"
+testpaths = ["tests"]
 
-[tool.interrogate]
-fail-under = 60
-ignore-init-module = true
-ignore-semiprivate = true
-style = "google"
+[tool.coverage.run]
+branch = true
+source = ["factsynth_ultimate"]
+omit = ["tests/*","scripts/*"]
 
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
