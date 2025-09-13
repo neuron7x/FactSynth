@@ -39,7 +39,7 @@ ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 def get_allowed_hosts() -> set[str]:
     """Return the set of allowed callback hosts."""
-    from ..core.settings import load_settings
+    from ..core.settings import load_settings  # noqa: PLC0415
 
     hosts = load_settings().callback_url_allowed_hosts
     return set(filter(None, hosts.split(",")))
@@ -52,7 +52,8 @@ def validate_callback_url(url: str) -> None:
         url: URL provided by the client.
 
     Raises:
-        HTTPException: If the URL does not use an allowed scheme or host.
+        HTTPException: If the URL uses a disallowed scheme or host or the
+            allowlist is empty.
     """
     allowed_hosts = get_allowed_hosts()
     try:
@@ -74,7 +75,13 @@ def validate_callback_url(url: str) -> None:
             detail="Missing callback URL host",
         )
 
-    if allowed_hosts and parsed.hostname not in allowed_hosts:
+    if not allowed_hosts:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="Callback URL allowlist is empty",
+        )
+
+    if parsed.hostname not in allowed_hosts:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
             detail="Disallowed callback URL host",
