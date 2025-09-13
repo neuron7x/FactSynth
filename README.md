@@ -101,10 +101,10 @@ Set up a local development environment:
 
 ### Development dependencies
 
-`requests` powers the contract tests while `PyYAML` supports schema
-validation. These and all other development dependencies live in
-`pyproject.toml` under the `dev` extra and are **pinned** in
-`requirements-dev.txt`. Regenerate the lockfile with
+The `[project.optional-dependencies].dev` section of `pyproject.toml`
+is the **single source of truth** for tooling needed to work on
+FactSynth. The `requirements-dev.txt` lockfile is generated from that
+list and should not be edited by hand. Regenerate it with
 `scripts/update_dev_requirements.sh` (a thin wrapper around
 `pip-compile`) and install with `pip install -r requirements-dev.txt`.
 Pre-commit and the CI workflow both run `pip-compile` and fail if the
