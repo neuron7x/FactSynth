@@ -56,11 +56,12 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         if not self.api_key:
             return await call_next(request)
 
-        expected = self.api_key.casefold()
+        expected = self.api_key.casefold().encode()
         if provided is None:
             return self._reject(request, 401, "Missing API key", "unauthorized")
 
-        if hmac.compare_digest(provided.casefold(), expected):
+        provided_bytes = provided.casefold().encode()
+        if hmac.compare_digest(provided_bytes, expected):
             return await call_next(request)
 
         return self._reject(request, 403, "Invalid API key", "forbidden")
@@ -79,6 +80,7 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
             "title": translate(lang, title_key),
             "status": status,
             "detail": detail,
+            "instance": request.url.path,
             "trace_id": request_id,
         }
         return JSONResponse(problem, status_code=status, media_type="application/problem+json")

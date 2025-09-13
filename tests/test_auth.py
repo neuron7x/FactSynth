@@ -3,10 +3,12 @@ import string
 from http import HTTPStatus
 
 import pytest
-from hypothesis import assume, given
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 API_KEY = os.getenv("API_KEY", "change-me")
+
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
 
 @st.composite
@@ -22,8 +24,18 @@ def header_variations(draw):
     return name, value
 
 
+@st.composite
+def wrong_headers(draw):
+    alphabet = string.ascii_letters + string.digits + "-"
+    name = draw(st.text(alphabet=alphabet, min_size=1, max_size=20))
+    assume(name.casefold() != "x-api-key")
+    value = draw(st.text(alphabet=alphabet, min_size=1, max_size=20))
+    return name, value
+
+
 @pytest.mark.anyio
 @given(header_variations())
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
 async def test_api_key_case_insensitive(client, header_variations):
     name, value = header_variations
     r = await client.post(
@@ -44,9 +56,21 @@ def invalid_keys(draw):
 
 @pytest.mark.anyio
 @given(invalid_keys())
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
 async def test_invalid_key_rejected(client, invalid_keys):
     key = invalid_keys
     r = await client.post(
         "/v1/generate", headers={"x-api-key": key}, json={"text": "hi"}
     )
     assert r.status_code == HTTPStatus.FORBIDDEN
+
+
+@pytest.mark.anyio
+@given(wrong_headers())
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
+async def test_missing_header_rejected(client, wrong_headers):
+    name, value = wrong_headers
+    r = await client.post(
+        "/v1/generate", headers={name: value}, json={"text": "hi"}
+    )
+    assert r.status_code == HTTPStatus.UNAUTHORIZED
