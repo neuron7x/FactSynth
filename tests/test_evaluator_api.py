@@ -1,4 +1,4 @@
-
+import pytest
 from pydantic import BaseModel
 
 from factsynth_ultimate.api import verify as verify_mod
@@ -6,6 +6,9 @@ from factsynth_ultimate.services.evaluator import evaluate_claim
 
 SCORING_RESULT = 0.5
 DIVERSITY_RESULT = 0.1
+
+
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
 
 def test_evaluate_claim_composes_and_closes():
@@ -35,6 +38,25 @@ def test_evaluate_claim_composes_and_closes():
     assert result["diversity"] == DIVERSITY_RESULT
     assert result["nli"] == {"label": "neutral"}
     assert result["evidence"] == [("alpha", 1.0)]
+    assert retriever.closed
+
+
+def test_evaluate_claim_handles_retriever_exception_and_closes():
+    class DummyRetriever:
+        def __init__(self):
+            self.closed = False
+
+        def search(self, _):
+            raise RuntimeError("boom")
+
+        def close(self):
+            self.closed = True
+
+    retriever = DummyRetriever()
+
+    result = evaluate_claim("alpha", retriever=retriever)
+
+    assert result["evidence"] == []
     assert retriever.closed
 
 
