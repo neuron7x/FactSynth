@@ -7,11 +7,35 @@ pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
 
 def test_domain_metadata_valid():
-    meta = DomainMetadata(region="eu", language="en", time_range="2020-2021")
+    meta = DomainMetadata(
+        region="us",
+        language="en",
+        time_range="2020-01-01/2020-12-31",
+    )
     req = ScoreReq(text="t", domain=meta)
     assert req.domain == meta
 
 
-def test_domain_metadata_invalid_region():
+def test_domain_metadata_invalid_region_code():
     with pytest.raises(ValidationError):
-        ScoreReq(text="t", domain={"region": "", "language": "en", "time_range": "2020"})
+        DomainMetadata(region="zz", language="en", time_range="2020-01-01/2020-12-31")
+
+
+def test_domain_metadata_invalid_language_code():
+    with pytest.raises(ValidationError):
+        DomainMetadata(region="US", language="zz", time_range="2020-01-01/2020-12-31")
+
+
+def test_domain_metadata_malformed_time_range_string():
+    with pytest.raises(ValidationError):
+        DomainMetadata(region="US", language="en", time_range="2020")
+
+
+def test_domain_metadata_malformed_time_range_object():
+    with pytest.raises(ValidationError):
+        DomainMetadata(
+            region="US",
+            language="en",
+            time_range={"start": "2020-01-01"},
+        )
+
