@@ -15,7 +15,7 @@ client = TestClient(app)
 
 
 def test_quality_pipeline_verify_returns_lock(httpx_mock):
-    httpx_mock.reset(assert_all_responses_were_requested=False)
+    httpx_mock.reset()
     payload = {
         "claim": "The earth orbits the sun",
         "lock": {

@@ -7,7 +7,7 @@ THRESHOLD = 0.9
 
 
 def test_nli_uses_async_classifier(httpx_mock):
-    httpx_mock.reset(assert_all_responses_were_requested=False)
+    httpx_mock.reset()
 
     async def classifier(_p: str, _h: str) -> float:
         return EXPECTED_SCORE
@@ -18,7 +18,7 @@ def test_nli_uses_async_classifier(httpx_mock):
 
 
 def test_nli_fallback_on_error(httpx_mock):
-    httpx_mock.reset(assert_all_responses_were_requested=False)
+    httpx_mock.reset()
 
     async def failing_classifier(_p: str, _h: str) -> float:
         raise RuntimeError("boom")
@@ -29,7 +29,7 @@ def test_nli_fallback_on_error(httpx_mock):
 
 
 def test_nli_fallback_on_custom_classifier_error(httpx_mock):
-    httpx_mock.reset(assert_all_responses_were_requested=False)
+    httpx_mock.reset()
 
     class CustomError(Exception):
         pass

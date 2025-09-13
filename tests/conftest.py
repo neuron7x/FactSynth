@@ -78,7 +78,7 @@ async def api_stub():
 def _stub_external_api(httpx_mock):
     """Stub external HTTP calls so tests remain offline."""
 
-    httpx_mock.reset(assert_all_responses_were_requested=False)
+    httpx_mock.reset()
 
     def handler(request):
         path = request.url.path
@@ -98,4 +98,4 @@ def _stub_external_api(httpx_mock):
 
     httpx_mock.add_callback(handler)
     yield
-    httpx_mock.reset(assert_all_responses_were_requested=False)
+    httpx_mock.reset()
