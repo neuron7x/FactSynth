@@ -10,6 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from ..i18n import choose_language, translate
+from .errors import problem
 
 
 class BodySizeLimitMiddleware(BaseHTTPMiddleware):
@@ -36,15 +37,14 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
                 detail = (
                     f"Payload size {received} exceeds limit of {self.max_bytes} bytes"
                 )
-                problem = {
-                    "type": "about:blank",
-                    "title": title,
-                    "status": 413,
-                    "detail": detail,
-                    "trace_id": getattr(request.state, "request_id", ""),
-                }
+                body = problem(
+                    request,
+                    title=title,
+                    status=413,
+                    detail=detail,
+                )
                 return JSONResponse(
-                    problem,
+                    body,
                     status_code=413,
                     media_type="application/problem+json",
                 )

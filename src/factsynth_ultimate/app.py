@@ -14,7 +14,7 @@ from . import VERSION
 from .api.routers import api
 from .core.auth import APIKeyAuthMiddleware
 from .core.body_limit import BodySizeLimitMiddleware
-from .core.errors import install_handlers
+from .core.errors import register_error_handlers
 from .core.ip_allowlist import IPAllowlistMiddleware
 from .core.logging import setup_logging
 from .core.metrics import LATENCY, REQUESTS, metrics_bytes, metrics_content_type
@@ -46,13 +46,18 @@ class _MetricsMiddleware(BaseHTTPMiddleware):
         return response
 
 
-def create_app(rate_limit_window: int | None = None) -> FastAPI:
+def create_app(
+    rate_limit_window: int | None = None,
+    *,
+    register_handlers: bool = True,
+) -> FastAPI:
     """Application factory used by tests and ASGI server."""
     settings = load_settings()
     setup_logging()
 
     app = FastAPI(title="FactSynth Ultimate Pro API", version=VERSION)
-    install_handlers(app)
+    if register_handlers:
+        register_error_handlers(app)
     try_enable_otel(app)
 
     # core routes

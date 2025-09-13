@@ -23,8 +23,8 @@ def test_forbidden_ip_returns_403():
             r = client.post("/v1/score", headers={"x-api-key": "secret"}, json={"text": "x"})
             assert r.status_code == HTTPStatus.FORBIDDEN
             body = r.json()
-            trace_id = body.pop("trace_id")
-            assert trace_id
+            instance = body.pop("instance")
+            assert instance
             assert body == {
                 "type": "about:blank",
                 "title": "Forbidden",

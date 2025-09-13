@@ -11,6 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from ..i18n import choose_language, translate
+from .errors import problem
 
 
 class APIKeyAuthMiddleware(BaseHTTPMiddleware):
@@ -53,15 +54,14 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         lang = choose_language(request)
         title = translate(lang, "unauthorized")
         detail = "Invalid or missing API key"
-        problem = {
-            "type": "about:blank",
-            "title": title,
-            "status": 401,
-            "detail": detail,
-            "trace_id": getattr(request.state, "request_id", ""),
-        }
+        body = problem(
+            request,
+            title=title,
+            status=401,
+            detail=detail,
+        )
         return JSONResponse(
-            problem,
+            body,
             status_code=401,
             media_type="application/problem+json",
         )

@@ -58,8 +58,8 @@ def test_rate_limit_exceeded_returns_429():
         r = client.post("/v1/score", headers=headers, json={"text": "x"})
         assert r.status_code == HTTPStatus.TOO_MANY_REQUESTS
         body = r.json()
-        trace_id = body.pop("trace_id")
-        assert trace_id
+        instance = body.pop("instance")
+        assert instance
         assert body == {
             "type": "about:blank",
             "title": "Too Many Requests",

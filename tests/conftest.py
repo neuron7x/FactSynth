@@ -94,7 +94,7 @@ def _stub_external_api(httpx_mock) -> None:
             return Response(200, json={"openapi": "3.1.0", "paths": {}})
         return Response(200, json={"stub": True})
 
-    httpx_mock.add_callback(handler)
+    httpx_mock.add_callback(handler, is_optional=True)
 
 
 @pytest.fixture(autouse=True)

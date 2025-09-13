@@ -22,7 +22,7 @@
   {
     "id": 5,
     "name": "coding",
-    "description": "Return Problem+JSON unchanged on 422; include trace_id in output."
+    "description": "Return Problem+JSON unchanged on 422; include instance in output."
   },
   {
     "id": 6,

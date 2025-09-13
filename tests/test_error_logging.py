@@ -19,8 +19,8 @@ def test_internal_error_logs_path_and_exception():
         r = client.get("/boom", headers={"x-api-key": "change-me"})
         assert r.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
         body = r.json()
-        trace_id = body.pop("trace_id")
-        assert trace_id
+        instance = body.pop("instance")
+        assert instance
         assert body == {
             "type": "about:blank",
             "title": "Internal Server Error",

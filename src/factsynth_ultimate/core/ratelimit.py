@@ -12,6 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from ..i18n import choose_language, translate
+from .errors import problem
 from .metrics import REQUESTS
 
 
@@ -93,15 +94,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 lang = choose_language(request)
                 title = translate(lang, "too_many_requests")
                 detail = "Request rate limit exceeded"
-                problem = {
-                    "type": "about:blank",
-                    "title": title,
-                    "status": 429,
-                    "detail": detail,
-                    "trace_id": getattr(request.state, "request_id", ""),
-                }
+                body = problem(
+                    request,
+                    title=title,
+                    status=429,
+                    detail=detail,
+                )
                 resp = JSONResponse(
-                    problem,
+                    body,
                     status_code=429,
                     media_type="application/problem+json",
                 )

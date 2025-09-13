@@ -12,6 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from ..i18n import choose_language, translate
+from .errors import problem
 
 logger = logging.getLogger(__name__)
 
@@ -45,15 +46,14 @@ class IPAllowlistMiddleware(BaseHTTPMiddleware):
             lang = choose_language(request)
             title = translate(lang, "forbidden")
             detail = f"IP {ip} not allowed"
-            problem = {
-                "type": "about:blank",
-                "title": title,
-                "status": 403,
-                "detail": detail,
-                "trace_id": getattr(request.state, "request_id", ""),
-            }
+            body = problem(
+                request,
+                title=title,
+                status=403,
+                detail=detail,
+            )
             return JSONResponse(
-                problem,
+                body,
                 status_code=403,
                 media_type="application/problem+json",
             )

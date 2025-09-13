@@ -15,8 +15,8 @@ def test_auth_required() -> None:
         r = client.post(url, json={"text": "x"})
         assert r.status_code == HTTPStatus.UNAUTHORIZED
         body = r.json()
-        trace_id = body.pop("trace_id")
-        assert trace_id
+        instance = body.pop("instance")
+        assert instance
         assert body == {
             "type": "about:blank",
             "title": "Unauthorized",
