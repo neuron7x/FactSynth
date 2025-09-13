@@ -33,7 +33,7 @@ def test_forbidden_ip_returns_403():
             }
 
 
-def test_empty_allowlist_blocks_request():
+def test_empty_allowlist_blocks_request(caplog):
     app = FastAPI()
     app.add_middleware(IPAllowlistMiddleware, cidrs=[])
 
@@ -41,9 +41,15 @@ def test_empty_allowlist_blocks_request():
     def root() -> dict[str, str]:  # pragma: no cover - trivial
         return {"status": "ok"}
 
-    with TestClient(app) as client:
+    with TestClient(app) as client, caplog.at_level(logging.WARNING):
         r = client.get("/")
         assert r.status_code == HTTPStatus.FORBIDDEN
+    assert any(
+        "IP allowlist empty" in rec.getMessage()
+        and "client_ip=testclient" in rec.getMessage()
+        and "request_id=" in rec.getMessage()
+        for rec in caplog.records
+    )
 
 
 def test_invalid_ip_logs_warning(caplog):
@@ -58,10 +64,35 @@ def test_invalid_ip_logs_warning(caplog):
         r = client.get("/")
         assert r.status_code == HTTPStatus.FORBIDDEN
     assert any(
-        rec.levelno == logging.WARNING and "invalid client IP" in rec.getMessage()
+        rec.levelno == logging.WARNING
+        and "invalid client IP" in rec.getMessage()
+        and "client_ip=testclient" in rec.getMessage()
+        and "request_id=" in rec.getMessage()
         for rec in caplog.records
     )
     assert any(
-        rec.levelno == logging.WARNING and "Unparseable IP address" in rec.getMessage()
+        rec.levelno == logging.WARNING
+        and "Unparseable IP address" in rec.getMessage()
+        and "client_ip=testclient" in rec.getMessage()
+        and "request_id=" in rec.getMessage()
         for rec in caplog.records
     )
+
+
+def test_missing_api_key_returns_401():
+    env = {"API_KEY": "secret", "IP_ALLOWLIST": "[]"}
+    with patch.dict(os.environ, env):
+        importlib.reload(settings_module)
+        with TestClient(create_app()) as client:
+            r = client.post("/v1/score", json={"text": "x"})
+            assert r.status_code == HTTPStatus.UNAUTHORIZED
+            body = r.json()
+            trace_id = body.pop("trace_id")
+            assert trace_id
+            assert body == {
+                "type": "about:blank",
+                "title": "Unauthorized",
+                "status": HTTPStatus.UNAUTHORIZED,
+                "detail": "Invalid or missing API key",
+            }
+
