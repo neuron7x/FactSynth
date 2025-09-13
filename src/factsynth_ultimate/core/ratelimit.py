@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hmac
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
 
@@ -42,6 +43,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.key_header = key_header or cfg.auth_header_name
         self.org_header = org_header
         self.window = window
+        self.api_key = cfg.api_key
 
     def _identifiers(self, request: Request) -> tuple[str, str, str]:
         """Return API key, IP and organization identifiers for a request."""
@@ -51,19 +53,21 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         org = request.headers.get(self.org_header) or "anon"
         return api_key, ip, org
 
-    async def _check(self, redis_key: str, limit: int) -> tuple[bool, int]:
+    async def _check(self, redis_key: str, limit: int) -> tuple[bool, int, int]:
         """Increment the counter and determine if the limit was exceeded."""
 
         count = await self.redis.incr(redis_key)
         if count == 1:
             await self.redis.expire(redis_key, self.window)
-        return count <= limit, count
+        ttl = await self.redis.ttl(redis_key)
+        return count <= limit, count, max(ttl, 0)
 
-    def _set_headers(self, response: Response, limit: int, used: int) -> None:
+    def _set_headers(self, response: Response, limit: int, used: int, ttl: int) -> None:
         """Populate standard rate limit headers on *response*."""
 
         response.headers.setdefault("X-RateLimit-Limit", str(limit))
         response.headers.setdefault("X-RateLimit-Remaining", str(max(0, limit - used)))
+        response.headers.setdefault("X-RateLimit-Reset", str(ttl))
 
     async def dispatch(
         self,
@@ -75,7 +79,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         if path.startswith(("/v1/healthz", "/metrics")):
             return await call_next(request)
-        if self.key_header not in request.headers:
+        provided = request.headers.get(self.key_header)
+        if not provided:
+            return await call_next(request)
+        if not hmac.compare_digest(provided.casefold(), self.api_key.casefold()):
             return await call_next(request)
         api_key, ip, org = self._identifiers(request)
         checks: dict[str, tuple[str, int]] = {
@@ -83,12 +90,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             "ip": (f"rl:ip:{ip}", self.per_ip),
             "org": (f"rl:org:{org}", self.per_org),
         }
-        counts: dict[str, int] = {}
+        counts: dict[str, tuple[int, int]] = {}
         for name, (redis_key, limit) in checks.items():
             if limit <= 0:
                 continue
-            ok, count = await self._check(redis_key, limit)
-            counts[name] = count
+            ok, count, ttl = await self._check(redis_key, limit)
+            counts[name] = (count, ttl)
             if not ok:
                 with suppress(Exception):
                     REQUESTS.labels(request.method, path, "429").inc()
@@ -107,10 +114,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     status_code=429,
                     media_type="application/problem+json",
                 )
-                resp.headers["Retry-After"] = str(self.window)
-                self._set_headers(resp, limit, count)
+                resp.headers["Retry-After"] = str(ttl)
+                self._set_headers(resp, limit, count, ttl)
                 return resp
         response = await call_next(request)
         if self.per_key > 0 and "key" in counts:
-            self._set_headers(response, self.per_key, counts.get("key", 0))
+            count, ttl = counts.get("key", (0, 0))
+            self._set_headers(response, self.per_key, count, ttl)
         return response
