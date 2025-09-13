@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 StrippedNonEmpty = Annotated[str, Field(strip_whitespace=True, min_length=1)]
 NonNegativeStr = Annotated[str, Field(strip_whitespace=True, min_length=0)]
@@ -35,6 +35,12 @@ class ScoreReq(BaseModel):
     targets: list[StrippedNonEmpty] | None = None
     callback_url: str | None = None
     domain: DomainMetadata | None = None
+
+    @model_validator(mode="after")
+    def _require_text_or_targets(self) -> ScoreReq:
+        if not self.text and not self.targets:
+            raise ValueError("either 'text' or 'targets' must be provided")
+        return self
 
 
 class ScoreBatchReq(BaseModel):

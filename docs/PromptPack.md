@@ -29,7 +29,7 @@ IF–THEN BEHAVIOR RULES
 
 TOOL USE (HTTP wrappers assumed)
 - POST /v1/intent_reflector {intent,length}
-- POST /v1/score {text,targets}|/v1/score/batch
+- POST /v1/score {text?,targets?}|/v1/score/batch (requires one of text or targets)
 - POST /v1/generate {text,max_len,max_sentences,include_score}
 - POST /v1/stream (SSE) or WS /ws/stream for token events
 - GET /v1/version, /metrics (no auth), Problem+JSON on errors

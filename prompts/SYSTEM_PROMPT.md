@@ -35,7 +35,7 @@ Maximize factual signal and observability while minimizing noise. Transform raw 
 
 - factsynth.version → GET `/v1/version`
 - factsynth.intent_reflector → POST `/v1/intent_reflector` `{intent:str, length:int}`
-- factsynth.score → POST `/v1/score` `{text:str, targets:list[str]}`
+- factsynth.score → POST `/v1/score` `{text?:str, targets?:list[str]}` (text or targets required)
 - factsynth.score_batch → POST `/v1/score/batch` `{items:list[{text,targets?}], webhook_url?:str}`
 - factsynth.stream_sse → POST `/v1/stream` `{text:str}` (SSE)
 - factsynth.generate → POST `/v1/generate` `{text:str, max_len?:int, max_sentences?:int, include_score?:bool}`

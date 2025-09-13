@@ -15,3 +15,17 @@ def test_domain_metadata_valid():
 def test_domain_metadata_invalid_region():
     with pytest.raises(ValidationError):
         ScoreReq(text="t", domain={"region": "", "language": "en", "time_range": "2020"})
+
+
+@pytest.mark.parametrize("kwargs", [
+    {},
+    {"targets": []},
+])
+def test_score_req_requires_text_or_targets(kwargs):
+    with pytest.raises(ValidationError):
+        ScoreReq(**kwargs)
+
+
+def test_score_req_accepts_text_or_targets():
+    assert ScoreReq(text="x").text == "x"
+    assert ScoreReq(targets=["a"]).targets == ["a"]
