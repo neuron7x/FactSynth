@@ -61,19 +61,16 @@ class IPAllowlistMiddleware(BaseHTTPMiddleware):
 
         if not self.networks:
             logger.warning(
-                "request_id=%s client_ip=%s: IP allowlist empty", request_id, ip
+                "request_id=%s client_ip=%s: IP allowlist empty; denying by default",
+                request_id,
+                ip,
             )
             return forbidden()
         try:
             addr = ipaddress.ip_address(ip)
         except ValueError:
             logger.warning(
-                "request_id=%s client_ip=%s: invalid client IP", request_id, ip
-            )
-            logger.warning(
-                "request_id=%s client_ip=%s: Unparseable IP address",
-                request_id,
-                ip,
+                "request_id=%s client_ip=%s: Unparseable IP address", request_id, ip
             )
             addr = None
         if addr and any(addr in n for n in self.networks):
