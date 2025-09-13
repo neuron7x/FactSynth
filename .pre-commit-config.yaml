@@ -25,6 +25,13 @@ repos:
         language: system
         pass_filenames: false
         types: [python]
+  - repo: https://github.com/jazzband/pip-tools
+    rev: v7.5.0
+    hooks:
+      - id: pip-compile
+        name: pip-compile requirements-dev
+        files: ^(pyproject\.toml|requirements-dev\.txt)$
+        args: ["--extra=dev", "--output-file=requirements-dev.txt", "pyproject.toml"]
   - repo: https://github.com/psf/black
     rev: 24.8.0
     hooks:
