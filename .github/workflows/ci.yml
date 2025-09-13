@@ -55,11 +55,17 @@ jobs:
             fi
             [ -f pyproject.toml ] && pip install -e .[dev] || true
 
-        - name: Check lockfile
-          if: hashFiles('requirements.lock','pyproject.toml') != ''
-          run: |
-            pip-compile pyproject.toml --allow-unsafe --extra=dev --extra=isr --extra=numpy --generate-hashes --output-file=requirements.lock
-            git diff --exit-code requirements.lock
+      - name: Check lockfile
+        if: hashFiles('requirements.lock','pyproject.toml') != ''
+        run: |
+          pip-compile pyproject.toml --allow-unsafe --extra=dev --extra=isr --extra=numpy --generate-hashes --output-file=requirements.lock
+          git diff --exit-code requirements.lock
+
+      - name: Check dev requirements
+        if: hashFiles('pyproject.toml','requirements-dev.txt') != ''
+        run: |
+          scripts/update_dev_requirements.sh
+          git diff --exit-code requirements-dev.txt
 
       - name: Lint JS
         if: hashFiles('package.json') != ''

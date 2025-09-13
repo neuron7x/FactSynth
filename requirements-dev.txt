@@ -1,0 +1,16 @@
+pytest==8.4.2
+schemathesis==4.1.4
+websockets==15.0.1
+pytest-cov==7.0.0
+requests==2.32.5
+pip-audit==2.9.0
+spectral==0.24
+fakeredis==2.23.1
+hypothesis==6.138.15
+numpy==1.26.4
+jax==0.4.38
+jaxlib==0.4.38
+diffrax==0.7.0
+pre-commit==4.3.0
+pytest-httpx==0.35.0
+pip-tools==7.5.0
