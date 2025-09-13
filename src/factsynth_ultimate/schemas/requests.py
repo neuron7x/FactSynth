@@ -17,6 +17,8 @@ Percent = Annotated[float, Field(ge=0.0, le=1.0)]
 
 ISO_DATE = r"\d{4}-\d{2}-\d{2}"
 ISO_RANGE_PATTERN = re.compile(rf"^{ISO_DATE}/{ISO_DATE}$")
+ISO_REGION_PATTERN = r"^[A-Z]{2}$"
+ISO_LANGUAGE_PATTERN = r"^[a-z]{2}$"
 
 COUNTRY_CODES = {c.alpha_2 for c in pycountry.countries}
 LANGUAGE_CODES = {lang.alpha_2 for lang in pycountry.languages if hasattr(lang, 'alpha_2')}
@@ -40,8 +42,8 @@ TimeRange = TimeRangeStr | ExplicitTimeRange
 class DomainMetadata(BaseModel):
     """Domain attributes describing region, language and time span."""
 
-    region: Annotated[str, Field(pattern="^[A-Z]{2}$", description="ISO 3166-1 alpha-2 code")]
-    language: Annotated[str, Field(pattern="^[a-z]{2}$", description="ISO 639-1 code")]
+    region: Annotated[str, Field(pattern=ISO_REGION_PATTERN, description="ISO 3166-1 alpha-2 code")]
+    language: Annotated[str, Field(pattern=ISO_LANGUAGE_PATTERN, description="ISO 639-1 code")]
     time_range: TimeRange
 
     @field_validator("region", mode="before")
@@ -66,6 +68,16 @@ class DomainMetadata(BaseModel):
     def validate_language(cls, v: str) -> str:
         if v not in LANGUAGE_CODES:
             raise ValueError("invalid ISO 639-1 language code")
+        return v
+
+    @field_validator("time_range")
+    def validate_time_range_order(cls, v: TimeRange) -> TimeRange:
+        if isinstance(v, str):
+            start_str, end_str = v.split("/")
+            start = date.fromisoformat(start_str)
+            end = date.fromisoformat(end_str)
+            if end < start:
+                raise ValueError("end must not be before start")
         return v
 
 
