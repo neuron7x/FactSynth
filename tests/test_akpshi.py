@@ -19,15 +19,36 @@ def test_metrics():
     assert 0 <= pfi([0.4, 0.6, 0.5]) <= 1
 
 
-def test_rmse_length_mismatch():
+@pytest.mark.parametrize(
+    "y,yhat",
+    [
+        ([0, 1], [0]),
+        ([0], [0, 1]),
+        ([0, 1], [0, 1, 2]),
+    ],
+)
+def test_rmse_length_mismatch(y, yhat):
+    """RMSE should error on mismatched vector lengths."""
     with pytest.raises(ValueError):
-        rmse([0, 1], [0])
+        rmse(y, yhat)
 
 
-def test_fcr_clamps_totals():
-    assert fcr(1, 0) == 1.0
-    assert fcr(1, -5) == 1.0
+@pytest.mark.parametrize("total", [0, -5])
+def test_fcr_clamps_totals(total):
+    """FCR should clamp non-positive totals to 1."""
+    assert fcr(1, total) == 1.0
 
 
-def test_pfi_clips_scores():
-    assert pfi([-0.5, 0.5, 1.5]) == EXPECTED_PFI_CLIP
+@pytest.mark.parametrize(
+    "scores,expected",
+    [
+        ([-0.5, 0.5, 1.5], EXPECTED_PFI_CLIP),
+        ([-1.0, 2.0], 0.5),
+    ],
+)
+def test_pfi_clips_scores(scores, expected):
+    """PFI should clip input scores to the unit interval."""
+    result = pfi(scores)
+    assert result == expected
+    assert 0.0 <= result <= 1.0
+
