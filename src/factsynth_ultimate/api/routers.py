@@ -27,31 +27,21 @@ from fastapi.responses import StreamingResponse
 from factsynth_ultimate import VERSION
 
 from ..core.audit import audit_event
+from ..core.config import load_config
 from ..core.metrics import SSE_TOKENS
-from ..core.secrets import read_api_key
 from ..schemas.requests import GenerateReq, IntentReq, ScoreBatchReq, ScoreReq
 from ..services.runtime import reflect_intent, score_payload, tokenize_preview
 
 logger = logging.getLogger(__name__)
 
-API_KEY = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
-
 ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 
 def get_allowed_hosts() -> set[str]:
-    """Return the set of allowed callback hosts.
-
-    The value is computed on each call so changes to the environment or
-    settings are always respected.
-    """
-    import os
+    """Return the set of allowed callback hosts."""
     from ..core.settings import load_settings
 
-    try:
-        hosts = load_settings().callback_url_allowed_hosts
-    except Exception:  # pragma: no cover - settings may not load during tests
-        hosts = os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "")
+    hosts = load_settings().callback_url_allowed_hosts
     return set(filter(None, hosts.split(",")))
 
 
@@ -205,8 +195,9 @@ async def stream(req: ScoreReq, request: Request) -> StreamingResponse:  # noqa:
 async def ws_stream(ws: WebSocket) -> None:
     """Stream tokenization results over WebSocket with API-key auth."""
 
-    key = ws.headers.get("x-api-key")
-    if key != API_KEY:
+    cfg = load_config()
+    key = ws.headers.get(cfg.auth_header_name)
+    if key != cfg.api_key:
         await ws.close(code=4401, reason="Unauthorized")
         return
     await ws.accept()
