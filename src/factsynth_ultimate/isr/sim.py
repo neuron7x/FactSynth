@@ -5,8 +5,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
-import jax.numpy as jnp
-from diffrax import ODETerm, SaveAt, Tsit5, diffeqsolve
+try:
+    import jax.numpy as jnp
+except ImportError as exc:  # pragma: no cover - runtime dependency check
+    raise RuntimeError(
+        "JAX is required for ISR simulations. Install with `pip install jax`"
+    ) from exc
+
+try:
+    from diffrax import ODETerm, SaveAt, Tsit5, diffeqsolve
+except ImportError as exc:  # pragma: no cover - runtime dependency check
+    raise RuntimeError(
+        "Diffrax is required for ISR simulations. Install with `pip install diffrax`"
+    ) from exc
 
 GAMMA_FREQ = 40.0
 
