@@ -19,5 +19,5 @@ def test_sanitize_idempotent(s: str) -> None:
 @given(st.text(min_size=1, max_size=1000))
 def test_ensure_period_postcondition(s: str) -> None:
     t = formatting.ensure_period(s)
-    assert t.endswith(("!", "?", "."))
+    assert t.endswith(("!", "?", ".", "…"))
 

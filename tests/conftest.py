@@ -11,6 +11,9 @@ import pytest
 from fakeredis.aioredis import FakeRedis
 from httpx import ASGITransport, AsyncClient, MockTransport, Response
 
+# Allow unused mocked responses; tests may not trigger HTTP calls
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+
 # Global Redis patch so tests don't require a real server
 _FAKE_REDIS = FakeRedis()
 patch("redis.asyncio.from_url", return_value=_FAKE_REDIS).start()
@@ -77,6 +80,8 @@ async def api_stub():
 @pytest.fixture(autouse=True)
 def _stub_external_api(httpx_mock) -> None:
     """Stub external HTTP calls so tests remain offline."""
+    # Avoid teardown errors when no HTTP requests are made
+    httpx_mock._options.assert_all_responses_were_requested = False
 
     def handler(request):
         path = request.url.path
