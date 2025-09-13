@@ -4,8 +4,16 @@ from fastapi import HTTPException
 from factsynth_ultimate.api.routers import validate_callback_url
 
 
-def test_validate_callback_url_basic(httpx_mock):
+def test_validate_callback_url_requires_hosts(monkeypatch, httpx_mock):
     httpx_mock.reset()
+    monkeypatch.delenv("CALLBACK_URL_ALLOWED_HOSTS", raising=False)
+    with pytest.raises(HTTPException):
+        validate_callback_url("https://example.com")
+
+
+def test_validate_callback_url_basic(monkeypatch, httpx_mock):
+    httpx_mock.reset()
+    monkeypatch.setenv("CALLBACK_URL_ALLOWED_HOSTS", "example.com")
     assert validate_callback_url("https://example.com") is None
     with pytest.raises(HTTPException):
         validate_callback_url("ftp://example.com")
