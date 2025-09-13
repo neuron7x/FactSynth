@@ -20,40 +20,46 @@ class GLRTPMStep(str, Enum):
     Omega = "Omega"
 
 
-def handle_r(thesis: str, _: dict[str, str]) -> str:
-    """Return critic response for thesis."""
+class CriticHandler:
+    """Callable returning the critic response."""
 
-    return Critic().respond(thesis)
-
-
-def handle_i(thesis: str, _: dict[str, str]) -> str:
-    """Return combined rationalist and aesthete perspectives."""
-
-    return " | ".join([Rationalist().respond(thesis), Aesthete().respond(thesis)])
+    def __call__(self, thesis: str, _: dict[str, str]) -> str:
+        return Critic().respond(thesis)
 
 
-def handle_p(thesis: str, results: dict[str, str]) -> str:
-    """Project thesis and counter arguments into a meta representation."""
+class RationalistAestheteHandler:
+    """Callable combining rationalist and aesthete perspectives."""
 
-    return "[Meta-Projection] Nodes: " + json.dumps(
-        {
-            "thesis": f"{thesis[:64]}...",
-            "counter": f"{results.get('R', '')[:64]}...",
-        }
-    )
+    def __call__(self, thesis: str, _: dict[str, str]) -> str:
+        return " | ".join(
+            [Rationalist().respond(thesis), Aesthete().respond(thesis)]
+        )
 
 
-def handle_omega(thesis: str, _: dict[str, str]) -> str:
-    """Return integrator synthesis and observer audit."""
+class ProjectionHandler:
+    """Callable projecting thesis and counter arguments into meta representation."""
 
-    return Integrator().respond(thesis) + " | " + Observer().respond(thesis)
+    def __call__(self, thesis: str, results: dict[str, str]) -> str:
+        return "[Meta-Projection] Nodes: " + json.dumps(
+            {
+                "thesis": f"{thesis[:64]}...",
+                "counter": f"{results.get('R', '')[:64]}...",
+            }
+        )
+
+
+class IntegratorObserverHandler:
+    """Callable returning integrator synthesis and observer audit."""
+
+    def __call__(self, thesis: str, _: dict[str, str]) -> str:
+        return Integrator().respond(thesis) + " | " + Observer().respond(thesis)
 
 
 STEP_HANDLERS: dict[GLRTPMStep, Callable[[str, dict[str, str]], str]] = {
-    GLRTPMStep.R: handle_r,
-    GLRTPMStep.I: handle_i,
-    GLRTPMStep.P: handle_p,
-    GLRTPMStep.Omega: handle_omega,
+    GLRTPMStep.R: CriticHandler(),
+    GLRTPMStep.I: RationalistAestheteHandler(),
+    GLRTPMStep.P: ProjectionHandler(),
+    GLRTPMStep.Omega: IntegratorObserverHandler(),
 }
 
 
