@@ -1,3 +1,6 @@
+import os
+from unittest.mock import patch
+
 import pytest
 from fastapi import HTTPException
 
@@ -39,15 +42,20 @@ def test_validate_callback_url_missing_host(monkeypatch, httpx_mock):
     assert exc.value.detail == "Missing callback URL host"
 
 
-def test_validate_callback_url_dynamic_allowlist(monkeypatch, httpx_mock):
+def test_validate_callback_url_dynamic_allowlist(httpx_mock):
     httpx_mock.reset()
+    routers.get_allowed_hosts.cache_clear()
 
-    monkeypatch.setattr(routers, "get_allowed_hosts", lambda: {"a.com"})
-    routers.validate_callback_url("https://a.com/path")
+    env_a = {"CALLBACK_URL_ALLOWED_HOSTS": "a.com"}
+    env_b = {"CALLBACK_URL_ALLOWED_HOSTS": "b.com"}
 
-    monkeypatch.setattr(routers, "get_allowed_hosts", lambda: {"b.com"})
-    with pytest.raises(HTTPException) as exc:
-        routers.validate_callback_url("https://a.com/path")
-    assert exc.value.detail == "Callback URL host not in allowlist"
-    routers.validate_callback_url("https://b.com/path")
+    with patch.dict(os.environ, env_a):
+        validate_callback_url("https://a.com/path")
 
+    with patch.dict(os.environ, env_b):
+        with pytest.raises(HTTPException) as exc:
+            validate_callback_url("https://b.com/path")
+        assert exc.value.detail == "Callback URL host not in allowlist"
+
+        routers.get_allowed_hosts.cache_clear()
+        validate_callback_url("https://b.com/path")
