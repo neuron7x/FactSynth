@@ -8,6 +8,9 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
     env:
       API_KEY: change-me
       RATE_LIMIT_REDIS_URL: redis://test
@@ -22,7 +25,9 @@ jobs:
         with: { node-version: 'lts/*', cache: 'npm' }
 
       - uses: actions/setup-python@v6
-        with: { python-version: '3.11', cache: 'pip' }
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
 
       - name: Install JS deps
         if: hashFiles('package.json') != ''
@@ -85,7 +90,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ci-failures
+          name: ci-failures-${{ matrix.python-version }}
           if-no-files-found: ignore
           path: |
             **/junit*.xml
