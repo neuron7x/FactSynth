@@ -18,3 +18,9 @@ nav:
   - Prompt Pack: PromptPack.md
   - Incubation Co-Dev UA: INCUBATION_CO_DEV_UA.md
   - FactSynth Lock: FACTSYNTH_LOCK.md
+  - Models:
+      - NLI Token Overlap: models/nli.md
+      - LLM Candidate Arbitrator: models/llm_arbitrator.md
+  - Datasets:
+      - Golden FactSynth: datasets/golden_factsynth.md
+      - Golden 12: datasets/golden_12.md
