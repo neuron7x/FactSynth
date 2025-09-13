@@ -11,7 +11,8 @@ OPENAPI_SPEC = {
     "paths": {"/v1/score": {"post": {"responses": {"200": {"description": "OK"}}}}},
 }
 
-schema = schemathesis.from_dict(OPENAPI_SPEC, base_url="http://test")
+schema = schemathesis.openapi.from_dict(OPENAPI_SPEC)
+schema.config.base_url = "http://test"
 schema.validate()
 
 
