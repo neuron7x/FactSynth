@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ipaddress
+import logging
 from collections.abc import Awaitable, Callable
 
 from fastapi import Request
@@ -11,6 +12,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from ..i18n import choose_language, translate
+
+logger = logging.getLogger(__name__)
 
 
 class IPAllowlistMiddleware(BaseHTTPMiddleware):
@@ -36,14 +39,17 @@ class IPAllowlistMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         if any(path.startswith(s) for s in self.skip):
             return await call_next(request)
-        if not self.networks:
+        ip = request.client.host if request.client else "127.0.0.1"
+
+        def forbidden() -> JSONResponse:
             lang = choose_language(request)
             title = translate(lang, "forbidden")
+            detail = f"IP {ip} not allowed"
             problem = {
                 "type": "about:blank",
                 "title": title,
                 "status": 403,
-                "detail": "IP allowlist is empty",
+                "detail": detail,
                 "trace_id": getattr(request.state, "request_id", ""),
             }
             return JSONResponse(
@@ -51,25 +57,14 @@ class IPAllowlistMiddleware(BaseHTTPMiddleware):
                 status_code=403,
                 media_type="application/problem+json",
             )
-        ip = request.client.host if request.client else "127.0.0.1"
+
+        if not self.networks:
+            logger.warning("IP allowlist empty; blocking request from %s", ip)
+            return forbidden()
         try:
             addr = ipaddress.ip_address(ip)
         except ValueError:
             addr = None
         if addr and any(addr in n for n in self.networks):
             return await call_next(request)
-        lang = choose_language(request)
-        title = translate(lang, "forbidden")
-        detail = f"IP {ip} not allowed"
-        problem = {
-            "type": "about:blank",
-            "title": title,
-            "status": 403,
-            "detail": detail,
-            "trace_id": getattr(request.state, "request_id", ""),
-        }
-        return JSONResponse(
-            problem,
-            status_code=403,
-            media_type="application/problem+json",
-        )
+        return forbidden()

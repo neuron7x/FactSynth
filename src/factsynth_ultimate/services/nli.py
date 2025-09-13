@@ -7,10 +7,9 @@ from collections.abc import Awaitable, Callable
 
 from ..tokenization import tokenize
 
-Classifier = Callable[[str, str], Awaitable[float]]
-
-
 logger = logging.getLogger(__name__)
+
+Classifier = Callable[[str, str], Awaitable[float]]
 
 
 class NLI:
@@ -31,7 +30,7 @@ class NLI:
             try:
                 return await self.classifier(premise, hypothesis)
             except Exception:
-                logger.exception("NLI classifier failed; falling back to heuristic")
+                logger.exception("classifier_error")
         return self._heuristic(premise, hypothesis)
 
     def _heuristic(self, premise: str, hypothesis: str) -> float:

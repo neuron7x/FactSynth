@@ -2,22 +2,29 @@
 
 The original implementation used ``dataclasses``; this module replaces those
 structures with Pydantic models that offer validation and serialization
-support. The models enforce a strict schema so the contract remains explicit.
+support. Unknown fields are forbidden to ensure the schema is followed strictly.
 """
 
 from __future__ import annotations
 
-from typing import Literal
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class Decision(str, Enum):
+    """Possible outcomes of a claim evaluation."""
+
+    SUPPORTED = "supported"
+    PARTIALLY_SUPPORTED = "partially_supported"
+    REFUTED = "refuted"
+    NOT_PROVABLE = "not_provable"
 
 
 class Verdict(BaseModel):
     """Outcome of the claim evaluation."""
 
-    decision: Literal["supported", "refuted", "uncertain"] = Field(
-        ..., description="Assessment of the claim"
-    )
+    decision: Decision = Field(..., description="Assessment of the claim")
     confidence: float | None = Field(None, description="Confidence score for the assessment")
 
     model_config = ConfigDict(extra="forbid")
@@ -106,4 +113,5 @@ __all__ = [
     "SourceSynthesis",
     "Traceability",
     "Verdict",
+    "Decision",
 ]
