@@ -1,10 +1,13 @@
 from http import HTTPStatus
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from factsynth_ultimate.api import verify as verify_mod
 from factsynth_ultimate.core.factsynth_lock import FactSynthLock
+
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
 app = FastAPI()
 app.include_router(verify_mod.api)
