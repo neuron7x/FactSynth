@@ -74,7 +74,13 @@
     },
     "VERDICT": {
       "type": "string",
-      "enum": ["supported", "partially_supported", "refuted", "not_provable"]
+      "enum": [
+        "confirmed",
+        "refuted",
+        "mixed",
+        "not_enough_evidence",
+        "not_a_fact"
+      ]
     },
     "NORMALIZATION": { "type": "string" },
     "CONFLICTS": { "type": "array", "items": { "type": "string" } },
@@ -85,17 +91,21 @@
       "required": [
         "latency_ms",
         "claims_total",
-        "claims_supported",
+        "claims_confirmed",
         "claims_refuted",
-        "claims_gap",
+        "claims_mixed",
+        "claims_not_enough_evidence",
+        "claims_not_a_fact",
         "calibration_hint"
       ],
       "properties": {
         "latency_ms": { "type": "number" },
         "claims_total": { "type": "integer" },
-        "claims_supported": { "type": "integer" },
+        "claims_confirmed": { "type": "integer" },
         "claims_refuted": { "type": "integer" },
-        "claims_gap": { "type": "integer" },
+        "claims_mixed": { "type": "integer" },
+        "claims_not_enough_evidence": { "type": "integer" },
+        "claims_not_a_fact": { "type": "integer" },
         "calibration_hint": { "type": "string" }
       }
     }

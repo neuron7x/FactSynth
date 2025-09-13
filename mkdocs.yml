@@ -24,3 +24,9 @@ nav:
   - Datasets:
       - Golden FactSynth: datasets/golden_factsynth.md
       - Golden 12: datasets/golden_12.md
+  - Observability:
+      - Grafana Dashboard: grafana/dashboards/factsynth-overview.json
+      - Prometheus Alerts: config/prometheus/alerts.yml
+  - API:
+      - OpenAPI Spec: openapi/openapi.yaml
+      - Live Docs: https://api.factsynth.example.com/docs

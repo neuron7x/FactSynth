@@ -81,3 +81,8 @@ ignore-init-module = true
 ignore-semiprivate = true
 style = "google"
 
+[tool.semantic_release]
+version_variable = "pyproject.toml:project.version"
+branch = "main"
+commit_parser = "conventional"
+changelog_file = "CHANGELOG.md"

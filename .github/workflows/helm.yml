@@ -1,0 +1,18 @@
+name: helm
+on:
+  push:
+    tags: ["v*.*.*"]
+jobs:
+  package-push:
+    runs-on: ubuntu-latest
+    permissions: {packages: write, contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+      - name: Package
+        run: helm package charts/factsynth -d dist
+      - name: Push OCI
+        run: |
+          helm registry login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+          helm push dist/*.tgz oci://ghcr.io/${{ github.repository_owner }}/charts

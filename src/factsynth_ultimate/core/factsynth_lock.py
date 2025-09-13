@@ -21,10 +21,11 @@ class _StrictModel(BaseModel):
 class Decision(str, Enum):
     """Possible outcomes of a claim evaluation."""
 
-    SUPPORTED = "supported"
-    PARTIALLY_SUPPORTED = "partially_supported"
+    CONFIRMED = "confirmed"
     REFUTED = "refuted"
-    NOT_PROVABLE = "not_provable"
+    MIXED = "mixed"
+    NOT_ENOUGH_EVIDENCE = "not_enough_evidence"
+    NOT_A_FACT = "not_a_fact"
 
 
 class Verdict(_StrictModel):
@@ -67,4 +68,3 @@ class FactSynthLock(_StrictModel):
 
 
 __all__ = ["Decision", "Evidence", "FactSynthLock", "Verdict"]
-

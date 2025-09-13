@@ -1,0 +1,10 @@
+groups:
+  - name: factsynth
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status!~"2.."}[5m]) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: High error rate detected
