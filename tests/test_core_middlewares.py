@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+import pytest
 
 from factsynth_ultimate.core.body_limit import BodySizeLimitMiddleware
 from factsynth_ultimate.core.security_headers import SecurityHeadersMiddleware
@@ -44,3 +45,19 @@ def test_security_headers_added():
     assert headers["X-Frame-Options"] == "DENY"
     assert headers["Content-Security-Policy"].startswith("default-src")
     assert headers["Strict-Transport-Security"].startswith("max-age")
+
+
+@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+def test_security_headers_without_hsts():
+    app = FastAPI()
+    app.add_middleware(SecurityHeadersMiddleware, hsts=False)
+
+    @app.get("/")
+    async def get_root():
+        return {"ok": True}
+
+    client = TestClient(app)
+    r = client.get("/")
+    assert r.status_code == HTTPStatus.OK
+    headers = r.headers
+    assert "Strict-Transport-Security" not in headers
