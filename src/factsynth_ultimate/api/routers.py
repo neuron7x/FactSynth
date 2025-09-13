@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 API_KEY = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
 
 ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
+ALLOWED_HOSTS = set(filter(None, os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "").split(",")))
 
 
 def validate_callback_url(url: str) -> None:
@@ -49,7 +50,6 @@ def validate_callback_url(url: str) -> None:
     Raises:
         HTTPException: If the URL does not use an allowed scheme or host.
     """
-    allowed_hosts = set(filter(None, os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "").split(",")))
     try:
         parsed = urlparse(url)
     except Exception as exc:  # pragma: no cover
@@ -63,7 +63,7 @@ def validate_callback_url(url: str) -> None:
     if parsed.scheme not in ALLOWED_CALLBACK_SCHEMES:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL")
 
-    if allowed_hosts and parsed.hostname not in allowed_hosts:
+    if not ALLOWED_HOSTS or parsed.hostname not in ALLOWED_HOSTS:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL")
 
 
