@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 import random
 import string
 import time
@@ -42,9 +41,14 @@ ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 def _get_allowed_hosts() -> set[str]:
     """Return the set of allowed callback hosts."""
-    return set(
-        filter(None, os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "").split(","))
-    )
+    import os
+    from ..core.settings import load_settings
+
+    try:
+        hosts = load_settings().callback_url_allowed_hosts
+    except Exception:  # pragma: no cover - settings may not load during tests
+        hosts = os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "")
+    return set(filter(None, hosts.split(",")))
 
 
 def validate_callback_url(url: str) -> None:
@@ -66,17 +70,20 @@ def validate_callback_url(url: str) -> None:
 
     if parsed.scheme not in ALLOWED_CALLBACK_SCHEMES:
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL scheme"
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="Disallowed callback URL scheme",
         )
 
     if not parsed.hostname:
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL host"
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="Missing callback URL host",
         )
 
     if allowed_hosts and parsed.hostname not in allowed_hosts:
         raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL host"
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="Disallowed callback URL host",
         )
 
 

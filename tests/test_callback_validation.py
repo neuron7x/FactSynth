@@ -20,7 +20,7 @@ def test_invalid_callback_scheme() -> None:
             json={"text": "x", "callback_url": "ftp://example.com/cb"},
         )
         assert r.status_code == HTTPStatus.BAD_REQUEST
-        assert r.json()["detail"] == "Invalid callback URL scheme"
+        assert r.json()["detail"] == "Disallowed callback URL scheme"
 
 
 def test_invalid_callback_host() -> None:
@@ -32,7 +32,7 @@ def test_invalid_callback_host() -> None:
             json={"text": "x", "callback_url": "https://evil.com/cb"},
         )
         assert r.status_code == HTTPStatus.BAD_REQUEST
-        assert r.json()["detail"] == "Invalid callback URL host"
+        assert r.json()["detail"] == "Disallowed callback URL host"
 
 
 def test_valid_callback_url() -> None:
