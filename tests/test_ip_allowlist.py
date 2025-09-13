@@ -74,6 +74,23 @@ def test_unparseable_ip_logs_warning(caplog):
     )
 
 
+def test_invalid_ip_logs_warning_and_returns_403(caplog):
+    app = FastAPI()
+    app.add_middleware(IPAllowlistMiddleware, cidrs=["127.0.0.1/32"])
+
+    @app.get("/")
+    def root() -> dict[str, str]:  # pragma: no cover - trivial
+        return {"status": "ok"}
+
+    with TestClient(app) as client, caplog.at_level(logging.WARNING):
+        r = client.get("/")
+        assert r.status_code == HTTPStatus.FORBIDDEN
+    assert any(
+        rec.levelno == logging.WARNING and "invalid client IP testclient" in rec.getMessage()
+        for rec in caplog.records
+    )
+
+
 def test_missing_api_key_returns_401():
     env = {"API_KEY": "secret", "IP_ALLOWLIST": "[]"}
     with patch.dict(os.environ, env):
@@ -90,4 +107,3 @@ def test_missing_api_key_returns_401():
                 "status": HTTPStatus.UNAUTHORIZED,
                 "detail": "Missing API key",
             }
-
