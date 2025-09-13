@@ -58,6 +58,6 @@ def test_invalid_ip_logs_warning(caplog):
         r = client.get("/")
         assert r.status_code == HTTPStatus.FORBIDDEN
     assert any(
-        rec.levelno == logging.WARNING and "Invalid IP address" in rec.getMessage()
+        rec.levelno == logging.WARNING and "Unparseable IP address" in rec.getMessage()
         for rec in caplog.records
     )
