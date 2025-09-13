@@ -102,8 +102,9 @@ class GLRTPMPipeline:
         results: dict[str, str] = {}
         for step in self.config.steps:
             handler = STEP_HANDLERS.get(step)
-            if handler:
-                results[step.value] = handler(thesis, results)
+            if handler is None:
+                raise ValueError(f"Unsupported GLRTPM step: {step.value}")
+            results[step.value] = handler(thesis, results)
 
         metrics = {
             "coherence": compute_coherence(thesis, *results.values()),
