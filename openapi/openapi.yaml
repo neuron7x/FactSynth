@@ -256,19 +256,30 @@ components:
       properties:
         region:
           type: string
-          minLength: 1
+          pattern: '^[A-Z]{2}$'
           title: Region
-          x-strip-whitespace: true
+          description: ISO 3166-1 alpha-2 code
         language:
           type: string
-          minLength: 1
+          pattern: '^[a-z]{2}$'
           title: Language
-          x-strip-whitespace: true
+          description: ISO 639-1 code
         time_range:
-          type: string
-          minLength: 1
+          oneOf:
+            - type: string
+              pattern: '^\\d{4}-\\d{2}-\\d{2}/\\d{4}-\\d{2}-\\d{2}$'
+            - type: object
+              required:
+                - start
+                - end
+              properties:
+                start:
+                  type: string
+                  format: date
+                end:
+                  type: string
+                  format: date
           title: Time Range
-          x-strip-whitespace: true
       required:
       - region
       - language
