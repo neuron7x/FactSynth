@@ -13,3 +13,4 @@ Welcome to the FactSynth documentation site built with MkDocs and the Material t
 - [Incubation Co-Dev UA](INCUBATION_CO_DEV_UA.md)
 - [FactSynth Lock](FACTSYNTH_LOCK.md)
 - [Security and Authorization](security.md)
+- [AI Ethics & Bias Policy](ai-ethics-bias-policy.md)
