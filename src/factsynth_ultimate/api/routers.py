@@ -39,7 +39,7 @@ API_KEY = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
 ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 
-def _get_allowed_hosts() -> set[str]:
+def get_allowed_hosts() -> set[str]:
     """Return the set of allowed callback hosts.
 
     The value is computed on each call so changes to the environment or
@@ -64,7 +64,7 @@ def validate_callback_url(url: str) -> None:
     Raises:
         HTTPException: If the URL does not use an allowed scheme or host.
     """
-    allowed_hosts = _get_allowed_hosts()
+    allowed_hosts = get_allowed_hosts()
     try:
         parsed = urlparse(url)
     except Exception as exc:  # pragma: no cover
