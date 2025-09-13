@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI
@@ -14,7 +15,7 @@ app.include_router(verify_mod.api)
 client = TestClient(app)
 
 
-def test_quality_pipeline_verify_returns_lock():
+def test_quality_pipeline_verify_enriches_lock():
     payload = {
         "claim": "The earth orbits the sun",
         "lock": {
@@ -23,9 +24,24 @@ def test_quality_pipeline_verify_returns_lock():
         },
     }
 
-    resp = client.post("/verify", json=payload)
+    evaluation = {
+        "verdict": {"decision": "refuted"},
+        "evidence": [
+            {
+                "source_id": "2",
+                "source": "url2",
+                "content": "different",
+            }
+        ],
+    }
+
+    with patch("factsynth_ultimate.api.verify.evaluate_claim", return_value=evaluation):
+        resp = client.post("/verify", json=payload)
+
     assert resp.status_code == HTTPStatus.OK
 
     returned = FactSynthLock.model_validate(resp.json())
     expected = FactSynthLock.model_validate(payload["lock"])
-    assert returned == expected
+    assert returned != expected
+    assert returned.verdict.decision == "refuted"
+    assert returned.evidence[0].source_id == "2"
