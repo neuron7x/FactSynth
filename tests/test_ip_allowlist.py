@@ -61,3 +61,7 @@ def test_invalid_ip_logs_warning(caplog):
         rec.levelno == logging.WARNING and "invalid client IP" in rec.getMessage()
         for rec in caplog.records
     )
+    assert any(
+        rec.levelno == logging.WARNING and "Unparseable IP address" in rec.getMessage()
+        for rec in caplog.records
+    )
