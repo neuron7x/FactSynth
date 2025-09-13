@@ -224,6 +224,7 @@ curl -X POST http://localhost:8000/v1/generate \
 ## Observability
 
 - Metrics exposed at `/metrics` for Prometheus.
+  - `/v1/feedback` captures **Explanation Satisfaction Score** and **Citation Precision** from user surveys.
 - Structured logging with request IDs.
 - Tracing hooks ready for OpenTelemetry.
 

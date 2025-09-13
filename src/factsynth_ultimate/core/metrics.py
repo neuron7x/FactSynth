@@ -29,6 +29,17 @@ SSE_TOKENS = Counter(
     "Number of SSE tokens streamed",
 )
 
+EXPLANATION_SATISFACTION = Histogram(
+    "factsynth_explanation_satisfaction_score",
+    "User-rated satisfaction with explanations",
+    buckets=(0.0, 0.25, 0.5, 0.75, 1.0),
+)
+CITATION_PRECISION = Histogram(
+    "factsynth_citation_precision",
+    "User-perceived citation accuracy",
+    buckets=(0.0, 0.25, 0.5, 0.75, 1.0),
+)
+
 
 def metrics_bytes() -> bytes:
     """Return all metrics in Prometheus text format."""

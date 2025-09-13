@@ -176,6 +176,7 @@ export CORS_ALLOW_ORIGINS="https://example.com,https://another.example"
 ## Спостережуваність
 
 - Метрики Prometheus доступні на `/metrics`.
+  - `/v1/feedback` збирає **індекс задоволеності поясненням** та **точність цитат** від користувачів.
 - Структуровані логи з ідентифікаторами запитів.
 - Гачки трасування готові до OpenTelemetry.
 
