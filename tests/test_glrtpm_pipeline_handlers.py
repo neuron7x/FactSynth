@@ -1,11 +1,11 @@
 import pytest
 
 from factsynth_ultimate.glrtpm.pipeline import (
+    STEP_HANDLERS,
+    CriticHandler,
     GLRTPMConfig,
     GLRTPMPipeline,
     GLRTPMStep,
-    STEP_HANDLERS,
-    CriticHandler,
     IntegratorObserverHandler,
     ProjectionHandler,
     RationalistAestheteHandler,
@@ -37,3 +37,10 @@ def test_run_raises_for_unsupported_step(monkeypatch):
 
     with pytest.raises(ValueError, match="Unsupported GLRTPM step: R"):
         pipeline.run("thesis")
+
+
+def test_config_rejects_unknown_step():
+    """Configuration should reject steps not defined in ``GLRTPMStep``."""
+
+    with pytest.raises(ValueError, match="Unknown GLRTPM step: X"):
+        GLRTPMConfig(["X"])

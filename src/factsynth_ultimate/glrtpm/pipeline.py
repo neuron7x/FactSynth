@@ -1,4 +1,3 @@
-
 """Simple pipeline orchestrating GLRTPM role interactions."""
 
 import json
@@ -24,42 +23,44 @@ class UnknownGLRTPMStepError(ValueError):
     """Raised when an unknown GLRTPM step is encountered."""
 
 
-def handle_critic(thesis: str, _: dict[str, str]) -> str:
+class CriticHandler:
     """Return the critic response."""
 
-    return Critic().respond(thesis)
+    def __call__(self, thesis: str, _: dict[str, str]) -> str:
+        return Critic().respond(thesis)
 
 
-def handle_rationalist_aesthete(thesis: str, _: dict[str, str]) -> str:
+class RationalistAestheteHandler:
     """Combine rationalist and aesthete perspectives."""
 
-    return " | ".join(
-        [Rationalist().respond(thesis), Aesthete().respond(thesis)]
-    )
+    def __call__(self, thesis: str, _: dict[str, str]) -> str:
+        return " | ".join([Rationalist().respond(thesis), Aesthete().respond(thesis)])
 
 
-def handle_projection(thesis: str, results: dict[str, str]) -> str:
+class ProjectionHandler:
     """Project thesis and counter arguments into meta representation."""
 
-    return "[Meta-Projection] Nodes: " + json.dumps(
-        {
-            "thesis": f"{thesis[:64]}...",
-            "counter": f"{results.get('R', '')[:64]}...",
-        }
-    )
+    def __call__(self, thesis: str, results: dict[str, str]) -> str:
+        return "[Meta-Projection] Nodes: " + json.dumps(
+            {
+                "thesis": f"{thesis[:64]}...",
+                "counter": f"{results.get('R', '')[:64]}...",
+            }
+        )
 
 
-def handle_integrator_observer(thesis: str, _: dict[str, str]) -> str:
+class IntegratorObserverHandler:
     """Return integrator synthesis and observer audit."""
 
-    return Integrator().respond(thesis) + " | " + Observer().respond(thesis)
+    def __call__(self, thesis: str, _: dict[str, str]) -> str:
+        return Integrator().respond(thesis) + " | " + Observer().respond(thesis)
 
 
 STEP_HANDLERS: dict[GLRTPMStep, Callable[[str, dict[str, str]], str]] = {
-    GLRTPMStep.R: handle_critic,
-    GLRTPMStep.I: handle_rationalist_aesthete,
-    GLRTPMStep.P: handle_projection,
-    GLRTPMStep.Omega: handle_integrator_observer,
+    GLRTPMStep.R: CriticHandler(),
+    GLRTPMStep.I: RationalistAestheteHandler(),
+    GLRTPMStep.P: ProjectionHandler(),
+    GLRTPMStep.Omega: IntegratorObserverHandler(),
 }
 
 
@@ -91,10 +92,9 @@ class GLRTPMConfig:
                 try:
                     validated.append(GLRTPMStep(step))
                 except ValueError as exc:  # pragma: no cover - defensive
-                    raise UnknownGLRTPMStepError(
-                        f"Unknown GLRTPM step: {step}"
-                    ) from exc
+                    raise UnknownGLRTPMStepError(f"Unknown GLRTPM step: {step}") from exc
         self.steps = validated
+
 
 @dataclass
 class GLRTPMPipeline:
@@ -109,9 +109,7 @@ class GLRTPMPipeline:
         for step in self.config.steps:
             handler = STEP_HANDLERS.get(step)
             if handler is None:
-                raise UnknownGLRTPMStepError(
-                    f"Unsupported GLRTPM step: {step.value}"
-                )
+                raise UnknownGLRTPMStepError(f"Unsupported GLRTPM step: {step.value}")
             results[step.value] = handler(thesis, results)
 
         metrics = {
