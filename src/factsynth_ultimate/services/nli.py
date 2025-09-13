@@ -18,7 +18,9 @@ class NLI:
     def __init__(self, classifier: Classifier | None = None) -> None:
         self.classifier = classifier
 
-    async def classify(self, premise: str, hypothesis: str) -> float:
+    async def classify(
+        self, premise: str, hypothesis: str, request_id: str | None = None
+    ) -> float:
         """Return entailment score for *hypothesis* given *premise*.
 
         If an async *classifier* was provided, it will be awaited. Any exception
@@ -30,8 +32,10 @@ class NLI:
             try:
                 return await self.classifier(premise, hypothesis)
             except Exception:
-                logger.exception("classifier_error")
-                pass
+                logger.exception(
+                    "classifier_error", extra={"request_id": request_id}
+                )
+                return self._heuristic(premise, hypothesis)
         return self._heuristic(premise, hypothesis)
 
     def _heuristic(self, premise: str, hypothesis: str) -> float:
