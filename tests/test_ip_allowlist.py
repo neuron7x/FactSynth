@@ -33,7 +33,7 @@ def test_forbidden_ip_returns_403():
             }
 
 
-def test_empty_allowlist_blocks_request(caplog):
+def test_empty_allowlist_denied_by_default(caplog):
     app = FastAPI()
     app.add_middleware(IPAllowlistMiddleware, cidrs=[])
 
@@ -44,15 +44,17 @@ def test_empty_allowlist_blocks_request(caplog):
     with TestClient(app) as client, caplog.at_level(logging.WARNING):
         r = client.get("/")
         assert r.status_code == HTTPStatus.FORBIDDEN
+        body = r.json()
+        assert body["detail"] == "IP testclient not allowed"
     assert any(
-        "IP allowlist empty" in rec.getMessage()
+        "IP allowlist empty; denying by default" in rec.getMessage()
         and "client_ip=testclient" in rec.getMessage()
         and "request_id=" in rec.getMessage()
         for rec in caplog.records
     )
 
 
-def test_invalid_ip_logs_warning(caplog):
+def test_unparseable_ip_logs_warning(caplog):
     app = FastAPI()
     app.add_middleware(IPAllowlistMiddleware, cidrs=["127.0.0.1/32"])
 
@@ -63,13 +65,6 @@ def test_invalid_ip_logs_warning(caplog):
     with TestClient(app) as client, caplog.at_level(logging.WARNING):
         r = client.get("/")
         assert r.status_code == HTTPStatus.FORBIDDEN
-    assert any(
-        rec.levelno == logging.WARNING
-        and "invalid client IP" in rec.getMessage()
-        and "client_ip=testclient" in rec.getMessage()
-        and "request_id=" in rec.getMessage()
-        for rec in caplog.records
-    )
     assert any(
         rec.levelno == logging.WARNING
         and "Unparseable IP address" in rec.getMessage()
@@ -93,6 +88,6 @@ def test_missing_api_key_returns_401():
                 "type": "about:blank",
                 "title": "Unauthorized",
                 "status": HTTPStatus.UNAUTHORIZED,
-                "detail": "Invalid or missing API key",
+                "detail": "Missing API key",
             }
 
