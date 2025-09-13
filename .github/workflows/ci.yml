@@ -53,6 +53,12 @@ jobs:
           fi
           [ -f pyproject.toml ] && pip install ".[dev]" || true
 
+      - name: Check dev requirements lockfile
+        if: hashFiles('requirements-dev.txt','pyproject.toml') != ''
+        run: |
+          pip-compile pyproject.toml --extra=dev --output-file=requirements-dev.txt
+          git diff --exit-code requirements-dev.txt
+
       - name: Lint JS
         if: hashFiles('package.json') != ''
         run: |
