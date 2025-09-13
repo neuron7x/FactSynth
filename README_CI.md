@@ -4,7 +4,8 @@
 
     ```bash
     python -m pip install -U pip wheel build pre-commit
-    pip install -r requirements.lock -r requirements-dev.txt || pip install -e .[dev,test]
+    pip install -r requirements.lock && pip install -e .[dev,test]
+    # опційно: scripts/update_dev_requirements.sh && pip install -r requirements-dev.txt
     pre-commit run --all-files || true
     pytest --cov --cov-report=xml
     python tools/coverage_gate.py --xml coverage.xml --min 90

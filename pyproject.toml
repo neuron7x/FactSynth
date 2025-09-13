@@ -30,7 +30,11 @@ dev = [
     "hypothesis==6.138.15",  # Property-based testing
     "numpy==1.26.4",  # Numerical computations in tests
     "jax==0.4.38",  # JAX core for diffrax
+    "jaxlib==0.4.38",  # JAX runtime
     "diffrax==0.7.0",  # Differential equation solver used in tests
+    "pre-commit==4.3.0",  # Git hooks runner
+    "pytest-httpx==0.35.0",  # HTTPX mocking for tests
+    "pip-tools==7.5.0",  # requirements management
 ]
 ops = [
     "prometheus-client==0.22.1",
