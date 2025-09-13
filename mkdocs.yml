@@ -1,6 +1,16 @@
 site_name: FactSynth
+site_url: https://neuron7x.github.io/FactSynth/
+repo_url: https://github.com/neuron7x/FactSynth/
+
 theme:
   name: material
+
+plugins:
+  - search
+  - redirects
+  - minify
+  - git-revision-date-localized
+
 nav:
   - Home: index.md
   - Production Runbook: prod-runbook.md
