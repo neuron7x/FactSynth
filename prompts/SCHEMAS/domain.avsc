@@ -1,0 +1,34 @@
+{
+  "type": "record",
+  "name": "ClaimDomain",
+  "namespace": "factsynth",
+  "fields": [
+    {
+      "name": "region",
+      "type": "string",
+      "doc": "ISO 3166-1 alpha-2 region code"
+    },
+    {
+      "name": "language",
+      "type": "string",
+      "doc": "ISO 639-1 language code"
+    },
+    {
+      "name": "time_range",
+      "type": {
+        "type": "record",
+        "name": "TimeRange",
+        "fields": [
+          {
+            "name": "start",
+            "type": {"type": "long", "logicalType": "timestamp-millis"}
+          },
+          {
+            "name": "end",
+            "type": {"type": "long", "logicalType": "timestamp-millis"}
+          }
+        ]
+      }
+    }
+  ]
+}

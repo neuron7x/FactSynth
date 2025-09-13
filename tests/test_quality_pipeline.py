@@ -17,9 +17,15 @@ client = TestClient(app)
 def test_quality_pipeline_verify_returns_lock():
     payload = {
         "claim": "The earth orbits the sun",
+        "region": "US",
+        "language": "en",
+        "time_range": {
+            "start": "2020-01-01T00:00:00Z",
+            "end": "2020-12-31T23:59:59Z"
+        },
         "lock": {
             "verdict": {"decision": "supported"},
-            "evidence": [{"source": "url", "content": "text"}],
+            "evidence": [{"source": "https://example.com", "content": "text"}],
         },
     }
 

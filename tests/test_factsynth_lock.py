@@ -9,7 +9,7 @@ pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 def test_unknown_field_rejected():
     data = {
         "verdict": {"decision": "supported"},
-        "evidence": [{"source": "url", "content": "text"}],
+        "evidence": [{"source": "https://example.com", "content": "text"}],
         "unexpected": "value",
     }
 

@@ -14,5 +14,10 @@ api = APIRouter()
 def verify(req: VerifyRequest) -> FactSynthLock:
     """Verify a claim and return the provided lock."""
 
-    evaluate_claim(req.claim)
+    evaluate_claim(
+        req.claim,
+        region=req.region,
+        language=req.language,
+        time_range=(req.time_range.start, req.time_range.end),
+    )
     return req.lock

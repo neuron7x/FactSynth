@@ -120,6 +120,11 @@ paths:
               sample:
                 value:
                   claim: "The earth orbits the sun"
+                  region: "US"
+                  language: "en"
+                  time_range:
+                    start: "2020-01-01T00:00:00Z"
+                    end: "2020-12-31T23:59:59Z"
                   lock:
                     version: "1.1"
                     nonce: "abc123"
@@ -273,9 +278,32 @@ components:
       type: object
       required:
         - claim
+        - region
+        - language
+        - time_range
         - lock
       properties:
         claim:
           type: string
+        region:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          description: ISO 3166-1 alpha-2 region code
+        language:
+          type: string
+          pattern: '^[a-z]{2}$'
+          description: ISO 639-1 language code
+        time_range:
+          type: object
+          required:
+            - start
+            - end
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
         lock:
           $ref: '#/components/schemas/FactSynthLock_v1_1'

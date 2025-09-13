@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
 
 class _StrictModel(BaseModel):
@@ -42,8 +42,12 @@ class Verdict(_StrictModel):
 class Evidence(_StrictModel):
     """A single piece of evidence supporting the verdict."""
 
-    source: str = Field(..., min_length=1, description="Identifier or URL of the source")
-    content: str = Field(..., min_length=1, description="Excerpt taken from the source")
+    source: HttpUrl = Field(
+        ..., description="HTTP or HTTPS URL of the source"
+    )
+    content: str = Field(
+        ..., min_length=1, description="Excerpt taken from the source"
+    )
 
 
 class FactSynthLock(_StrictModel):

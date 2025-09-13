@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from contextlib import ExitStack
-from typing import Any, Callable, Dict, Iterable, Optional
+from datetime import datetime
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple
 
 ResultDict = Dict[str, Any]
 
@@ -11,6 +12,9 @@ ResultDict = Dict[str, Any]
 def evaluate_claim(  # noqa: PLR0913
     claim: str,
     *,
+    region: str | None = None,
+    language: str | None = None,
+    time_range: Tuple[datetime, datetime] | None = None,
     policy_check: Callable[[str], Any] | None = None,
     scoring: Callable[[str], Any] | None = None,
     diversity: Callable[[str], Any] | None = None,
@@ -23,6 +27,9 @@ def evaluate_claim(  # noqa: PLR0913
     ----------
     claim:
         The textual claim to analyse.
+    region, language, time_range:
+        Optional domain context. Currently unused but accepted for forward
+        compatibility with enriched evaluators.
     policy_check, scoring, diversity, nli:
         Optional callables implementing each stage. They are invoked with the
         claim and their results are merged into the output dictionary under
