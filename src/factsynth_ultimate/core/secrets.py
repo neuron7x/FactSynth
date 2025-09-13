@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -16,6 +17,9 @@ if TYPE_CHECKING or hvac is not None:
 else:
     class VaultError(Exception):
         pass
+
+
+logger = logging.getLogger(__name__)
 
 
 def _validate_key(key: str) -> str:
@@ -50,8 +54,8 @@ def read_api_key(env: str, env_file: str, default: Optional[str], env_name: str)
             val = secret["data"]["data"].get(env_name)
             if val:
                 key = str(val)
-        except VaultError:
-            pass
+        except VaultError as err:
+            logger.warning("Vault error: %s", err)
     # 3) environment
     if not key:
         val = os.getenv(env)
