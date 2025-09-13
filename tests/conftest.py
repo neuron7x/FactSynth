@@ -1,6 +1,5 @@
 """Shared test fixtures for FactSynth API tests."""
 
-import asyncio
 import json
 import os
 import random
@@ -11,9 +10,10 @@ import pytest
 from fakeredis.aioredis import FakeRedis
 from httpx import ASGITransport, AsyncClient, MockTransport, Response
 
-# Global Redis patch so tests don't require a real server
-_FAKE_REDIS = FakeRedis()
-patch("redis.asyncio.from_url", return_value=_FAKE_REDIS).start()
+# Global Redis patch so tests don't require a real server. Each call to
+# ``redis.asyncio.from_url`` returns a fresh ``FakeRedis`` instance so tests do
+# not share state and event loop issues are avoided.
+patch("redis.asyncio.from_url", side_effect=lambda *_, **__: FakeRedis()).start()
 os.environ.setdefault("RATE_LIMIT_REDIS_URL", "redis://test")
 os.environ.setdefault("RATE_LIMIT_PER_KEY", "1000")
 os.environ.setdefault("RATE_LIMIT_PER_IP", "1000")
@@ -75,8 +75,10 @@ async def api_stub():
 
 
 @pytest.fixture(autouse=True)
-def _stub_external_api(httpx_mock) -> None:
+def _stub_external_api(httpx_mock):
     """Stub external HTTP calls so tests remain offline."""
+
+    httpx_mock.reset(assert_all_responses_were_requested=False)
 
     def handler(request):
         path = request.url.path
@@ -95,8 +97,5 @@ def _stub_external_api(httpx_mock) -> None:
         return Response(200, json={"stub": True})
 
     httpx_mock.add_callback(handler)
-
-
-@pytest.fixture(autouse=True)
-def _reset_fake_redis() -> None:
-    asyncio.run(_FAKE_REDIS.flushall())
+    yield
+    httpx_mock.reset(assert_all_responses_were_requested=False)
