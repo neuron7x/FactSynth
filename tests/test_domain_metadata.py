@@ -39,3 +39,13 @@ def test_domain_metadata_malformed_time_range_object():
             time_range={"start": "2020-01-01"},
         )
 
+
+def test_domain_metadata_invalid_region_format():
+    with pytest.raises(ValidationError):
+        DomainMetadata(region="USA", language="en", time_range="2020-01-01/2020-12-31")
+
+
+def test_domain_metadata_time_range_end_before_start():
+    with pytest.raises(ValidationError):
+        DomainMetadata(region="US", language="en", time_range="2020-12-31/2020-01-01")
+
