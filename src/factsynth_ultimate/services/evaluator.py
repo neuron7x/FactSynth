@@ -8,6 +8,7 @@ from contextlib import ExitStack
 from typing import Any
 
 from ..core.trace import index, normalize_trace, parse, start_trace
+from .redaction import redact_pii
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ def evaluate_claim(  # noqa: PLR0913
             for doc in docs:
                 url = getattr(doc, "id", "")
                 content = getattr(doc, "text", "")
+                content = redact_pii(content)
                 trace = start_trace(url, content)
                 trace = parse(trace)
                 trace = normalize_trace(trace)
