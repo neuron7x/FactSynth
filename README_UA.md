@@ -48,7 +48,7 @@ FactSynth — це мікросервіс FastAPI для екстрактивн�
 [![FastAPI](assets/fastapi.svg)](https://fastapi.tiangolo.com/)
 [![Uvicorn](assets/uvicorn.svg)](https://www.uvicorn.org/)
 
-Python 3.10+ · FastAPI 0.116 · Uvicorn 0.35
+Python 3.10–3.12 · FastAPI 0.116 · Uvicorn 0.35
 
 ## Швидкий старт
 
