@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from contextlib import ExitStack
 from typing import Any
 
 from ..core.trace import index, normalize_trace, parse, start_trace
+
+logger = logging.getLogger(__name__)
 
 ResultDict = dict[str, Any]
 
@@ -45,7 +48,11 @@ def evaluate_claim(  # noqa: PLR0913
         if retriever and hasattr(retriever, "search"):
             try:
                 docs = retriever.search(claim)
-            except Exception:  # noqa: BLE001 - defensive best effort
+            except Exception as exc:
+                logger.exception(
+                    "retriever_search_error",
+                    extra={"claim": claim, "error": str(exc)},
+                )
                 docs = []
             for doc in docs:
                 url = getattr(doc, "id", "")
@@ -54,11 +61,13 @@ def evaluate_claim(  # noqa: PLR0913
                 trace = parse(trace)
                 trace = normalize_trace(trace)
                 trace = index(trace)
-                evidence.append({
-                    "source_id": trace.source_id,
-                    "source": url,
-                    "content": trace.content,
-                })
+                evidence.append(
+                    {
+                        "source_id": trace.source_id,
+                        "source": url,
+                        "content": trace.content,
+                    }
+                )
         out["evidence"] = evidence
 
         if policy_check is not None:

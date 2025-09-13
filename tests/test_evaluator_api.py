@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from pydantic import BaseModel
 
@@ -61,6 +63,22 @@ def test_evaluate_claim_handles_retriever_exception_and_closes():
 
     assert result["evidence"] == []
     assert retriever.closed
+
+
+def test_evaluate_claim_logs_retriever_exception(caplog):
+    class DummyRetriever:
+        def search(self, _):
+            raise RuntimeError("boom")
+
+        def close(self):  # pragma: no cover - no-op
+            pass
+
+    with caplog.at_level(logging.ERROR):
+        evaluate_claim("beta", retriever=DummyRetriever())
+
+    record = next(r for r in caplog.records if r.message == "retriever_search_error")
+    assert record.claim == "beta"
+    assert "boom" in record.error
 
 
 def test_verify_exposes_models():
