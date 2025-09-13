@@ -19,7 +19,9 @@ def test_quality_pipeline_verify_returns_lock():
         "claim": "The earth orbits the sun",
         "lock": {
             "verdict": {"decision": "supported"},
-            "evidence": [{"source": "url", "content": "text"}],
+            "evidence": [
+                {"source_id": "1", "source": "url", "content": "text"}
+            ],
         },
     }
 

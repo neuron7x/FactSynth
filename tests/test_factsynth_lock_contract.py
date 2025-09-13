@@ -9,7 +9,9 @@ pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 def minimal_lock_data() -> dict:
     return {
         "verdict": {"decision": "supported"},
-        "evidence": [{"source": "url", "content": "text"}],
+        "evidence": [
+            {"source_id": "1", "source": "url", "content": "text"}
+        ],
     }
 
 
