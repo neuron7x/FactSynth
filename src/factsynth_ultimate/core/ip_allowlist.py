@@ -40,6 +40,7 @@ class IPAllowlistMiddleware(BaseHTTPMiddleware):
         if any(path.startswith(s) for s in self.skip):
             return await call_next(request)
         ip = request.client.host if request.client else "127.0.0.1"
+        request_id = getattr(request.state, "request_id", "")
 
         def forbidden() -> JSONResponse:
             lang = choose_language(request)
@@ -59,14 +60,25 @@ class IPAllowlistMiddleware(BaseHTTPMiddleware):
             )
 
         if not self.networks:
-            logger.warning("IP allowlist empty; blocking request from %s", ip)
+            logger.warning(
+                "request_id=%s client_ip=%s: IP allowlist empty", request_id, ip
+            )
             return forbidden()
         try:
             addr = ipaddress.ip_address(ip)
         except ValueError:
-            logger.warning("invalid client IP %s", ip)
-            logger.warning("Unparseable IP address %s", ip)
+            logger.warning(
+                "request_id=%s client_ip=%s: invalid client IP", request_id, ip
+            )
+            logger.warning(
+                "request_id=%s client_ip=%s: Unparseable IP address",
+                request_id,
+                ip,
+            )
             addr = None
         if addr and any(addr in n for n in self.networks):
             return await call_next(request)
+        logger.warning(
+            "request_id=%s client_ip=%s: IP not in allowlist", request_id, ip
+        )
         return forbidden()
