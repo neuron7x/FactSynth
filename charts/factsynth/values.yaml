@@ -83,6 +83,11 @@ pdb:
   enabled: false
   minAvailable: 1
 
+alerts:
+  enabled: true
+  latencyP95Threshold: 0.5
+  errorRateThreshold: 0.05
+
 namespace:
   create: false
   name: factsynth
