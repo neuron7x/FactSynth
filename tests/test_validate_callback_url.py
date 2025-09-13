@@ -1,5 +1,3 @@
-import importlib
-
 import pytest
 from fastapi import HTTPException
 
@@ -36,11 +34,11 @@ def test_validate_callback_url_missing_host(httpx_mock):
 
 def test_validate_callback_url_dynamic_allowlist(monkeypatch, httpx_mock):
     httpx_mock.reset()
-    monkeypatch.setenv("CALLBACK_URL_ALLOWED_HOSTS", "a.com")
-    importlib.reload(routers)
+
+    monkeypatch.setattr(routers, "_get_allowed_hosts", lambda: {"a.com"})
     routers.validate_callback_url("https://a.com/path")
-    monkeypatch.setenv("CALLBACK_URL_ALLOWED_HOSTS", "b.com")
-    importlib.reload(routers)
+
+    monkeypatch.setattr(routers, "_get_allowed_hosts", lambda: {"b.com"})
     with pytest.raises(HTTPException) as exc:
         routers.validate_callback_url("https://a.com/path")
     assert exc.value.detail == "Disallowed callback URL host"

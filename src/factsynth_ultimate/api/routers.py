@@ -40,7 +40,11 @@ ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 
 def _get_allowed_hosts() -> set[str]:
-    """Return the set of allowed callback hosts."""
+    """Return the set of allowed callback hosts.
+
+    The value is computed on each call so changes to the environment or
+    settings are always respected.
+    """
     import os
     from ..core.settings import load_settings
 
