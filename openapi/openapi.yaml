@@ -124,6 +124,13 @@ paths:
                     version: "1.1"
                     nonce: "abc123"
                     api_guard: "factsynth-lock/v1.1"
+                    verdict:
+                      decision: "confirmed"
+                      confidence: 0.9
+                    evidence:
+                      - source_id: "1"
+                        source: "url"
+                        content: "text"
       responses:
         '200':
           description: Verification result
@@ -137,6 +144,13 @@ paths:
                     version: "1.1"
                     nonce: "abc123"
                     api_guard: "factsynth-lock/v1.1"
+                    verdict:
+                      decision: "confirmed"
+                      confidence: 0.9
+                    evidence:
+                      - source_id: "1"
+                        source: "url"
+                        content: "text"
   /v1/healthz:
     get:
       summary: Healthz
@@ -288,6 +302,8 @@ components:
         - version
         - nonce
         - api_guard
+        - verdict
+        - evidence
       properties:
         version:
           type: string
@@ -297,6 +313,38 @@ components:
         api_guard:
           type: string
           enum: ["factsynth-lock/v1.1"]
+        verdict:
+          type: object
+          required:
+            - decision
+          properties:
+            decision:
+              type: string
+              enum:
+                - confirmed
+                - refuted
+                - mixed
+                - not_enough_evidence
+                - not_a_fact
+            confidence:
+              type: number
+              minimum: 0
+              maximum: 1
+        evidence:
+          type: array
+          items:
+            type: object
+            required:
+              - source_id
+              - source
+              - content
+            properties:
+              source_id:
+                type: string
+              source:
+                type: string
+              content:
+                type: string
     VerifyRequest:
       type: object
       required:
