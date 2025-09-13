@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    image: factsynth:local
+    ports:
+      - "8000:8000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
