@@ -103,6 +103,7 @@ Set up a local development environment:
 The `[project.optional-dependencies].dev` section of `pyproject.toml`
 is the **single source of truth** for tooling needed to work on
 FactSynth. Install them with `pip install -e .[dev]`.
+It includes `fakeredis` so tests can run without a real Redis instance.
 A `requirements.lock` file is generated with `pip-compile` to pin
 versions; do not edit it by hand. Pre-commit and the CI workflow both
 run `pip-compile` and fail if the lockfile differs from
