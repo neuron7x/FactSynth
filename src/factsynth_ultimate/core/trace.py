@@ -1,7 +1,9 @@
 """Simple trace object used to propagate ``source_id`` through the pipeline."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from ..tokenization import normalize
 from .source_store import ingest_source
@@ -16,10 +18,15 @@ class Trace:
     content: str
 
 
-def start_trace(url: str, content: str) -> Trace:
+def start_trace(
+    url: str,
+    content: str,
+    trust: float = 1.0,
+    expires_at: datetime | None = None,
+) -> Trace:
     """Ingest *content* and return a new :class:`Trace` with ``source_id``."""
 
-    source_id = ingest_source(url, content)
+    source_id = ingest_source(url, content, trust, expires_at)
     return Trace(source_id=source_id, url=url, content=content)
 
 

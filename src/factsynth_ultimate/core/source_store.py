@@ -20,12 +20,20 @@ class SourceMetadata:
     url: str
     date: str
     hash: str
+    trust: float
+    expires_at: str | None = None
 
 
 class SourceStore(Protocol):
     """Protocol describing store operations."""
 
-    def ingest_source(self, url: str, content: str) -> str: ...
+    def ingest_source(
+        self,
+        url: str,
+        content: str,
+        trust: float,
+        expires_at: datetime | None = None,
+    ) -> str: ...
 
     def get_metadata(self, source_id: str) -> SourceMetadata | None: ...
 
@@ -33,70 +41,124 @@ class SourceStore(Protocol):
 
 
 class MemorySourceStore:
-    """In-memory store with optional TTL support."""
+    """In-memory store with optional TTL and trust filtering."""
 
-    def __init__(self, ttl: int | None = None):
-        self._db: dict[str, tuple[SourceMetadata, datetime | None]] = {}
+    def __init__(self, ttl: int | None = None, min_trust: float = 0.0):
+        self._db: dict[str, SourceMetadata] = {}
         self.ttl = ttl
+        self.min_trust = min_trust
 
-    def ingest_source(self, url: str, content: str) -> str:
+    def ingest_source(
+        self,
+        url: str,
+        content: str,
+        trust: float,
+        expires_at: datetime | None = None,
+    ) -> str:
         source_id = uuid4().hex
+        if trust < self.min_trust:
+            return source_id
+        now = datetime.now(UTC)
+        if expires_at is not None:
+            exp_dt = expires_at
+        elif self.ttl is not None:
+            exp_dt = now + timedelta(seconds=self.ttl)
+        else:
+            exp_dt = None
         metadata = SourceMetadata(
             url=url,
-            date=datetime.now(UTC).isoformat(),
+            date=now.isoformat(),
             hash=sha256(content.encode("utf-8")).hexdigest(),
+            trust=trust,
+            expires_at=exp_dt.isoformat() if exp_dt else None,
         )
-        expires = datetime.now(UTC) + timedelta(seconds=self.ttl) if self.ttl is not None else None
-        self._db[source_id] = (metadata, expires)
+        self._db[source_id] = metadata
         return source_id
 
     def get_metadata(self, source_id: str) -> SourceMetadata | None:
-        item = self._db.get(source_id)
-        if not item:
+        metadata = self._db.get(source_id)
+        if not metadata:
             return None
-        metadata, expires = item
-        if expires and datetime.now(UTC) >= expires:
+        if metadata.expires_at and datetime.now(UTC) >= datetime.fromisoformat(metadata.expires_at):
+            del self._db[source_id]
+            return None
+        if metadata.trust < self.min_trust:
             del self._db[source_id]
             return None
         return metadata
 
     def cleanup(self) -> None:
-        if not self.ttl:
-            return
         now = datetime.now(UTC)
-        expired = [k for k, (_, exp) in self._db.items() if exp and exp <= now]
+        expired = [
+            k
+            for k, v in self._db.items()
+            if (v.expires_at and datetime.fromisoformat(v.expires_at) <= now)
+            or v.trust < self.min_trust
+        ]
         for key in expired:
             del self._db[key]
 
 
 class RedisSourceStore:
-    """Redis-backed store relying on Redis for TTL management."""
+    """Redis-backed store relying on Redis for TTL and trust management."""
 
-    def __init__(self, redis_client, ttl: int | None = None):
+    def __init__(self, redis_client, ttl: int | None = None, min_trust: float = 0.0):
         self.redis = redis_client
         self.ttl = ttl
+        self.min_trust = min_trust
 
-    def ingest_source(self, url: str, content: str) -> str:
+    def ingest_source(
+        self,
+        url: str,
+        content: str,
+        trust: float,
+        expires_at: datetime | None = None,
+    ) -> str:
         source_id = uuid4().hex
+        if trust < self.min_trust:
+            return source_id
+        now = datetime.now(UTC)
+        if expires_at is not None:
+            exp_dt = expires_at
+        elif self.ttl is not None:
+            exp_dt = now + timedelta(seconds=self.ttl)
+        else:
+            exp_dt = None
         metadata = SourceMetadata(
             url=url,
-            date=datetime.now(UTC).isoformat(),
+            date=now.isoformat(),
             hash=sha256(content.encode("utf-8")).hexdigest(),
+            trust=trust,
+            expires_at=exp_dt.isoformat() if exp_dt else None,
         )
-        self.redis.hset(source_id, mapping=metadata.__dict__)
-        if self.ttl:
-            self.redis.expire(source_id, self.ttl)
+        mapping = {k: v for k, v in metadata.__dict__.items() if v is not None}
+        self.redis.hset(source_id, mapping=mapping)
+        if exp_dt:
+            ttl_seconds = int((exp_dt - now).total_seconds())
+            if ttl_seconds > 0:
+                self.redis.expire(source_id, ttl_seconds)
+            else:
+                self.redis.delete(source_id)
         return source_id
 
     def get_metadata(self, source_id: str) -> SourceMetadata | None:
         data = self.redis.hgetall(source_id)
         if not data:
             return None
-        return SourceMetadata(
+        metadata = SourceMetadata(
             url=data[b"url"].decode(),
             date=data[b"date"].decode(),
             hash=data[b"hash"].decode(),
+            trust=float(data[b"trust"].decode()),
+            expires_at=data[b"expires_at"].decode() if b"expires_at" in data else None,
         )
+        if metadata.expires_at and datetime.now(UTC) >= datetime.fromisoformat(metadata.expires_at):
+            self.redis.delete(source_id)
+            return None
+        if metadata.trust < self.min_trust:
+            self.redis.delete(source_id)
+            return None
+        return metadata
 
     def cleanup(self) -> None:  # pragma: no cover - Redis handles TTL itself
         return
@@ -113,10 +175,15 @@ def _build_store() -> SourceStore:
 _STORE: SourceStore = _build_store()
 
 
-def ingest_source(url: str, content: str) -> str:
+def ingest_source(
+    url: str,
+    content: str,
+    trust: float,
+    expires_at: datetime | None = None,
+) -> str:
     """Generate a unique ``source_id`` and persist metadata."""
 
-    return _STORE.ingest_source(url, content)
+    return _STORE.ingest_source(url, content, trust, expires_at)
 
 
 def get_metadata(source_id: str) -> SourceMetadata | None:
