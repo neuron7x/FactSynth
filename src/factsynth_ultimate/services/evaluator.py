@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextlib import ExitStack
-from typing import Any, Callable, Dict, Iterable, Optional
+from typing import Any
 
-ResultDict = Dict[str, Any]
+from ..core.trace import index, normalize_trace, parse, start_trace
+
+ResultDict = dict[str, Any]
 
 
 def evaluate_claim(  # noqa: PLR0913
@@ -15,7 +18,7 @@ def evaluate_claim(  # noqa: PLR0913
     scoring: Callable[[str], Any] | None = None,
     diversity: Callable[[str], Any] | None = None,
     nli: Callable[[str], Any] | None = None,
-    retriever: Optional[Any] = None,
+    retriever: Any | None = None,
 ) -> ResultDict:
     """Evaluate *claim* and compose results from several subsystems.
 
@@ -38,13 +41,25 @@ def evaluate_claim(  # noqa: PLR0913
         if retriever and hasattr(retriever, "close"):
             stack.callback(retriever.close)
 
-        evidence: Iterable[Any] = []
+        evidence: list[dict[str, Any]] = []
         if retriever and hasattr(retriever, "search"):
             try:
-                evidence = retriever.search(claim)
+                docs = retriever.search(claim)
             except Exception:  # noqa: BLE001 - defensive best effort
-                evidence = []
-        out["evidence"] = list(evidence)
+                docs = []
+            for doc in docs:
+                url = getattr(doc, "id", "")
+                content = getattr(doc, "text", "")
+                trace = start_trace(url, content)
+                trace = parse(trace)
+                trace = normalize_trace(trace)
+                trace = index(trace)
+                evidence.append({
+                    "source_id": trace.source_id,
+                    "source": url,
+                    "content": trace.content,
+                })
+        out["evidence"] = evidence
 
         if policy_check is not None:
             out["policy"] = policy_check(claim)

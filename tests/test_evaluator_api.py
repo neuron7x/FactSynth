@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 from factsynth_ultimate.api import verify as verify_mod
 from factsynth_ultimate.services.evaluator import evaluate_claim
+from factsynth_ultimate.services.retriever import RetrievedDoc
 
 SCORING_RESULT = 0.5
 DIVERSITY_RESULT = 0.1
@@ -17,7 +18,7 @@ def test_evaluate_claim_composes_and_closes():
             self.closed = False
 
         def search(self, q):
-            return [(q, 1.0)]
+            return [RetrievedDoc(id=q, text=q, score=1.0)]
 
         def close(self):
             self.closed = True
@@ -37,7 +38,9 @@ def test_evaluate_claim_composes_and_closes():
     assert result["score"] == SCORING_RESULT
     assert result["diversity"] == DIVERSITY_RESULT
     assert result["nli"] == {"label": "neutral"}
-    assert result["evidence"] == [("alpha", 1.0)]
+    assert result["evidence"][0]["source"] == "alpha"
+    assert result["evidence"][0]["content"] == "alpha"
+    assert result["evidence"][0]["source_id"]
     assert retriever.closed
 
 

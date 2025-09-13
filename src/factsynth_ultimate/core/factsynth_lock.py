@@ -1,7 +1,7 @@
 """Pydantic models describing a FactSynth lock document.
 
 A lock bundles the final verdict of a claim evaluation together with the
-evidence used to reach it.  The models defined here are strict – unknown
+evidence used to reach it.  The models defined here are strict - unknown
 fields are rejected to ensure the contract stays stable.
 """
 
@@ -42,6 +42,9 @@ class Verdict(_StrictModel):
 class Evidence(_StrictModel):
     """A single piece of evidence supporting the verdict."""
 
+    source_id: str = Field(
+        ..., min_length=1, description="Unique identifier of the ingested source"
+    )
     source: str = Field(..., min_length=1, description="Identifier or URL of the source")
     content: str = Field(..., min_length=1, description="Excerpt taken from the source")
 
