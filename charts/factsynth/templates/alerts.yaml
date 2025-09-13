@@ -1,0 +1,34 @@
+{{- if .Values.alerts.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: factsynth-alerts
+spec:
+  groups:
+    - name: factsynth.rules
+      rules:
+        - alert: HighRequestLatency
+          expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > {{ .Values.alerts.latencyP95Threshold }}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: High p95 latency
+            description: 95th percentile request latency is above {{ .Values.alerts.latencyP95Threshold }}s for 5 minutes.
+        - alert: ServiceDown
+          expr: up == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Service is down
+            description: No running instances detected for 5 minutes.
+        - alert: HighErrorRate
+          expr: (sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))) > {{ .Values.alerts.errorRateThreshold }}
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: High 5xx error rate
+            description: More than {{ mul .Values.alerts.errorRateThreshold 100 }}% of requests returned 5xx status codes for 5 minutes.
+{{- end }}

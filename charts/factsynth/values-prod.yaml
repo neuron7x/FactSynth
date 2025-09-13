@@ -79,3 +79,8 @@ networkPolicy:
       ports:
         - protocol: TCP
           port: 8000
+
+alerts:
+  enabled: true
+  latencyP95Threshold: 0.5
+  errorRateThreshold: 0.05
