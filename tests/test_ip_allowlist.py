@@ -85,6 +85,8 @@ def test_invalid_ip_logs_warning_and_returns_403(caplog):
     with TestClient(app) as client, caplog.at_level(logging.WARNING):
         r = client.get("/")
         assert r.status_code == HTTPStatus.FORBIDDEN
+        body = r.json()
+        assert body["detail"] == "IP testclient not allowed"
     assert any(
         rec.levelno == logging.WARNING and "invalid client IP testclient" in rec.getMessage()
         for rec in caplog.records
