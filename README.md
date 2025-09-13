@@ -70,7 +70,7 @@ git clone https://github.com/neuron7x/FactSynth.git
 cd FactSynth
 python -m venv .venv && source .venv/bin/activate
 pip install -U pip && pip install -r requirements.lock && pip install -e .[dev]
-# Or generate a pinned requirements-dev.txt:
+# Or generate a pinned requirements-dev.txt via pip-compile:
 # scripts/update_dev_requirements.sh && pip install -r requirements-dev.txt
 uvicorn factsynth_ultimate.app:app --reload
 ```
@@ -99,13 +99,16 @@ Set up a local development environment:
    pip install -U pip
    pip install -r requirements.lock && pip install -e .[dev]
    # Optional: scripts/update_dev_requirements.sh && pip install -r requirements-dev.txt
+   # (the script wraps pip-compile to regenerate requirements-dev.txt from pyproject.toml)
    ```
 
 `requests` powers the contract tests while `PyYAML` supports schema
 validation; these and other development dependencies are managed in
 `pyproject.toml` under the `dev` extra. Run `pip install -e .[dev]` or
 generate `requirements-dev.txt` with `scripts/update_dev_requirements.sh`
-to install them.
+(which invokes `pip-compile`) to install them. A pre-commit hook runs
+`pip-compile` to keep `requirements-dev.txt` in sync with
+`pyproject.toml`.
 
 ## Usage
 
