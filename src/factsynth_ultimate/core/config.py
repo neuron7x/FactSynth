@@ -17,6 +17,7 @@ class Config(BaseSettings):
     api_key: str = Field(
         default_factory=lambda: read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
     )
+    allowed_api_keys: list[str] = Field(default_factory=list, env="ALLOWED_API_KEYS")
     ip_allowlist: list[str] = Field(default_factory=list, env="IP_ALLOWLIST")
     cors_origins: list[str] = Field(default_factory=list, env="CORS_ORIGINS")
     rate_limit_redis_url: str = Field(
@@ -26,7 +27,7 @@ class Config(BaseSettings):
     rate_limit_per_ip: int = Field(default=120, env="RATE_LIMIT_PER_IP")
     rate_limit_per_org: int = Field(default=120, env="RATE_LIMIT_PER_ORG")
 
-    @field_validator("ip_allowlist", "cors_origins", mode="before")
+    @field_validator("ip_allowlist", "cors_origins", "allowed_api_keys", mode="before")
     @classmethod
     def _split_csv(cls, value: str | list[str]) -> list[str]:
         if isinstance(value, str):

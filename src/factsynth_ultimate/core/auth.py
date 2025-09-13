@@ -23,14 +23,16 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
-        api_key: str,
+        api_keys: Iterable[str] | str,
         header_name: str = "x-api-key",
         skip: Iterable[str] = ("/v1/healthz", "/metrics"),
     ) -> None:
         """Store configuration for later request checks."""
 
         super().__init__(app)
-        self.api_key = api_key
+        if isinstance(api_keys, str):
+            api_keys = [api_keys]
+        self.api_keys = {key.casefold() for key in api_keys}
         self.header_name = header_name
         self.skip_exact: set[str] = set()
         patterns = []
@@ -53,16 +55,16 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         provided = request.headers.get(self.header_name)
-        if not self.api_key:
+        if not self.api_keys:
             return await call_next(request)
 
-        expected = self.api_key.casefold().encode()
         if provided is None:
             return self._reject(request, 401, "Missing API key", "unauthorized")
 
         provided_bytes = provided.casefold().encode()
-        if hmac.compare_digest(provided_bytes, expected):
-            return await call_next(request)
+        for key in self.api_keys:
+            if hmac.compare_digest(provided_bytes, key.encode()):
+                return await call_next(request)
 
         return self._reject(request, 403, "Invalid API key", "forbidden")
 

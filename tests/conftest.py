@@ -1,20 +1,14 @@
 """Shared test fixtures for FactSynth API tests."""
 
-import asyncio
 import json
 import os
 import random
 import string
-from unittest.mock import patch
 
 import pytest
-from fakeredis.aioredis import FakeRedis
 from httpx import ASGITransport, AsyncClient, MockTransport, Response
 
-# Global Redis patch so tests don't require a real server
-_FAKE_REDIS = FakeRedis()
-patch("redis.asyncio.from_url", return_value=_FAKE_REDIS).start()
-os.environ.setdefault("RATE_LIMIT_REDIS_URL", "redis://test")
+os.environ.setdefault("RATE_LIMIT_REDIS_URL", "memory://")
 os.environ.setdefault("RATE_LIMIT_PER_KEY", "1000")
 os.environ.setdefault("RATE_LIMIT_PER_IP", "1000")
 os.environ.setdefault("RATE_LIMIT_PER_ORG", "1000")
@@ -99,4 +93,4 @@ def _stub_external_api(httpx_mock) -> None:
 
 @pytest.fixture(autouse=True)
 def _reset_fake_redis() -> None:
-    asyncio.run(_FAKE_REDIS.flushall())
+    pass
