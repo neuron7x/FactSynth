@@ -60,7 +60,7 @@ structured logs, and tracing hooks.
 [![FastAPI](assets/fastapi.svg)](https://fastapi.tiangolo.com/)
 [![Uvicorn](assets/uvicorn.svg)](https://www.uvicorn.org/)
 
-Python 3.10+ · FastAPI 0.116 · Uvicorn 0.35  
+Python 3.10–3.12 · FastAPI 0.116 · Uvicorn 0.35
 See full [dependency graph](https://github.com/neuron7x/FactSynth/network/dependencies).
 
 ## Quick Start
