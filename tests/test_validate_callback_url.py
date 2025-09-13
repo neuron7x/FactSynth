@@ -12,7 +12,7 @@ def test_validate_callback_url_disallowed_scheme(monkeypatch, httpx_mock):
     monkeypatch.setattr(routers, "get_allowed_hosts", lambda: {"example.com"})
     with pytest.raises(HTTPException) as exc:
         validate_callback_url("ftp://example.com")
-    assert exc.value.detail == "Disallowed callback URL scheme"
+    assert exc.value.detail == "Callback URL scheme must be http or https"
 
 
 def test_validate_callback_url_host_mismatch(monkeypatch, httpx_mock):
@@ -20,7 +20,7 @@ def test_validate_callback_url_host_mismatch(monkeypatch, httpx_mock):
     monkeypatch.setattr(routers, "get_allowed_hosts", lambda: {"a.com"})
     with pytest.raises(HTTPException) as exc:
         validate_callback_url("https://b.com")
-    assert exc.value.detail == "Disallowed callback URL host"
+    assert exc.value.detail == "Callback URL host not in allowlist"
 
 
 def test_validate_callback_url_empty_allowlist(monkeypatch, httpx_mock):
@@ -28,7 +28,7 @@ def test_validate_callback_url_empty_allowlist(monkeypatch, httpx_mock):
     monkeypatch.setattr(routers, "get_allowed_hosts", lambda: set())
     with pytest.raises(HTTPException) as exc:
         validate_callback_url("https://example.com")
-    assert exc.value.detail == "Callback URL allowlist is empty"
+    assert exc.value.detail == "Callback URL host allowlist is empty"
 
 
 def test_validate_callback_url_missing_host(monkeypatch, httpx_mock):
@@ -48,6 +48,6 @@ def test_validate_callback_url_dynamic_allowlist(monkeypatch, httpx_mock):
     monkeypatch.setattr(routers, "get_allowed_hosts", lambda: {"b.com"})
     with pytest.raises(HTTPException) as exc:
         routers.validate_callback_url("https://a.com/path")
-    assert exc.value.detail == "Disallowed callback URL host"
+    assert exc.value.detail == "Callback URL host not in allowlist"
     routers.validate_callback_url("https://b.com/path")
 

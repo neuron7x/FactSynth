@@ -66,7 +66,7 @@ def validate_callback_url(url: str) -> None:
     if parsed.scheme not in ALLOWED_CALLBACK_SCHEMES:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
-            detail="Disallowed callback URL scheme",
+            detail="Callback URL scheme must be http or https",
         )
 
     if not parsed.hostname:
@@ -78,13 +78,13 @@ def validate_callback_url(url: str) -> None:
     if not allowed_hosts:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
-            detail="Callback URL allowlist is empty",
+            detail="Callback URL host allowlist is empty",
         )
 
     if parsed.hostname not in allowed_hosts:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
-            detail="Disallowed callback URL host",
+            detail="Callback URL host not in allowlist",
         )
 
 
