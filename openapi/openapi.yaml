@@ -126,7 +126,6 @@ paths:
                     api_guard: "factsynth-lock/v1.1"
                     verdict:
                       decision: "confirmed"
-                      confidence: 0.9
                     evidence:
                       - source_id: "1"
                         source: "url"
@@ -148,9 +147,9 @@ paths:
                       decision: "confirmed"
                       confidence: 0.9
                     evidence:
-                      - source_id: "1"
-                        source: "url"
-                        content: "text"
+                      - source_id: "99"
+                        source: "https://example.com"
+                        content: "astronomical observation"
   /v1/healthz:
     get:
       summary: Healthz

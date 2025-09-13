@@ -12,7 +12,14 @@ api = APIRouter()
 
 @api.post("/verify", response_model=FactSynthLock)
 def verify(req: VerifyRequest) -> FactSynthLock:
-    """Verify a claim and return the provided lock."""
+    """Verify a claim and merge evaluation results into the lock."""
 
-    evaluate_claim(req.claim)
-    return req.lock
+    evaluation = evaluate_claim(req.claim)
+    lock_data = req.lock.model_dump()
+
+    if verdict := evaluation.get("verdict"):
+        lock_data["verdict"] = verdict
+    if evidence := evaluation.get("evidence"):
+        lock_data["evidence"] = evidence
+
+    return FactSynthLock.model_validate(lock_data)
