@@ -17,3 +17,9 @@ def test_validate_callback_url_allowed_hosts(monkeypatch, httpx_mock):
     assert validate_callback_url("https://a.com/path") is None
     with pytest.raises(HTTPException):
         validate_callback_url("https://c.com")
+
+
+def test_validate_callback_url_missing_host(httpx_mock):
+    httpx_mock.reset()
+    with pytest.raises(HTTPException):
+        validate_callback_url("https:///path")
