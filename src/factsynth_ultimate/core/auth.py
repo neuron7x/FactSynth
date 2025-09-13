@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import hmac
+import logging
 import re
-from typing import Awaitable, Callable, Iterable
+from collections.abc import Awaitable, Callable, Iterable
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -11,6 +13,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from ..i18n import choose_language, translate
+
+logger = logging.getLogger(__name__)
 
 
 class APIKeyAuthMiddleware(BaseHTTPMiddleware):
@@ -47,21 +51,34 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         if path in self.skip_exact or any(p.fullmatch(path) for p in self.skip_patterns):
             return await call_next(request)
+
         provided = request.headers.get(self.header_name)
-        if self.api_key and provided == self.api_key:
+        if not self.api_key:
             return await call_next(request)
+
+        expected = self.api_key.casefold()
+        if provided is None:
+            return self._reject(request, 401, "Missing API key", "unauthorized")
+
+        if hmac.compare_digest(provided.casefold(), expected):
+            return await call_next(request)
+
+        return self._reject(request, 403, "Invalid API key", "forbidden")
+
+    @staticmethod
+    def _reject(request: Request, status: int, detail: str, title_key: str) -> JSONResponse:
+        """Log failed auth and return an RFC 9457 problem response."""
+
+        client_id = request.headers.get("x-client-id", "")
+        request_id = getattr(request.state, "request_id", "")
+        logger.warning("auth failed", extra={"client_id": client_id, "request_id": request_id})
+
         lang = choose_language(request)
-        title = translate(lang, "unauthorized")
-        detail = "Invalid or missing API key"
         problem = {
             "type": "about:blank",
-            "title": title,
-            "status": 401,
+            "title": translate(lang, title_key),
+            "status": status,
             "detail": detail,
-            "trace_id": getattr(request.state, "request_id", ""),
+            "trace_id": request_id,
         }
-        return JSONResponse(
-            problem,
-            status_code=401,
-            media_type="application/problem+json",
-        )
+        return JSONResponse(problem, status_code=status, media_type="application/problem+json")

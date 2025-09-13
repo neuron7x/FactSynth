@@ -21,7 +21,7 @@ def test_auth_required() -> None:
             "type": "about:blank",
             "title": "Unauthorized",
             "status": HTTPStatus.UNAUTHORIZED,
-            "detail": "Invalid or missing API key",
+            "detail": "Missing API key",
         }
         assert (
             client.post(url, headers={"x-api-key": "secret"}, json={"text": "x"}).status_code
