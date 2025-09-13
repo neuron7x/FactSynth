@@ -65,6 +65,44 @@ def test_evaluate_claim_handles_retriever_exception_and_closes():
     assert retriever.closed
 
 
+def test_evaluate_claim_closes_async_retriever():
+    class DummyRetriever:
+        def __init__(self):
+            self.closed = False
+
+        def search(self, _):
+            return []
+
+        async def aclose(self):
+            self.closed = True
+
+    retriever = DummyRetriever()
+
+    result = evaluate_claim("gamma", retriever=retriever)
+
+    assert result["evidence"] == []
+    assert retriever.closed
+
+
+def test_evaluate_claim_handles_async_retriever_exception_and_closes():
+    class DummyRetriever:
+        def __init__(self):
+            self.closed = False
+
+        def search(self, _):
+            raise RuntimeError("boom")
+
+        async def aclose(self):
+            self.closed = True
+
+    retriever = DummyRetriever()
+
+    result = evaluate_claim("delta", retriever=retriever)
+
+    assert result["evidence"] == []
+    assert retriever.closed
+
+
 def test_evaluate_claim_logs_retriever_exception(caplog):
     class DummyRetriever:
         def search(self, _):

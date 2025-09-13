@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Callable
 from contextlib import ExitStack
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 ResultDict = dict[str, Any]
 
 
-def evaluate_claim(  # noqa: PLR0913
+def evaluate_claim(  # noqa: PLR0913,C901
     claim: str,
     *,
     policy_check: Callable[[str], Any] | None = None,
@@ -35,15 +36,19 @@ def evaluate_claim(  # noqa: PLR0913
         claim and their results are merged into the output dictionary under
         corresponding keys. Missing callables simply yield ``None``.
     retriever:
-        Optional object providing ``search`` and, optionally, ``close`` methods.
-        If a ``close`` method is present it will be invoked once the evaluation
-        is complete.
+        Optional object providing ``search`` and, optionally, ``close`` or
+        ``aclose`` methods. If an ``aclose`` coroutine is present it will be
+        executed via :func:`asyncio.run`; otherwise any ``close`` method will
+        be invoked once the evaluation is complete.
     """
 
     out: ResultDict = {}
     with ExitStack() as stack:
-        if retriever and hasattr(retriever, "close"):
-            stack.callback(retriever.close)
+        if retriever:
+            if hasattr(retriever, "aclose"):
+                stack.callback(lambda: asyncio.run(retriever.aclose()))
+            elif hasattr(retriever, "close"):
+                stack.callback(retriever.close)
 
         evidence: list[dict[str, Any]] = []
         if retriever and hasattr(retriever, "search"):
