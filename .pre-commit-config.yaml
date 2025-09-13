@@ -29,9 +29,18 @@ repos:
     rev: v7.5.0
     hooks:
       - id: pip-compile
-        name: pip-compile requirements-dev
-        files: ^(pyproject\.toml|requirements-dev\.txt)$
-        args: ["--extra=dev", "--output-file=requirements-dev.txt", "pyproject.toml"]
+        name: pip-compile lock
+        files: ^(pyproject\.toml|requirements\.lock)$
+        args:
+          [
+            "--allow-unsafe",
+            "--extra=dev",
+            "--extra=isr",
+            "--extra=numpy",
+            "--generate-hashes",
+            "--output-file=requirements.lock",
+            "pyproject.toml",
+          ]
   - repo: https://github.com/psf/black
     rev: 24.8.0
     hooks:

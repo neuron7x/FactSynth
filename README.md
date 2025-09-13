@@ -69,7 +69,7 @@ See full [dependency graph](https://github.com/neuron7x/FactSynth/network/depend
 git clone https://github.com/neuron7x/FactSynth.git
 cd FactSynth
 python -m venv .venv && source .venv/bin/activate
-pip install -U pip && scripts/update_dev_requirements.sh && pip install -r requirements-dev.txt && pip install -e .
+pip install -U pip && pip install -e .[dev]
 uvicorn factsynth_ultimate.app:app --reload
 ```
 
@@ -94,21 +94,19 @@ Set up a local development environment:
 3. **Install dependencies**
 
    ```bash
-   pip install -U pip
-   scripts/update_dev_requirements.sh
-   pip install -r requirements-dev.txt && pip install -e .
+     pip install -U pip
+     pip install -e .[dev]
    ```
 
 ### Development dependencies
 
 The `[project.optional-dependencies].dev` section of `pyproject.toml`
 is the **single source of truth** for tooling needed to work on
-FactSynth. The `requirements-dev.txt` lockfile is generated from that
-list and should not be edited by hand. Regenerate it with
-`scripts/update_dev_requirements.sh` (a thin wrapper around
-`pip-compile`) and install with `pip install -r requirements-dev.txt`.
-Pre-commit and the CI workflow both run `pip-compile` and fail if the
-lockfile differs from `pyproject.toml`, ensuring the two stay in sync.
+FactSynth. Install them with `pip install -e .[dev]`.
+A `requirements.lock` file is generated with `pip-compile` to pin
+versions; do not edit it by hand. Pre-commit and the CI workflow both
+run `pip-compile` and fail if the lockfile differs from
+`pyproject.toml`, ensuring the two stay in sync.
 
 ## Usage
 

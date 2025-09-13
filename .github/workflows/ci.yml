@@ -24,14 +24,14 @@ jobs:
       - uses: actions/setup-node@v5
         with: { node-version: 'lts/*', cache: 'npm' }
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: |
-            requirements.txt
-            requirements-dev.txt
-            pyproject.toml
+        - uses: actions/setup-python@v6
+          with:
+            python-version: ${{ matrix.python-version }}
+            cache: 'pip'
+            cache-dependency-path: |
+              requirements.txt
+              requirements.lock
+              pyproject.toml
 
       - name: Install JS deps
         if: hashFiles('package.json') != ''
@@ -41,23 +41,22 @@ jobs:
           elif [ -f package-lock.json ]; then npm ci;
           else echo "No JS lockfile, skipping strict install"; fi
 
-      - name: Install Python deps
-        if: hashFiles('requirements.txt','requirements-dev.txt','pyproject.toml') != ''
-        run: |
-          python -m pip install -U pip
-          if [ -f requirements-dev.txt ]; then
-            pip install -r requirements-dev.txt
-          fi
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          fi
-          [ -f pyproject.toml ] && pip install ".[dev]" || true
+        - name: Install Python deps
+          if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
+          run: |
+            python -m pip install -U pip
+            if [ -f requirements.lock ]; then
+              pip install -r requirements.lock
+            elif [ -f requirements.txt ]; then
+              pip install -r requirements.txt
+            fi
+            [ -f pyproject.toml ] && pip install -e . || true
 
-      - name: Check dev requirements lockfile
-        if: hashFiles('requirements-dev.txt','pyproject.toml') != ''
-        run: |
-          pip-compile pyproject.toml --extra=dev --output-file=requirements-dev.txt
-          git diff --exit-code requirements-dev.txt
+        - name: Check lockfile
+          if: hashFiles('requirements.lock','pyproject.toml') != ''
+          run: |
+            pip-compile pyproject.toml --allow-unsafe --extra=dev --extra=isr --extra=numpy --generate-hashes --output-file=requirements.lock
+            git diff --exit-code requirements.lock
 
       - name: Lint JS
         if: hashFiles('package.json') != ''
@@ -87,11 +86,11 @@ jobs:
           pip install bandit
           bandit -r .
 
-      - name: Safety
-        if: hashFiles('requirements.txt','requirements-dev.txt','pyproject.toml') != ''
-        run: |
-          pip install safety
-          safety check --full-report
+        - name: Safety
+          if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
+          run: |
+            pip install safety
+            safety check --full-report
 
       - name: Unit tests (JS)
         if: hashFiles('package.json') != ''
