@@ -49,9 +49,7 @@ def validate_callback_url(url: str) -> None:
     Raises:
         HTTPException: If the URL does not use an allowed scheme or host.
     """
-    allowed_hosts = set(
-        filter(None, os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "").split(","))
-    )
+    allowed_hosts = set(filter(None, os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "").split(",")))
     try:
         parsed = urlparse(url)
     except Exception as exc:  # pragma: no cover
@@ -59,15 +57,14 @@ def validate_callback_url(url: str) -> None:
             status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
         ) from exc
 
+    if not parsed.hostname:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL")
+
     if parsed.scheme not in ALLOWED_CALLBACK_SCHEMES:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
-        )
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL")
 
     if allowed_hosts and parsed.hostname not in allowed_hosts:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
-        )
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL")
 
 
 api = APIRouter()
@@ -79,12 +76,14 @@ def version() -> dict[str, str]:
 
     return {"name": "factsynth-ultimate-pro", "version": VERSION}
 
+
 @api.post("/v1/intent_reflector")
 def intent_reflector(req: IntentReq, request: Request) -> dict[str, str]:
     """Reflect user intent into a concise insight string."""
 
     audit_event("intent_reflector", request.client.host if request.client else "unknown")
     return {"insight": reflect_intent(req.intent, req.length)}
+
 
 @api.post("/v1/score")
 def score(
@@ -100,6 +99,7 @@ def score(
         validate_callback_url(req.callback_url)
         background_tasks.add_task(_post_callback, req.callback_url, result)
     return result
+
 
 @api.post("/v1/score/batch")
 def score_batch(
@@ -129,8 +129,9 @@ def generate(req: GenerateReq, request: Request) -> dict[str, dict[str, str]]:
     out = "".join(rng.choice(alphabet) for _ in req.text)
     return {"output": {"text": out}}
 
+
 @api.post("/v1/stream")
-async def stream(req: ScoreReq, request: Request) -> StreamingResponse:
+async def stream(req: ScoreReq, request: Request) -> StreamingResponse:  # noqa: C901
     """Stream tokenized preview of ``req.text`` using Server-Sent Events."""
 
     tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
@@ -175,6 +176,7 @@ async def stream(req: ScoreReq, request: Request) -> StreamingResponse:
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
+
 @api.websocket("/ws/stream")
 async def ws_stream(ws: WebSocket) -> None:
     """Stream tokenization results over WebSocket with API-key auth."""
@@ -192,6 +194,7 @@ async def ws_stream(ws: WebSocket) -> None:
             await ws.send_json({"end": True})
     except WebSocketDisconnect:
         return
+
 
 async def _post_callback(  # noqa: PLR0913
     url: str,
@@ -231,6 +234,7 @@ async def _post_callback(  # noqa: PLR0913
                 delay = min(delay * 2, max_delay)
     if last_err is not None:
         logger.error("Callback failed after %d attempts: %s", attempt_num, last_err)
+
 
 async def _sleep(s: float) -> None:
     """Async sleep exposed for tests and patching."""
