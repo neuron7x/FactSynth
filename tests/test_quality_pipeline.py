@@ -18,10 +18,8 @@ def test_quality_pipeline_verify_returns_lock():
     payload = {
         "claim": "The earth orbits the sun",
         "lock": {
-            "verdict": {"decision": "supported"},
-            "evidence": [
-                {"source_id": "1", "source": "url", "content": "text"}
-            ],
+            "verdict": {"decision": "confirmed"},
+            "evidence": [{"source_id": "1", "source": "url", "content": "text"}],
         },
     }
 
