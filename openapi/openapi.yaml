@@ -231,8 +231,36 @@ components:
           - type: string
           - type: 'null'
           title: Callback Url
+        domain:
+          anyOf:
+          - $ref: '#/components/schemas/DomainMetadata'
+          - type: 'null'
+          title: Domain
       type: object
       title: ScoreReq
+    DomainMetadata:
+      properties:
+        region:
+          type: string
+          minLength: 1
+          title: Region
+          x-strip-whitespace: true
+        language:
+          type: string
+          minLength: 1
+          title: Language
+          x-strip-whitespace: true
+        time_range:
+          type: string
+          minLength: 1
+          title: Time Range
+          x-strip-whitespace: true
+      required:
+      - region
+      - language
+      - time_range
+      type: object
+      title: DomainMetadata
     ValidationError:
       properties:
         loc:
