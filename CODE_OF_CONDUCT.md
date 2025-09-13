@@ -1,1 +1,3 @@
-Be respectful. No harassment. Collaborate constructively.
+# Code of Conduct
+
+Be respectful. No harassment. Report issues via SECURITY.md.

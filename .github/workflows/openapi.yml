@@ -1,0 +1,11 @@
+name: openapi-lint
+on:
+  pull_request:
+    paths: ["openapi/**", ".spectral.yaml"]
+jobs:
+  spectral:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm i -g @stoplight/spectral-cli
+      - run: spectral lint "openapi/**/*.yaml" -r .spectral.yaml

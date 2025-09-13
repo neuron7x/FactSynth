@@ -1,7 +1,11 @@
-target-version = "py311"
 line-length = 100
+target-version = "py310"
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
 
 [lint]
-select = ["E","F","I","B","BLE","C4","SIM","ARG","PL","RUF"]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "S", "C4", "PIE", "Q", "RUF"]
 ignore = ["E501"]
-extend-select = ["B","C","F","I","UP"]

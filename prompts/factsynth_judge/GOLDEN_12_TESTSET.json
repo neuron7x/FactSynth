@@ -2,7 +2,7 @@
   {
     "id": 1,
     "context": "",
-    "question": "Classification: Decide supported/refuted on a single factual claim with clear span.",
+    "question": "Classification: Decide confirmed/refuted on a single factual claim with clear span.",
     "expected": ""
   },
   {

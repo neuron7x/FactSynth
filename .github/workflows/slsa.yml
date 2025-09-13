@@ -1,0 +1,12 @@
+name: slsa-provenance
+on:
+  push:
+    tags: ["v*.*.*"]
+permissions:
+  id-token: write
+  contents: write
+jobs:
+  provenance:
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      upload-assets: true
