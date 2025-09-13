@@ -28,8 +28,18 @@ from factsynth_ultimate import VERSION
 
 from ..core.audit import audit_event
 from ..core.config import load_config
-from ..core.metrics import SSE_TOKENS
-from ..schemas.requests import GenerateReq, IntentReq, ScoreBatchReq, ScoreReq
+from ..core.metrics import (
+    CITATION_PRECISION,
+    EXPLANATION_SATISFACTION,
+    SSE_TOKENS,
+)
+from ..schemas.requests import (
+    FeedbackReq,
+    GenerateReq,
+    IntentReq,
+    ScoreBatchReq,
+    ScoreReq,
+)
 from ..services.runtime import reflect_intent, score_payload, tokenize_preview
 
 logger = logging.getLogger(__name__)
@@ -39,7 +49,7 @@ ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 def get_allowed_hosts() -> set[str]:
     """Return the set of allowed callback hosts."""
-    from ..core.settings import load_settings  # noqa: PLC0415
+    from ..core.settings import load_settings
 
     hosts = load_settings().callback_url_allowed_hosts
     return set(filter(None, hosts.split(",")))
@@ -149,6 +159,16 @@ def generate(req: GenerateReq, request: Request) -> dict[str, dict[str, str]]:
     alphabet = string.ascii_letters + string.digits + " "
     out = "".join(rng.choice(alphabet) for _ in req.text)
     return {"output": {"text": out}}
+
+
+@api.post("/v1/feedback")
+def feedback(req: FeedbackReq, request: Request) -> dict[str, str]:
+    """Record user feedback on explanation clarity and citation accuracy."""
+
+    audit_event("feedback", request.client.host if request.client else "unknown")
+    EXPLANATION_SATISFACTION.observe(req.explanation_satisfaction)
+    CITATION_PRECISION.observe(req.citation_precision)
+    return {"status": "recorded"}
 
 
 @api.post("/v1/stream")
