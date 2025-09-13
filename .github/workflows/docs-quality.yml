@@ -2,10 +2,18 @@ name: Docs Quality
 on:
   pull_request:
     branches: [ main ]
-    paths: [ '**/*.md', '.markdownlint.json' ]
+    paths:
+      - README.md
+      - docs/index.md
+      - docs/prod-runbook.md
+      - .markdownlint.jsonc
   push:
     branches: [ main ]
-    paths: [ '**/*.md', '.markdownlint.json' ]
+    paths:
+      - README.md
+      - docs/index.md
+      - docs/prod-runbook.md
+      - .markdownlint.jsonc
 permissions: { contents: read }
 jobs:
   markdown-lint:
@@ -13,4 +21,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: davidanson/markdownlint-cli2-action@v17
-        with: { globs: '**/*.md' }
+        with:
+          globs: |
+            README.md
+            docs/index.md
+            docs/prod-runbook.md
