@@ -100,10 +100,17 @@ Set up a local development environment:
 
 ### Development dependencies
 
-The `[project.optional-dependencies].dev` section of `pyproject.toml`
-is the **single source of truth** for tooling needed to work on
+The `[project.optional-dependencies].dev` section of `pyproject.toml` is
+the **single source of truth** for tooling needed to work on
 FactSynth. Install them with `pip install -e .[dev]`.
 It includes `fakeredis` so tests can run without a real Redis instance.
+
+For environments that expect a requirements file, run
+`scripts/update_dev_requirements.sh` to generate
+`requirements-dev.txt` from the `dev` extra. Pre-commit and the CI
+workflow execute this script and fail if `requirements-dev.txt` does not
+match `pyproject.toml`.
+
 A `requirements.lock` file is generated with `pip-compile` to pin
 versions; do not edit it by hand. Pre-commit and the CI workflow both
 run `pip-compile` and fail if the lockfile differs from
