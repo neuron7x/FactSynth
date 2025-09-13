@@ -116,6 +116,12 @@ jobs:
           pip install pytest
           pytest -q
 
+      - name: Fairness tests
+        if: hashFiles('fairness_tests/**','pyproject.toml','requirements.txt') != ''
+        run: |
+          pip install pytest
+          pytest -q fairness_tests
+
       - name: Build docs (MkDocs)
         if: hashFiles('mkdocs.yml') != ''
         run: |
