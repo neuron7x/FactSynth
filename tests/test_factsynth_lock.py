@@ -32,3 +32,21 @@ def test_lock_requires_evidence():
 
     with pytest.raises(ValidationError):
         FactSynthLock.model_validate(data)
+
+
+@pytest.mark.parametrize(
+    "legacy,expected",
+    [
+        ("supported", Decision.CONFIRMED),
+        ("partially_supported", Decision.MIXED),
+        ("not_provable", Decision.NOT_ENOUGH_EVIDENCE),
+    ],
+)
+def test_legacy_decisions_normalized(legacy: str, expected: Decision):
+    data = {
+        "verdict": {"decision": legacy},
+        "evidence": [{"source_id": "1", "source": "url", "content": "text"}],
+    }
+
+    lock = FactSynthLock.model_validate(data)
+    assert lock.verdict.decision is expected

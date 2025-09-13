@@ -326,6 +326,9 @@ components:
                 - mixed
                 - not_enough_evidence
                 - not_a_fact
+                - supported
+                - partially_supported
+                - not_provable
             confidence:
               type: number
               minimum: 0

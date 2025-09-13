@@ -26,6 +26,10 @@ class Decision(str, Enum):
     MIXED = "mixed"
     NOT_ENOUGH_EVIDENCE = "not_enough_evidence"
     NOT_A_FACT = "not_a_fact"
+    # Deprecated aliases preserved for backward compatibility
+    SUPPORTED = "supported"
+    PARTIALLY_SUPPORTED = "partially_supported"
+    NOT_PROVABLE = "not_provable"
 
 
 class Verdict(_StrictModel):
@@ -38,6 +42,16 @@ class Verdict(_StrictModel):
         le=1,
         description="Optional confidence score in range [0, 1]",
     )
+
+    @field_validator("decision", mode="after")
+    @classmethod
+    def _normalize_legacy(cls, v: Decision) -> Decision:
+        mapping = {
+            Decision.SUPPORTED: Decision.CONFIRMED,
+            Decision.PARTIALLY_SUPPORTED: Decision.MIXED,
+            Decision.NOT_PROVABLE: Decision.NOT_ENOUGH_EVIDENCE,
+        }
+        return mapping.get(v, v)
 
 
 class Evidence(_StrictModel):
