@@ -99,14 +99,16 @@ Set up a local development environment:
    pip install -r requirements-dev.txt && pip install -e .
    ```
 
+### Development dependencies
+
 `requests` powers the contract tests while `PyYAML` supports schema
-validation; these and other development dependencies are declared in
-`pyproject.toml` under the `dev` extra and **pinned** in
-`requirements-dev.txt`. Regenerate it with
-`scripts/update_dev_requirements.sh` (which invokes `pip-compile`) and
-install with `pip install -r requirements-dev.txt`. Both pre-commit and
-CI verify that `requirements-dev.txt` stays in sync with
-`pyproject.toml`.
+validation. These and all other development dependencies live in
+`pyproject.toml` under the `dev` extra and are **pinned** in
+`requirements-dev.txt`. Regenerate the lockfile with
+`scripts/update_dev_requirements.sh` (a thin wrapper around
+`pip-compile`) and install with `pip install -r requirements-dev.txt`.
+Pre-commit and the CI workflow both run `pip-compile` and fail if the
+lockfile differs from `pyproject.toml`, ensuring the two stay in sync.
 
 ## Usage
 
