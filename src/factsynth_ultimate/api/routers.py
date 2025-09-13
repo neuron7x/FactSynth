@@ -172,9 +172,12 @@ def feedback(req: FeedbackReq, request: Request) -> dict[str, str]:
 
 
 @api.post("/v1/stream")
-async def stream(req: ScoreReq, request: Request) -> StreamingResponse:  # noqa: C901
+async def stream(
+    req: ScoreReq, request: Request, token_delay: float | None = None
+) -> StreamingResponse:  # noqa: C901
     """Stream tokenized preview of ``req.text`` using Server-Sent Events."""
 
+    delay = token_delay if token_delay is not None else load_config().token_delay
     tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
     resources: list[object] = []
     for obj in (
@@ -192,7 +195,7 @@ async def stream(req: ScoreReq, request: Request) -> StreamingResponse:  # noqa:
         try:
             yield "event: start\n" + "data: {}\n\n"
             for t in tokens:
-                await asyncio.sleep(0.002)
+                await asyncio.sleep(delay)
                 if await request.is_disconnected():
                     break
                 sent += 1

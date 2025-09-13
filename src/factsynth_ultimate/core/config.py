@@ -26,6 +26,7 @@ class Config(BaseSettings):
     rate_limit_per_key: int = Field(default=120, env="RATE_LIMIT_PER_KEY")
     rate_limit_per_ip: int = Field(default=120, env="RATE_LIMIT_PER_IP")
     rate_limit_per_org: int = Field(default=120, env="RATE_LIMIT_PER_ORG")
+    token_delay: float = Field(default=0.002, env="TOKEN_DELAY")
 
     @field_validator("ip_allowlist", "cors_origins", "allowed_api_keys", mode="before")
     @classmethod
@@ -55,6 +56,13 @@ class Config(BaseSettings):
     def _non_negative(cls, value: int) -> int:
         if value < 0:
             raise ValueError("Rate limits must be non-negative")
+        return value
+
+    @field_validator("token_delay")
+    @classmethod
+    def _non_negative_delay(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("token_delay must be non-negative")
         return value
 
 
