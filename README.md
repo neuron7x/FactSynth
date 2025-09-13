@@ -223,8 +223,10 @@ curl -X POST http://localhost:8000/v1/generate \
 
 ## Security
 
-See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
-CodeQL and Dependabot help monitor dependencies and code.
+See [docs/security.md](docs/security.md) for API key authentication, allowlists,
+and rate limiting. For private vulnerability reporting, see
+[SECURITY.md](SECURITY.md). CodeQL and Dependabot help monitor dependencies and
+code.
 
 ## Roadmap
 
