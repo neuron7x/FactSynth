@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import json
 import logging
 import random
@@ -47,6 +48,7 @@ logger = logging.getLogger(__name__)
 ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 
+@functools.lru_cache
 def get_allowed_hosts() -> set[str]:
     """Return the set of allowed callback hosts."""
     from ..core.settings import load_settings
