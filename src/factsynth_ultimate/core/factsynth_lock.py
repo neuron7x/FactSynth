@@ -13,6 +13,12 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class _StrictModel(BaseModel):
+    """Base model forbidding unknown fields."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class Decision(str, Enum):
     """Possible outcomes of a claim evaluation."""
 
@@ -22,75 +28,67 @@ class Decision(str, Enum):
     NOT_PROVABLE = "not_provable"
 
 
-class Verdict(BaseModel):
+class Verdict(_StrictModel):
     """Outcome of the claim evaluation."""
 
     decision: Decision = Field(..., description="Assessment of the claim")
     confidence: float | None = Field(None, description="Confidence score for the assessment")
 
-    model_config = ConfigDict(extra="forbid")
 
 
-class Citation(BaseModel):
+class Citation(_StrictModel):
     """A citation supporting the evaluation."""
 
     source: str = Field(..., description="Identifier or URL of the source")
     content: str = Field(..., description="Excerpt taken from the source")
 
-    model_config = ConfigDict(extra="forbid")
 
 
-class SourceSynthesis(BaseModel):
+class SourceSynthesis(_StrictModel):
     """Synthesis derived from multiple citations."""
 
     summary: str = Field(..., description="Summary of the gathered sources")
     citations: list[Citation] = Field(default_factory=list)
 
-    model_config = ConfigDict(extra="forbid")
 
 
-class Traceability(BaseModel):
+class Traceability(_StrictModel):
     """Information enabling reproduction of the verdict."""
 
     steps: list[str] = Field(default_factory=list)
     sources: list[str] = Field(default_factory=list)
 
-    model_config = ConfigDict(extra="forbid")
 
 
-class Recommendations(BaseModel):
+class Recommendations(_StrictModel):
     """Follow-up actions suggested by the evaluation."""
 
     actions: list[str] = Field(default_factory=list)
 
-    model_config = ConfigDict(extra="forbid")
 
 
-class QualityReport(BaseModel):
+class QualityReport(_StrictModel):
     """Optional quality metrics for the evaluation."""
 
     metrics: dict[str, float] = Field(default_factory=dict)
 
-    model_config = ConfigDict(extra="forbid")
 
 
-class Provenance(BaseModel):
+class Provenance(_StrictModel):
     """Optional provenance information for sources."""
 
     sources: list[str] = Field(default_factory=list)
 
-    model_config = ConfigDict(extra="forbid")
 
 
-class PolicySnapshot(BaseModel):
+class PolicySnapshot(_StrictModel):
     """Optional snapshot of policies in effect during evaluation."""
 
     policies: dict[str, str] = Field(default_factory=dict)
 
-    model_config = ConfigDict(extra="forbid")
 
 
-class FactSynthLock(BaseModel):
+class FactSynthLock(_StrictModel):
     """Container bundling all FactSynth evaluation artefacts."""
 
     verdict: Verdict
@@ -101,7 +99,6 @@ class FactSynthLock(BaseModel):
     provenance: Provenance | None = None
     policy_snapshot: PolicySnapshot | None = None
 
-    model_config = ConfigDict(extra="forbid")
 
 
 __all__ = [

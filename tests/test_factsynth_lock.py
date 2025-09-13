@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from factsynth_ultimate.core.factsynth_lock import FactSynthLock, Verdict
+from factsynth_ultimate.core.factsynth_lock import Decision, FactSynthLock, Verdict
 
 pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
@@ -22,3 +22,8 @@ def test_unknown_field_rejected():
 def test_invalid_decision_rejected():
     with pytest.raises(ValidationError):
         Verdict.model_validate({"decision": "maybe"})
+
+
+def test_verdict_rejects_unknown_field():
+    with pytest.raises(ValidationError):
+        Verdict.model_validate({"decision": Decision.SUPPORTED, "extra": "value"})
