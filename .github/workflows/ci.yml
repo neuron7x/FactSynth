@@ -69,11 +69,29 @@ jobs:
             echo "No ESLint config; skipping."
           fi
 
-      - name: Lint Python
+      - name: Ruff
         if: hashFiles('pyproject.toml','requirements.txt') != ''
         run: |
           pip install ruff
           ruff check .
+
+      - name: Mypy
+        if: hashFiles('pyproject.toml','requirements.txt') != ''
+        run: |
+          pip install mypy
+          mypy .
+
+      - name: Bandit
+        if: hashFiles('pyproject.toml','requirements.txt') != ''
+        run: |
+          pip install bandit
+          bandit -r .
+
+      - name: Safety
+        if: hashFiles('requirements.txt','requirements-dev.txt','pyproject.toml') != ''
+        run: |
+          pip install safety
+          safety check --full-report
 
       - name: Unit tests (JS)
         if: hashFiles('package.json') != ''
@@ -106,3 +124,23 @@ jobs:
             **/junit*.xml
             **/coverage*
             site/**
+
+  container-scan:
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: factsynth:ci
+      - uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: factsynth:ci
+          format: sarif
+          output: trivy.sarif
+          severity: HIGH,CRITICAL
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
