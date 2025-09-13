@@ -50,6 +50,7 @@ structured logs, and tracing hooks.
 - Extractive generation — handled through FastAPI endpoints.
 - Streaming responses — Server-Sent Events and WebSocket support.
 - Security controls — API key header and optional IP allowlist.
+- Safe callback validation — URLs must use approved schemes and hostnames.
 - Rate limiting — sliding window limits per client.
 - Problem+JSON — RFC 9457 compliant error payloads.
 - Observability — Prometheus metrics, structured logs, and tracing hooks.

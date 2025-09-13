@@ -2,26 +2,32 @@
 
 The original implementation used ``dataclasses``; this module replaces those
 structures with Pydantic models that offer validation and serialization
-support. The models are intentionally permissive - unknown fields are allowed -
-so the schema can evolve without breaking consumers.
+support. Unknown fields are forbidden to ensure the schema is followed strictly.
 """
 
 from __future__ import annotations
 
-from typing import Dict, List
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class Decision(str, Enum):
+    """Possible outcomes of a claim evaluation."""
+
+    SUPPORTED = "supported"
+    PARTIALLY_SUPPORTED = "partially_supported"
+    REFUTED = "refuted"
+    NOT_PROVABLE = "not_provable"
 
 
 class Verdict(BaseModel):
     """Outcome of the claim evaluation."""
 
-    decision: str = Field(..., description="Assessment of the claim")
-    confidence: float | None = Field(
-        None, description="Confidence score for the assessment"
-    )
+    decision: Decision = Field(..., description="Assessment of the claim")
+    confidence: float | None = Field(None, description="Confidence score for the assessment")
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
 
 class Citation(BaseModel):
@@ -30,57 +36,57 @@ class Citation(BaseModel):
     source: str = Field(..., description="Identifier or URL of the source")
     content: str = Field(..., description="Excerpt taken from the source")
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
 
 class SourceSynthesis(BaseModel):
     """Synthesis derived from multiple citations."""
 
     summary: str = Field(..., description="Summary of the gathered sources")
-    citations: List[Citation] = Field(default_factory=list)
+    citations: list[Citation] = Field(default_factory=list)
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
 
 class Traceability(BaseModel):
     """Information enabling reproduction of the verdict."""
 
-    steps: List[str] = Field(default_factory=list)
-    sources: List[str] = Field(default_factory=list)
+    steps: list[str] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
 
 class Recommendations(BaseModel):
     """Follow-up actions suggested by the evaluation."""
 
-    actions: List[str] = Field(default_factory=list)
+    actions: list[str] = Field(default_factory=list)
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
 
 class QualityReport(BaseModel):
     """Optional quality metrics for the evaluation."""
 
-    metrics: Dict[str, float] = Field(default_factory=dict)
+    metrics: dict[str, float] = Field(default_factory=dict)
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
 
 class Provenance(BaseModel):
     """Optional provenance information for sources."""
 
-    sources: List[str] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
 
 class PolicySnapshot(BaseModel):
     """Optional snapshot of policies in effect during evaluation."""
 
-    policies: Dict[str, str] = Field(default_factory=dict)
+    policies: dict[str, str] = Field(default_factory=dict)
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
 
 class FactSynthLock(BaseModel):
@@ -94,7 +100,7 @@ class FactSynthLock(BaseModel):
     provenance: Provenance | None = None
     policy_snapshot: PolicySnapshot | None = None
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
 
 __all__ = [
@@ -107,5 +113,5 @@ __all__ = [
     "SourceSynthesis",
     "Traceability",
     "Verdict",
+    "Decision",
 ]
-

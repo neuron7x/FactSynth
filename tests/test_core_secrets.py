@@ -1,4 +1,3 @@
-
 import pytest
 
 from factsynth_ultimate.core import secrets
@@ -59,3 +58,34 @@ def test_read_api_key_vault(monkeypatch):
     monkeypatch.delenv("VAULT_ADDR")
     monkeypatch.delenv("VAULT_TOKEN")
     monkeypatch.delenv("VAULT_PATH")
+
+
+def test_read_api_key_vault_error(monkeypatch, caplog):
+    class DummyClient:
+        def __init__(self, url, token):
+            _ = url, token
+
+        class secrets:
+            class kv:
+                class v2:
+                    @staticmethod
+                    def read_secret_version(path):
+                        _ = path
+                        raise secrets.VaultError("boom")
+
+    class DummyHVAC:
+        Client = DummyClient
+
+    monkeypatch.setattr(secrets, "hvac", DummyHVAC)
+    monkeypatch.setenv("VAULT_ADDR", "x")
+    monkeypatch.setenv("VAULT_TOKEN", "y")
+    monkeypatch.setenv("VAULT_PATH", "z")
+    monkeypatch.setenv("KEY_ENV", "envkey")
+    with caplog.at_level("ERROR"):
+        key = secrets.read_api_key("KEY_ENV", "MISSING_FILE", None, "API")
+    assert key == "envkey"
+    assert "Vault lookup failed" in caplog.text
+    monkeypatch.delenv("VAULT_ADDR")
+    monkeypatch.delenv("VAULT_TOKEN")
+    monkeypatch.delenv("VAULT_PATH")
+    monkeypatch.delenv("KEY_ENV")
