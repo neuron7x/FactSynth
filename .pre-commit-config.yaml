@@ -66,6 +66,11 @@ repos:
         files: "^scripts/"
       - id: check-executables-have-shebangs
         files: "^scripts/"
+      - id: mixed-line-ending
+        files: "^src/factsynth_ultimate/akpshi/"
+        args: ["--fix=lf"]
+      - id: end-of-file-fixer
+        files: "^src/factsynth_ultimate/akpshi/"
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1
     hooks:
