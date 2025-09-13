@@ -2,9 +2,13 @@ import os
 from http import HTTPStatus
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from factsynth_ultimate.app import create_app
+
+
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
 
 def test_invalid_callback_scheme() -> None:
@@ -16,7 +20,7 @@ def test_invalid_callback_scheme() -> None:
             json={"text": "x", "callback_url": "ftp://example.com/cb"},
         )
         assert r.status_code == HTTPStatus.BAD_REQUEST
-        assert r.json()["detail"] == "Invalid callback URL"
+        assert r.json()["detail"] == "Invalid callback URL scheme"
 
 
 def test_invalid_callback_host() -> None:
@@ -28,7 +32,7 @@ def test_invalid_callback_host() -> None:
             json={"text": "x", "callback_url": "https://evil.com/cb"},
         )
         assert r.status_code == HTTPStatus.BAD_REQUEST
-        assert r.json()["detail"] == "Invalid callback URL"
+        assert r.json()["detail"] == "Invalid callback URL host"
 
 
 def test_valid_callback_url() -> None:

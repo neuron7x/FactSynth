@@ -40,6 +40,13 @@ API_KEY = read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY")
 ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 
+def _get_allowed_hosts() -> set[str]:
+    """Return the set of allowed callback hosts."""
+    return set(
+        filter(None, os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "").split(","))
+    )
+
+
 def validate_callback_url(url: str) -> None:
     """Validate that a callback URL uses an allowed scheme and host.
 
@@ -49,7 +56,7 @@ def validate_callback_url(url: str) -> None:
     Raises:
         HTTPException: If the URL does not use an allowed scheme or host.
     """
-    allowed_hosts = set(filter(None, os.getenv("CALLBACK_URL_ALLOWED_HOSTS", "").split(",")))
+    allowed_hosts = _get_allowed_hosts()
     try:
         parsed = urlparse(url)
     except Exception as exc:  # pragma: no cover
@@ -57,14 +64,20 @@ def validate_callback_url(url: str) -> None:
             status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
         ) from exc
 
-    if not parsed.hostname:
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL")
-
     if parsed.scheme not in ALLOWED_CALLBACK_SCHEMES:
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL")
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL scheme"
+        )
+
+    if not parsed.hostname:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL host"
+        )
 
     if allowed_hosts and parsed.hostname not in allowed_hosts:
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL")
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL host"
+        )
 
 
 api = APIRouter()
