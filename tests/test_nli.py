@@ -22,3 +22,13 @@ def test_nli_fallback_on_error():
     nli = NLI(failing_classifier)
     score = asyncio.run(nli.classify("Cats are animals", "Cats are animals"))
     assert score > THRESHOLD
+
+
+def test_nli_logs_error(caplog):
+    async def failing_classifier(_p: str, _h: str) -> float:
+        raise RuntimeError("boom")
+
+    nli = NLI(failing_classifier)
+    with caplog.at_level("ERROR"):
+        asyncio.run(nli.classify("p", "p"))
+    assert "classifier failed" in caplog.text

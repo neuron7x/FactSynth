@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
-from typing import Awaitable, Callable, Optional
+import logging
+from collections.abc import Awaitable, Callable
 
 from ..tokenization import tokenize
 
 Classifier = Callable[[str, str], Awaitable[float]]
 
 
+logger = logging.getLogger(__name__)
+
+
 class NLI:
     """Natural language inference with optional async classifier."""
 
-    def __init__(self, classifier: Optional[Classifier] = None) -> None:
+    def __init__(self, classifier: Classifier | None = None) -> None:
         self.classifier = classifier
 
     async def classify(self, premise: str, hypothesis: str) -> float:
@@ -26,8 +30,8 @@ class NLI:
         if self.classifier is not None:
             try:
                 return await self.classifier(premise, hypothesis)
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception:
+                logger.exception("NLI classifier failed; falling back to heuristic")
         return self._heuristic(premise, hypothesis)
 
     def _heuristic(self, premise: str, hypothesis: str) -> float:

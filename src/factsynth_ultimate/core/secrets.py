@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 try:
     import hvac
@@ -14,8 +15,12 @@ except ImportError:  # pragma: no cover - optional dependency
 if TYPE_CHECKING or hvac is not None:
     from hvac.exceptions import VaultError
 else:
+
     class VaultError(Exception):
         pass
+
+
+logger = logging.getLogger(__name__)
 
 
 def _validate_key(key: str) -> str:
@@ -25,7 +30,7 @@ def _validate_key(key: str) -> str:
     return key
 
 
-def read_api_key(env: str, env_file: str, default: Optional[str], env_name: str) -> str:
+def read_api_key(env: str, env_file: str, default: str | None, env_name: str) -> str:
     """Resolve API key from file, Vault, environment or default (dev only)."""
     key = ""
     # 1) file
@@ -44,14 +49,12 @@ def read_api_key(env: str, env_file: str, default: Optional[str], env_name: str)
                 url=os.getenv("VAULT_ADDR"),
                 token=os.getenv("VAULT_TOKEN"),
             )
-            secret = client.secrets.kv.v2.read_secret_version(
-                path=os.getenv("VAULT_PATH")
-            )
+            secret = client.secrets.kv.v2.read_secret_version(path=os.getenv("VAULT_PATH"))
             val = secret["data"]["data"].get(env_name)
             if val:
                 key = str(val)
         except VaultError:
-            pass
+            logger.exception("Vault lookup failed")
     # 3) environment
     if not key:
         val = os.getenv(env)
