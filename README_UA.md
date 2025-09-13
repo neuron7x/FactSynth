@@ -56,7 +56,7 @@ Python 3.10+ · FastAPI 0.116 · Uvicorn 0.35
 git clone https://github.com/neuron7x/FactSynth.git
 cd FactSynth
 python -m venv .venv && source .venv/bin/activate
-pip install -U pip && pip install -r requirements.lock -r requirements-dev.txt
+pip install -U pip && pip install -r requirements.lock && pip install -e .[dev]
 uvicorn factsynth_ultimate.app:app --reload
 ```
 
@@ -82,11 +82,11 @@ uvicorn factsynth_ultimate.app:app --reload
 
    ```bash
    pip install -U pip
-   pip install -r requirements.lock -r requirements-dev.txt
-   # опційно: pip install -e .[dev]
+   pip install -r requirements.lock && pip install -e .[dev]
+   # опційно: scripts/update_dev_requirements.sh && pip install -r requirements-dev.txt
    ```
 
-`requests` забезпечує контрактні тести, а `PyYAML` — валідацію схем; ці та інші залежності доступні у `requirements-dev.txt` або через extra `dev`.
+`requests` забезпечує контрактні тести, а `PyYAML` — валідацію схем; ці та інші залежності для розробки керуються у `pyproject.toml` через extra `dev`. Використайте `pip install -e .[dev]` або згенеруйте `requirements-dev.txt` командою `scripts/update_dev_requirements.sh` і встановіть його.
 
 ## Використання
 

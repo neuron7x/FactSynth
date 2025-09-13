@@ -69,9 +69,9 @@ See full [dependency graph](https://github.com/neuron7x/FactSynth/network/depend
 git clone https://github.com/neuron7x/FactSynth.git
 cd FactSynth
 python -m venv .venv && source .venv/bin/activate
-pip install -U pip && pip install -r requirements.lock -r requirements-dev.txt
-# Or install in editable mode with extras:
-# pip install -e .[dev]
+pip install -U pip && pip install -r requirements.lock && pip install -e .[dev]
+# Or generate a pinned requirements-dev.txt:
+# scripts/update_dev_requirements.sh && pip install -r requirements-dev.txt
 uvicorn factsynth_ultimate.app:app --reload
 ```
 
@@ -97,13 +97,15 @@ Set up a local development environment:
 
    ```bash
    pip install -U pip
-   pip install -r requirements.lock -r requirements-dev.txt
-   # Optional: pip install -e .[dev]
+   pip install -r requirements.lock && pip install -e .[dev]
+   # Optional: scripts/update_dev_requirements.sh && pip install -r requirements-dev.txt
    ```
 
 `requests` powers the contract tests while `PyYAML` supports schema
-validation; these and other development dependencies are provided via
-`requirements-dev.txt` or the `dev` extra.
+validation; these and other development dependencies are managed in
+`pyproject.toml` under the `dev` extra. Run `pip install -e .[dev]` or
+generate `requirements-dev.txt` with `scripts/update_dev_requirements.sh`
+to install them.
 
 ## Usage
 
