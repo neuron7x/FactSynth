@@ -6,14 +6,32 @@ import asyncio
 import logging
 from collections.abc import Callable
 from contextlib import ExitStack
+from importlib import metadata
 from typing import Any
 
 from ..core.trace import index, normalize_trace, parse, start_trace
 from .redaction import redact_pii
+from .retrievers.base import Retriever
 
 logger = logging.getLogger(__name__)
 
 ResultDict = dict[str, Any]
+
+
+def _load_retriever(name: str) -> Retriever:
+    """Load a retriever registered under the given entry-point ``name``."""
+
+    eps = metadata.entry_points()
+    group = (
+        eps.select(group="factsynth_ultimate.retrievers")
+        if hasattr(eps, "select")
+        else eps.get("factsynth_ultimate.retrievers", [])
+    )
+    for ep in group:
+        if ep.name == name:
+            obj = ep.load()
+            return obj() if callable(obj) else obj
+    raise LookupError(f"Retriever '{name}' not found")
 
 
 def evaluate_claim(  # noqa: PLR0913,C901
@@ -23,7 +41,7 @@ def evaluate_claim(  # noqa: PLR0913,C901
     scoring: Callable[[str], Any] | None = None,
     diversity: Callable[[str], Any] | None = None,
     nli: Callable[[str], Any] | None = None,
-    retriever: Any | None = None,
+    retriever: Retriever | str | None = None,
 ) -> ResultDict:
     """Evaluate *claim* and compose results from several subsystems.
 
@@ -36,13 +54,15 @@ def evaluate_claim(  # noqa: PLR0913,C901
         claim and their results are merged into the output dictionary under
         corresponding keys. Missing callables simply yield ``None``.
     retriever:
-        Optional object providing ``search`` and, optionally, ``close`` or
-        ``aclose`` methods. If an ``aclose`` coroutine is present it will be
-        executed via :func:`asyncio.run`; otherwise any ``close`` method will
-        be invoked once the evaluation is complete.
+        Either an instance implementing :class:`Retriever` or the name of a
+        registered entry point in the ``factsynth_ultimate.retrievers`` group.
+        Loaded retrievers may optionally define ``close`` or ``aclose`` methods
+        which will be invoked when evaluation completes.
     """
 
     out: ResultDict = {}
+    if isinstance(retriever, str):
+        retriever = _load_retriever(retriever)
     with ExitStack() as stack:
         if retriever:
             if hasattr(retriever, "aclose"):

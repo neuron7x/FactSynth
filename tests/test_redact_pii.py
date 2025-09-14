@@ -1,9 +1,8 @@
 import pytest
 
-from factsynth_ultimate.services.redaction import redact_pii
 from factsynth_ultimate.services.evaluator import evaluate_claim
-from factsynth_ultimate.services.retriever import RetrievedDoc
-
+from factsynth_ultimate.services.redaction import redact_pii
+from factsynth_ultimate.services.retrievers.base import RetrievedDoc
 
 pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 

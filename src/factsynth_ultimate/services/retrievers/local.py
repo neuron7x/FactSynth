@@ -1,12 +1,14 @@
-"""Small in-memory text retriever used for testing."""
-
 from __future__ import annotations
 
-import re
-from dataclasses import dataclass
-from typing import ClassVar, Iterable, List
+"""Local in-memory retriever used primarily for tests."""
 
-from ..tokenization import tokenize
+import re
+from collections.abc import Iterable
+from dataclasses import dataclass
+from typing import ClassVar
+
+from ...tokenization import tokenize
+from .base import RetrievedDoc, Retriever
 
 
 @dataclass
@@ -15,15 +17,6 @@ class Fixture:
 
     id: str
     text: str
-
-
-@dataclass
-class RetrievedDoc:
-    """Result returned by a retriever search."""
-
-    id: str
-    text: str
-    score: float
 
 
 class LocalFixtureRetriever:
@@ -35,7 +28,6 @@ class LocalFixtureRetriever:
     Ukrainian keywords with their English equivalents before tokenization.
     """
 
-    # Common Ukrainian→English keyword replacements.
     _UA_TO_EN: ClassVar[dict[str, str]] = {
         "мікросервіси": "microservices",
         "мікросервіс": "microservice",
@@ -53,12 +45,12 @@ class LocalFixtureRetriever:
             q = re.sub(rf"\b{ua}\b", en, q)
         return q
 
-    def search(self, query: str, k: int = 5) -> List[RetrievedDoc]:
+    def search(self, query: str, k: int = 5) -> list[RetrievedDoc]:
         """Return top ``k`` fixtures ranked by similarity to ``query``."""
 
         translated = self._translate_query(query)
         q_tokens = {t.lower() for t in tokenize(translated)}
-        results: List[RetrievedDoc] = []
+        results: list[RetrievedDoc] = []
         for fix in self.fixtures:
             f_tokens = {t.lower() for t in tokenize(fix.text)}
             if q_tokens or f_tokens:
@@ -68,3 +60,10 @@ class LocalFixtureRetriever:
             results.append(RetrievedDoc(id=fix.id, text=fix.text, score=score))
         results.sort(key=lambda d: d.score, reverse=True)
         return results[:k]
+
+
+def create_fixture_retriever() -> Retriever:
+    """Return a default retriever instance for entry-point loading."""
+
+    fixtures = [Fixture(id="default", text="alpha is the first letter")]
+    return LocalFixtureRetriever(fixtures)
