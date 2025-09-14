@@ -1,6 +1,6 @@
 import pytest
 
-from factsynth_ultimate.services.retriever import (
+from factsynth_ultimate.services.retrievers.local import (
     Fixture,
     LocalFixtureRetriever,
 )

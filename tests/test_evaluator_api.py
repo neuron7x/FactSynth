@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from factsynth_ultimate.api import verify as verify_mod
 from factsynth_ultimate.services.evaluator import evaluate_claim
-from factsynth_ultimate.services.retriever import RetrievedDoc
+from factsynth_ultimate.services.retrievers.base import RetrievedDoc
 
 SCORING_RESULT = 0.5
 DIVERSITY_RESULT = 0.1
@@ -117,6 +117,27 @@ def test_evaluate_claim_logs_retriever_exception(caplog):
     record = next(r for r in caplog.records if r.message == "retriever_search_error")
     assert record.claim == "beta"
     assert "boom" in record.error
+
+
+def test_evaluate_claim_loads_retriever_via_entrypoint(monkeypatch):
+    from importlib import metadata
+
+    ep = metadata.EntryPoint(
+        name="fixture",
+        value="factsynth_ultimate.services.retrievers.local:create_fixture_retriever",
+        group="factsynth_ultimate.retrievers",
+    )
+
+    def fake_entry_points():
+        if hasattr(metadata, "EntryPoints"):
+            return metadata.EntryPoints([ep])
+        return {"factsynth_ultimate.retrievers": [ep]}
+
+    monkeypatch.setattr(metadata, "entry_points", fake_entry_points)
+
+    result = evaluate_claim("alpha", retriever="fixture")
+    assert result["evidence"]
+    assert result["evidence"][0]["source"] == "default"
 
 
 def test_verify_exposes_models():
