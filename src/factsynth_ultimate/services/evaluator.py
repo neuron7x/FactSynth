@@ -65,8 +65,14 @@ def evaluate_claim(  # noqa: PLR0913,C901
         retriever = _load_retriever(retriever)
     with ExitStack() as stack:
         if retriever:
-            if hasattr(retriever, "aclose"):
-                stack.callback(lambda: asyncio.run(retriever.aclose()))
+            aclose = getattr(retriever, "aclose", None)
+            if callable(aclose):
+                try:
+                    loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    stack.callback(lambda: asyncio.run(aclose()))
+                else:
+                    stack.callback(lambda: loop.create_task(aclose()))
             elif hasattr(retriever, "close"):
                 stack.callback(retriever.close)
 

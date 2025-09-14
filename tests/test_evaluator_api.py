@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import pytest
@@ -65,7 +66,8 @@ def test_evaluate_claim_handles_retriever_exception_and_closes():
     assert retriever.closed
 
 
-def test_evaluate_claim_closes_async_retriever():
+@pytest.mark.asyncio
+async def test_evaluate_claim_closes_async_retriever():
     class DummyRetriever:
         def __init__(self):
             self.closed = False
@@ -79,12 +81,14 @@ def test_evaluate_claim_closes_async_retriever():
     retriever = DummyRetriever()
 
     result = evaluate_claim("gamma", retriever=retriever)
+    await asyncio.sleep(0)
 
     assert result["evidence"] == []
     assert retriever.closed
 
 
-def test_evaluate_claim_handles_async_retriever_exception_and_closes():
+@pytest.mark.asyncio
+async def test_evaluate_claim_handles_async_retriever_exception_and_closes():
     class DummyRetriever:
         def __init__(self):
             self.closed = False
@@ -98,6 +102,7 @@ def test_evaluate_claim_handles_async_retriever_exception_and_closes():
     retriever = DummyRetriever()
 
     result = evaluate_claim("delta", retriever=retriever)
+    await asyncio.sleep(0)
 
     assert result["evidence"] == []
     assert retriever.closed
