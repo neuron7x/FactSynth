@@ -41,3 +41,11 @@
 > ```bash
 > pip install -e .[numpy]
 > ```
+
+## Мутаційне тестування
+
+Запусти мутаційні тести для основних модулів (`src/factsynth_ultimate/core`, `src/factsynth_ultimate/services`, `src/factsynth_ultimate/api`):
+
+```bash
+mutmut run  # або make mutmut
+```
