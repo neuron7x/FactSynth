@@ -28,12 +28,12 @@ from fastapi.responses import StreamingResponse
 from factsynth_ultimate import VERSION
 
 from ..core.audit import audit_event
-from ..core.config import load_config
 from ..core.metrics import (
     CITATION_PRECISION,
     EXPLANATION_SATISFACTION,
     SSE_TOKENS,
 )
+from ..core.settings import load_settings
 from ..schemas.requests import (
     FeedbackReq,
     GenerateReq,
@@ -51,8 +51,6 @@ ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 @functools.lru_cache
 def get_allowed_hosts() -> set[str]:
     """Return the set of allowed callback hosts."""
-    from ..core.settings import load_settings
-
     hosts = load_settings().callback_url_allowed_hosts
     return set(filter(None, hosts.split(",")))
 
@@ -174,12 +172,12 @@ def feedback(req: FeedbackReq, request: Request) -> dict[str, str]:
 
 
 @api.post("/v1/stream")
-async def stream(
+async def stream(  # noqa: C901
     req: ScoreReq, request: Request, token_delay: float | None = None
-) -> StreamingResponse:  # noqa: C901
+) -> StreamingResponse:
     """Stream tokenized preview of ``req.text`` using Server-Sent Events."""
 
-    delay = token_delay if token_delay is not None else load_config().token_delay
+    delay = token_delay if token_delay is not None else load_settings().token_delay
     tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
     resources: list[object] = []
     for obj in (
@@ -227,7 +225,7 @@ async def stream(
 async def ws_stream(ws: WebSocket) -> None:
     """Stream tokenization results over WebSocket with API-key auth."""
 
-    cfg = load_config()
+    cfg = load_settings()
     key = ws.headers.get(cfg.auth_header_name)
     if key != cfg.api_key:
         await ws.close(code=4401, reason="Unauthorized")
