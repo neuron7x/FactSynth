@@ -88,4 +88,9 @@ def test_read_api_key_vault_logs_error(monkeypatch, caplog):
     with caplog.at_level(logging.WARNING):
         secrets.read_api_key("MISSING", "MISSING_FILE", None, "API")
 
-    assert any("Vault error" in r.message and "fail" in r.message for r in caplog.records)
+    assert any(
+        r.levelno == logging.WARNING
+        and "Vault error" in r.message
+        and "fail" in r.message
+        for r in caplog.records
+    )
