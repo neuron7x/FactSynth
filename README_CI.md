@@ -13,6 +13,7 @@
     pip-audit -r requirements.lock
     npm audit --production
     bandit -r src
+    pytest tests/test_i18n_catalog_parity.py
     ```
 
 > Contract tests rely on `requests`; they use `pytest.importorskip` to skip when it's absent.
