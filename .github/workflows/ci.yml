@@ -36,6 +36,7 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements.lock
+            requirements-dev.txt
             pyproject.toml
 
       - name: Install JS deps
@@ -55,6 +56,7 @@ jobs:
           elif [ -f requirements.txt ]; then
             pip install -r requirements.txt
           fi
+          [ -f requirements-dev.txt ] && pip install -r requirements-dev.txt || true
           [ -f pyproject.toml ] && pip install -e .[dev] || true
 
       - name: Check lockfile
@@ -72,8 +74,7 @@ jobs:
       - name: Lint JS
         if: hashFiles('package.json') != ''
         run: |
-          npx --yes eslint --version >/dev/null 2>&1 || npm i -D eslint
-          if [ -f .eslintrc* ] || npx --yes eslint --print-config . >/dev/null 2>&1; then
+          if [ -f .eslintrc* ] || npx eslint --print-config . >/dev/null 2>&1; then
             npx eslint . --max-warnings=0
           else
             echo "No ESLint config; skipping."
@@ -82,31 +83,26 @@ jobs:
       - name: Ruff
         if: hashFiles('pyproject.toml','requirements.txt') != ''
         run: |
-          pip install ruff
           ruff check .
 
       - name: Mypy
         if: hashFiles('pyproject.toml','requirements.txt') != ''
         run: |
-          pip install mypy
           mypy .
 
       - name: Bandit
         if: hashFiles('pyproject.toml','requirements.txt') != ''
         run: |
-          pip install bandit
           bandit -r .
 
       - name: Safety
         if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
         run: |
-          pip install safety
           safety check --full-report
 
       - name: pip-audit
         if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
         run: |
-          pip install pip-audit
           pip-audit
 
       - name: npm audit
@@ -125,19 +121,16 @@ jobs:
       - name: Unit tests (Python)
         if: hashFiles('tests/**','pyproject.toml','requirements.txt') != ''
         run: |
-          pip install pytest
           pytest -q
 
       - name: Fairness tests
         if: hashFiles('fairness_tests/**','pyproject.toml','requirements.txt') != ''
         run: |
-          pip install pytest
           pytest -q fairness_tests
 
       - name: Build docs (MkDocs)
         if: hashFiles('mkdocs.yml') != ''
         run: |
-          pip install mkdocs mkdocs-material
           mkdocs build -q
 
       - name: Upload failure artifacts

@@ -39,6 +39,12 @@ dev = [
     "pre-commit==4.3.0",  # Git hooks runner
     "pytest-httpx==0.35.0",  # HTTPX mocking for tests
     "pip-tools==7.5.0",  # requirements management
+    "ruff==0.13.0",  # Python linter
+    "mypy==1.18.1",  # static type checker
+    "bandit==1.8.6",  # security analyzer
+    "safety==3.6.1",  # dependency vulnerability scanner
+    "mkdocs==1.6.1",  # documentation site generator
+    "mkdocs-material==9.6.19",  # documentation theme
 ]
 ops = [
     "prometheus-client==0.22.1",
