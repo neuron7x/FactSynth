@@ -15,6 +15,12 @@
     bandit -r src
     ```
 
+To run only the locale catalog parity test:
+
+```bash
+pytest tests/test_i18n_catalog_parity.py
+```
+
 > Contract tests rely on `requests`; they use `pytest.importorskip` to skip when it's absent.
 
 Install [Node.js](https://nodejs.org/) ≥ 18 for Markdown linting:
