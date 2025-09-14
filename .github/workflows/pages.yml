@@ -19,7 +19,7 @@ jobs:
     env:
       STRICT_FAIL_FATAL: ${{ vars.STRICT_FAIL_FATAL || 'false' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
