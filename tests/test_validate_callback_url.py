@@ -59,3 +59,19 @@ def test_validate_callback_url_dynamic_allowlist(httpx_mock):
 
         reload_allowed_hosts()
         validate_callback_url("https://b.com/path")
+
+
+def test_get_allowed_hosts_cache(monkeypatch):
+    reload_allowed_hosts()
+    monkeypatch.setenv("CALLBACK_URL_ALLOWED_HOSTS", "a.com")
+
+    # First call caches the environment value
+    assert routers.get_allowed_hosts() == {"a.com"}
+
+    # Changing the environment does not affect cached result
+    monkeypatch.setenv("CALLBACK_URL_ALLOWED_HOSTS", "b.com")
+    assert routers.get_allowed_hosts() == {"a.com"}
+
+    # After cache invalidation, new environment value is loaded
+    reload_allowed_hosts()
+    assert routers.get_allowed_hosts() == {"b.com"}

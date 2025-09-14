@@ -9,12 +9,12 @@ import random
 import string
 import time
 from collections.abc import AsyncGenerator
+from functools import lru_cache
 from http import HTTPStatus
 from typing import Any
 from urllib.parse import urlparse
 
 import httpx
-from cachetools import TTLCache, cached
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -48,10 +48,7 @@ logger = logging.getLogger(__name__)
 ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 
-_ALLOWED_HOSTS_CACHE = TTLCache(maxsize=1, ttl=60)
-
-
-@cached(_ALLOWED_HOSTS_CACHE)
+@lru_cache(maxsize=1)
 def get_allowed_hosts() -> set[str]:
     """Return the set of allowed callback hosts."""
     hosts = load_settings().callback_url_allowed_hosts
@@ -60,7 +57,7 @@ def get_allowed_hosts() -> set[str]:
 
 def reload_allowed_hosts() -> None:
     """Clear the allowed hosts cache to reload settings."""
-    get_allowed_hosts.cache.clear()  # type: ignore[attr-defined]
+    get_allowed_hosts.cache_clear()
 
 
 def validate_callback_url(url: str) -> None:
@@ -137,9 +134,7 @@ def score(
     if req.callback_url:
         validate_callback_url(req.callback_url)
         request_id = getattr(request.state, "request_id", "")
-        background_tasks.add_task(
-            _post_callback, req.callback_url, result, request_id=request_id
-        )
+        background_tasks.add_task(_post_callback, req.callback_url, result, request_id=request_id)
     return result
 
 
@@ -158,9 +153,7 @@ def score_batch(
     if batch.callback_url:
         validate_callback_url(batch.callback_url)
         request_id = getattr(request.state, "request_id", "")
-        background_tasks.add_task(
-            _post_callback, batch.callback_url, out, request_id=request_id
-        )
+        background_tasks.add_task(_post_callback, batch.callback_url, out, request_id=request_id)
     return out
 
 
