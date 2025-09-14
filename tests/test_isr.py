@@ -3,19 +3,11 @@ import sys
 
 import pytest
 
-diffrax = pytest.importorskip("diffrax")
-jax = pytest.importorskip("jax")
-
-from factsynth_ultimate.isr import (  # noqa: E402
-    ISRParams,
-    dominant_freq,
-    estimate_fs,
-    gamma_spectrum,
-    simulate_isr,
-)
-
-jnp = jax.numpy
-_ = diffrax
+try:  # optional runtime deps
+    import jax  # noqa: F401
+    import diffrax  # noqa: F401
+except ImportError:  # pragma: no cover - handled in tests
+    jax = diffrax = None
 
 MIN_DOM_FREQ = 0.0
 MAX_DOM_FREQ = 55.0
@@ -27,7 +19,17 @@ def _stub_external_api():
     pass
 
 
+@pytest.mark.skipif(jax is None or diffrax is None, reason="requires jax and diffrax")
 def test_isr_shapes_and_peak():
+    from factsynth_ultimate.isr import (
+        ISRParams,
+        dominant_freq,
+        estimate_fs,
+        gamma_spectrum,
+        simulate_isr,
+    )
+
+    jnp = jax.numpy
     out = simulate_isr(params=ISRParams(steps=512, t1=5.12))
     fs = estimate_fs(out["t"])
     spec = gamma_spectrum(out["y"], idx=5, fs=fs, ts=out["t"])
@@ -37,6 +39,8 @@ def test_isr_shapes_and_peak():
 
 @pytest.mark.parametrize("missing_module, err_msg", [("jax", "JAX"), ("diffrax", "Diffrax")])
 def test_simulate_isr_missing_dependencies(monkeypatch, missing_module, err_msg):
+    if missing_module == "diffrax" and jax is None:
+        pytest.skip("requires jax to test diffrax absence")
     monkeypatch.setitem(sys.modules, missing_module, None)
     if missing_module == "jax":
         monkeypatch.setitem(sys.modules, "jax.numpy", None)
