@@ -1,0 +1,8 @@
+{
+  "internal_server_error": "Internal Server Error",
+  "payload_too_large": "Payload Too Large",
+  "forbidden": "Forbidden",
+  "unauthorized": "Unauthorized",
+  "too_many_requests": "Too Many Requests",
+  "only_en": "Only EN"
+}
