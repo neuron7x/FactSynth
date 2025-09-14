@@ -125,8 +125,8 @@ jobs:
       - name: Unit tests (Python)
         if: hashFiles('tests/**','pyproject.toml','requirements.txt') != ''
         run: |
-          pip install pytest
-          pytest -q
+          pip install pytest pytest-cov
+          pytest --cov --cov-report=term-missing
 
       - name: Fairness tests
         if: hashFiles('fairness_tests/**','pyproject.toml','requirements.txt') != ''
