@@ -34,7 +34,7 @@ def _load_retriever(name: str) -> Retriever:
     raise LookupError(f"Retriever '{name}' not found")
 
 
-def evaluate_claim(  # noqa: PLR0913,C901
+def evaluate_claim(  # noqa: PLR0913,C901,PLR0912
     claim: str,
     *,
     policy_check: Callable[[str], Any] | None = None,
@@ -63,6 +63,14 @@ def evaluate_claim(  # noqa: PLR0913,C901
     out: ResultDict = {}
     if isinstance(retriever, str):
         retriever = _load_retriever(retriever)
+    if retriever is not None:
+        if not callable(getattr(retriever, "search", None)):
+            raise TypeError("retriever must implement search()")
+        if not (
+            callable(getattr(retriever, "close", None))
+            or callable(getattr(retriever, "aclose", None))
+        ):
+            raise TypeError("retriever must implement close() or aclose()")
     with ExitStack() as stack:
         if retriever:
             aclose = getattr(retriever, "aclose", None)
