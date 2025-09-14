@@ -9,14 +9,16 @@ try:
     import jax.numpy as jnp
 except ImportError as exc:  # pragma: no cover - runtime dependency check
     raise RuntimeError(
-        "JAX is required for ISR simulations. Install with `pip install jax`"
+        "JAX is required for ISR simulations. Install optional dependencies with "
+        "`pip install 'factsynth-ultimate-pro[isr]'`"
     ) from exc
 
 try:
     from diffrax import ODETerm, SaveAt, Tsit5, diffeqsolve
 except ImportError as exc:  # pragma: no cover - runtime dependency check
     raise RuntimeError(
-        "Diffrax is required for ISR simulations. Install with `pip install diffrax`"
+        "Diffrax is required for ISR simulations. Install optional dependencies with "
+        "`pip install 'factsynth-ultimate-pro[isr]'`"
     ) from exc
 
 GAMMA_FREQ = 40.0
