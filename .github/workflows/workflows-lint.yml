@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
       - name: Run actionlint
-        uses: reviewdog/action-actionlint@v1
+        uses: reviewdog/action-actionlint@2fe545c4960e5d3ae6e60585a73c291287653aab
         with:
           reporter: github-pr-check
           level: error
