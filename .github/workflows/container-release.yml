@@ -7,6 +7,10 @@ on:
       - 'Dockerfile'
       - '.docker/**'
       - 'src/**'
+
+concurrency:
+  group: container-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
   packages: write
@@ -16,6 +20,7 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
@@ -41,3 +46,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
