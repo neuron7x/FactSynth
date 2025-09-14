@@ -9,6 +9,7 @@ from contextlib import ExitStack
 from typing import Any
 
 from ..core.trace import index, normalize_trace, parse, start_trace
+from ..core.tracing import trace
 from .redaction import redact_pii
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,8 @@ def evaluate_claim(  # noqa: PLR0913,C901
         be invoked once the evaluation is complete.
     """
 
+    tracer = trace.get_tracer(__name__)
+
     out: ResultDict = {}
     with ExitStack() as stack:
         if retriever:
@@ -52,38 +55,44 @@ def evaluate_claim(  # noqa: PLR0913,C901
 
         evidence: list[dict[str, Any]] = []
         if retriever and hasattr(retriever, "search"):
-            try:
-                docs = retriever.search(claim)
-            except Exception as exc:
-                logger.exception(
-                    "retriever_search_error",
-                    extra={"claim": claim, "error": str(exc)},
-                )
-                docs = []
+            with tracer.start_as_current_span("retriever.search", attributes={"claim": claim}):
+                try:
+                    docs = retriever.search(claim)
+                except Exception as exc:
+                    logger.exception(
+                        "retriever_search_error",
+                        extra={"claim": claim, "error": str(exc)},
+                    )
+                    docs = []
             for doc in docs:
                 url = getattr(doc, "id", "")
-                content = getattr(doc, "text", "")
-                content = redact_pii(content)
-                trace = start_trace(url, content)
-                trace = parse(trace)
-                trace = normalize_trace(trace)
-                trace = index(trace)
-                evidence.append(
-                    {
-                        "source_id": trace.source_id,
-                        "source": url,
-                        "content": trace.content,
-                    }
-                )
+                with tracer.start_as_current_span("retriever.process_doc", attributes={"source": url}):
+                    content = getattr(doc, "text", "")
+                    content = redact_pii(content)
+                    trace_obj = start_trace(url, content)
+                    trace_obj = parse(trace_obj)
+                    trace_obj = normalize_trace(trace_obj)
+                    trace_obj = index(trace_obj)
+                    evidence.append(
+                        {
+                            "source_id": trace_obj.source_id,
+                            "source": url,
+                            "content": trace_obj.content,
+                        }
+                    )
         out["evidence"] = evidence
 
         if policy_check is not None:
-            out["policy"] = policy_check(claim)
+            with tracer.start_as_current_span("policy_check"):
+                out["policy"] = policy_check(claim)
         if scoring is not None:
-            out["score"] = scoring(claim)
+            with tracer.start_as_current_span("scoring"):
+                out["score"] = scoring(claim)
         if diversity is not None:
-            out["diversity"] = diversity(claim)
+            with tracer.start_as_current_span("diversity"):
+                out["diversity"] = diversity(claim)
         if nli is not None:
-            out["nli"] = nli(claim)
+            with tracer.start_as_current_span("nli"):
+                out["nli"] = nli(claim)
 
     return out

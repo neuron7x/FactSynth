@@ -34,6 +34,7 @@ from ..core.metrics import (
     EXPLANATION_SATISFACTION,
     SSE_TOKENS,
 )
+from ..core.tracing import context, trace
 from ..schemas.requests import (
     FeedbackReq,
     GenerateReq,
@@ -130,7 +131,10 @@ def score(
     result: dict[str, float] = {"score": score_payload(req.model_dump())}
     if req.callback_url:
         validate_callback_url(req.callback_url)
-        background_tasks.add_task(_post_callback, req.callback_url, result)
+        ctx = context.get_current()
+        background_tasks.add_task(
+            _post_callback, req.callback_url, result, ctx=ctx
+        )
     return result
 
 
@@ -148,7 +152,10 @@ def score_batch(
     out: dict[str, Any] = {"results": results, "count": len(results)}
     if batch.callback_url:
         validate_callback_url(batch.callback_url)
-        background_tasks.add_task(_post_callback, batch.callback_url, out)
+        ctx = context.get_current()
+        background_tasks.add_task(
+            _post_callback, batch.callback_url, out, ctx=ctx
+        )
     return out
 
 
@@ -179,6 +186,7 @@ async def stream(
 ) -> StreamingResponse:  # noqa: C901
     """Stream tokenized preview of ``req.text`` using Server-Sent Events."""
 
+    tracer = trace.get_tracer(__name__)
     delay = token_delay if token_delay is not None else load_config().token_delay
     tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
     resources: list[object] = []
@@ -195,14 +203,17 @@ async def stream(
 
         sent = 0
         try:
-            yield "event: start\n" + "data: {}\n\n"
+            with tracer.start_as_current_span("sse.start"):
+                yield "event: start\n" + "data: {}\n\n"
             for t in tokens:
-                await asyncio.sleep(delay)
-                if await request.is_disconnected():
-                    break
-                sent += 1
-                yield "event: token\n" + "data: " + json.dumps({"t": t, "n": sent}) + "\n\n"
-            yield "event: end\n" + "data: {}\n\n"
+                with tracer.start_as_current_span("sse.token", attributes={"n": sent + 1}):
+                    await asyncio.sleep(delay)
+                    if await request.is_disconnected():
+                        break
+                    sent += 1
+                    yield "event: token\n" + "data: " + json.dumps({"t": t, "n": sent}) + "\n\n"
+            with tracer.start_as_current_span("sse.end"):
+                yield "event: end\n" + "data: {}\n\n"
         except asyncio.CancelledError:
             logger.info("SSE stream cancelled after %d tokens", sent)
             raise
@@ -227,6 +238,7 @@ async def stream(
 async def ws_stream(ws: WebSocket) -> None:
     """Stream tokenization results over WebSocket with API-key auth."""
 
+    tracer = trace.get_tracer(__name__)
     cfg = load_config()
     key = ws.headers.get(cfg.auth_header_name)
     if key != cfg.api_key:
@@ -236,9 +248,10 @@ async def ws_stream(ws: WebSocket) -> None:
     try:
         while True:
             data = await ws.receive_text()
-            for t in tokenize_preview(data, 128):
-                await ws.send_json({"t": t})
-            await ws.send_json({"end": True})
+            with tracer.start_as_current_span("ws.message", attributes={"size": len(data)}):
+                for t in tokenize_preview(data, 128):
+                    await ws.send_json({"t": t})
+                await ws.send_json({"end": True})
     except WebSocketDisconnect:
         return
 
@@ -250,8 +263,15 @@ async def _post_callback(  # noqa: PLR0913
     base_delay: float = 0.2,
     max_delay: float = 5.0,
     max_elapsed: float = 15.0,
+    ctx: object | None = None,
 ) -> None:
     """POST ``data`` to ``url`` using exponential backoff."""
+
+    token = None
+    if ctx is not None:
+        token = context.attach(ctx)
+
+    tracer = trace.get_tracer(__name__)
 
     delay = base_delay
     last_err = None
@@ -264,7 +284,8 @@ async def _post_callback(  # noqa: PLR0913
                 break
             attempt_num = i
             try:
-                r = await client.post(url, json=data)
+                with tracer.start_as_current_span("callback.post", attributes={"attempt": i}):
+                    r = await client.post(url, json=data)
                 if HTTPStatus.OK <= r.status_code < HTTPStatus.MULTIPLE_CHOICES:
                     return
                 last_err = f"HTTP {r.status_code}"
@@ -281,6 +302,8 @@ async def _post_callback(  # noqa: PLR0913
                 delay = min(delay * 2, max_delay)
     if last_err is not None:
         logger.error("Callback failed after %d attempts: %s", attempt_num, last_err)
+    if token is not None:
+        context.detach(token)
 
 
 async def _sleep(s: float) -> None:
