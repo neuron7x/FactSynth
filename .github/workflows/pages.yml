@@ -16,6 +16,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       STRICT_FAIL_FATAL: ${{ vars.STRICT_FAIL_FATAL || 'false' }}
     steps:
@@ -46,6 +47,13 @@ jobs:
               exit "$strict_exit"
             fi
           fi
+      - name: Smoke test MkDocs serve
+        run: |
+          timeout 15s mkdocs serve --watch >/tmp/mkdocs-serve.log 2>&1 || exit_code=$?
+          if [ "${exit_code:-0}" != "124" ]; then
+            cat /tmp/mkdocs-serve.log
+            exit "${exit_code:-1}"
+          fi
       - name: Upload strict build log
         if: steps.mkdocs.outputs.strict_failed == 'true'
         uses: actions/upload-artifact@v4
@@ -68,6 +76,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
