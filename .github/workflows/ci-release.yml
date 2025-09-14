@@ -28,4 +28,3 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836
         with: { files: dist/*.zip }
-        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
