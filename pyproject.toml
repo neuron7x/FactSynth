@@ -39,6 +39,7 @@ dev = [
     "pre-commit==4.3.0",  # Git hooks runner
     "pytest-httpx==0.35.0",  # HTTPX mocking for tests
     "pip-tools==7.5.0",  # requirements management
+    "mutmut==3.3.1",  # mutation testing
 ]
 ops = [
     "prometheus-client==0.22.1",

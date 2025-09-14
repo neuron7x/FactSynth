@@ -1,4 +1,4 @@
-.PHONY: install test lint api docker
+.PHONY: install test lint mutmut api docker
 
 install:
 	python -m venv .venv && . .venv/bin/activate && pip install -U pip && pip install --require-hashes -r requirements.lock && pip install -e .[dev,ops]
@@ -8,6 +8,9 @@ test:
 
 lint:
 	. .venv/bin/activate && ruff check . && mypy src
+
+mutmut:
+	. .venv/bin/activate && mutmut run
 
 api:
 	. .venv/bin/activate && fsu-api
