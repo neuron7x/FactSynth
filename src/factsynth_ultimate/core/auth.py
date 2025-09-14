@@ -74,7 +74,7 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
 
         client_id = request.headers.get("x-client-id", "")
         request_id = getattr(request.state, "request_id", "")
-        logger.warning("auth failed", extra={"client_id": client_id, "request_id": request_id})
+        logger.warning("auth failed", extra={"client_id": client_id})
 
         lang = choose_language(request)
         problem = {

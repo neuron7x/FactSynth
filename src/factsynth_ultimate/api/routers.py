@@ -130,7 +130,10 @@ def score(
     result: dict[str, float] = {"score": score_payload(req.model_dump())}
     if req.callback_url:
         validate_callback_url(req.callback_url)
-        background_tasks.add_task(_post_callback, req.callback_url, result)
+        request_id = getattr(request.state, "request_id", "")
+        background_tasks.add_task(
+            _post_callback, req.callback_url, result, request_id=request_id
+        )
     return result
 
 
@@ -148,7 +151,10 @@ def score_batch(
     out: dict[str, Any] = {"results": results, "count": len(results)}
     if batch.callback_url:
         validate_callback_url(batch.callback_url)
-        background_tasks.add_task(_post_callback, batch.callback_url, out)
+        request_id = getattr(request.state, "request_id", "")
+        background_tasks.add_task(
+            _post_callback, batch.callback_url, out, request_id=request_id
+        )
     return out
 
 
@@ -190,6 +196,8 @@ async def stream(
         if obj and (hasattr(obj, "close") or hasattr(obj, "aclose")):
             resources.append(obj)
 
+    request_id = getattr(request.state, "request_id", "")
+
     async def event_stream() -> AsyncGenerator[str, None]:
         """Yield SSE events for each produced token."""
 
@@ -204,7 +212,9 @@ async def stream(
                 yield "event: token\n" + "data: " + json.dumps({"t": t, "n": sent}) + "\n\n"
             yield "event: end\n" + "data: {}\n\n"
         except asyncio.CancelledError:
-            logger.info("SSE stream cancelled after %d tokens", sent)
+            logger.info(
+                "SSE stream cancelled after %d tokens", sent, extra={"request_id": request_id}
+            )
             raise
         finally:
             SSE_TOKENS.inc(sent)
@@ -218,7 +228,11 @@ async def stream(
                     if callable(close):
                         close()
                 except Exception:  # noqa: BLE001
-                    logger.debug("Error closing resource", exc_info=True)
+                    logger.debug(
+                        "Error closing resource",
+                        exc_info=True,
+                        extra={"request_id": request_id},
+                    )
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -250,6 +264,7 @@ async def _post_callback(  # noqa: PLR0913
     base_delay: float = 0.2,
     max_delay: float = 5.0,
     max_elapsed: float = 15.0,
+    request_id: str = "",
 ) -> None:
     """POST ``data`` to ``url`` using exponential backoff."""
 
@@ -270,7 +285,13 @@ async def _post_callback(  # noqa: PLR0913
                 last_err = f"HTTP {r.status_code}"
             except Exception as e:  # noqa: BLE001
                 last_err = str(e)
-            logger.warning("Callback attempt %d/%d failed: %s", i, attempts, last_err)
+            logger.warning(
+                "Callback attempt %d/%d failed: %s",
+                i,
+                attempts,
+                last_err,
+                extra={"request_id": request_id},
+            )
             if i < attempts:
                 elapsed = time.monotonic() - start
                 if elapsed >= max_elapsed:
@@ -280,7 +301,12 @@ async def _post_callback(  # noqa: PLR0913
                 await _sleep(min(jittered, remaining))
                 delay = min(delay * 2, max_delay)
     if last_err is not None:
-        logger.error("Callback failed after %d attempts: %s", attempt_num, last_err)
+        logger.error(
+            "Callback failed after %d attempts: %s",
+            attempt_num,
+            last_err,
+            extra={"request_id": request_id},
+        )
 
 
 async def _sleep(s: float) -> None:
