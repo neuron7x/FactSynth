@@ -57,6 +57,11 @@ jobs:
           fi
           [ -f pyproject.toml ] && pip install -e .[dev] || true
 
+      - name: Pre-commit
+        run: |
+          pip install pre-commit
+          pre-commit run --all-files --show-diff-on-failure
+
       - name: Check lockfile
         if: hashFiles('requirements.lock','pyproject.toml') != ''
         run: |
