@@ -34,6 +34,17 @@ npx markdownlint-cli2 README.md .github/PULL_REQUEST_TEMPLATE.md
 
     Отримаєш артефакти (wheel+sdist+checksums+SBOM) і контейнер у GHCR.
 
+## Updating GitHub Action pins
+
+Щоб оновити закріплені версії GitHub Action до останніх комітів
+відповідних мажорних тегів, запусти:
+
+```bash
+scripts/update-actions.sh
+```
+
+Перевір зміни в `.github/workflows` і закоміть оновлені файли.
+
 ## Cleanup branches with failed checks
 
 Use the **Cleanup branches with failed checks** workflow to prune branches whose

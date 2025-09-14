@@ -1,4 +1,4 @@
-.PHONY: install test lint api docker
+.PHONY: install test lint api docker update-actions
 
 install:
 	python -m venv .venv && . .venv/bin/activate && pip install -U pip && pip install --require-hashes -r requirements.lock && pip install -e .[dev,ops]
@@ -13,7 +13,10 @@ api:
 	. .venv/bin/activate && fsu-api
 
 docker:
-	docker build -t factsynth-ultimate:2.0 . && docker run --rm -p 8000:8000 -e API_KEY=change-me factsynth-ultimate:2.0
+        docker build -t factsynth-ultimate:2.0 . && docker run --rm -p 8000:8000 -e API_KEY=change-me factsynth-ultimate:2.0
+
+update-actions:
+        scripts/update-actions.sh
 
 # Added by Incubation Pack
 .PHONY: release sbom checksums test-contract
