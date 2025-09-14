@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import functools
 import json
 import logging
 import random
@@ -15,6 +14,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 import httpx
+from cachetools import TTLCache, cached
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -48,13 +48,21 @@ logger = logging.getLogger(__name__)
 ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 
-@functools.lru_cache
+_ALLOWED_HOSTS_CACHE = TTLCache(maxsize=1, ttl=60)
+
+
+@cached(_ALLOWED_HOSTS_CACHE)
 def get_allowed_hosts() -> set[str]:
     """Return the set of allowed callback hosts."""
     from ..core.settings import load_settings
 
     hosts = load_settings().callback_url_allowed_hosts
     return set(filter(None, hosts.split(",")))
+
+
+def reload_allowed_hosts() -> None:
+    """Clear the allowed hosts cache to reload settings."""
+    get_allowed_hosts.cache.clear()  # type: ignore[attr-defined]
 
 
 def validate_callback_url(url: str) -> None:
@@ -176,7 +184,7 @@ def feedback(req: FeedbackReq, request: Request) -> dict[str, str]:
 @api.post("/v1/stream")
 async def stream(
     req: ScoreReq, request: Request, token_delay: float | None = None
-) -> StreamingResponse:  # noqa: C901
+) -> StreamingResponse:
     """Stream tokenized preview of ``req.text`` using Server-Sent Events."""
 
     delay = token_delay if token_delay is not None else load_config().token_delay

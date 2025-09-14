@@ -5,7 +5,7 @@ import pytest
 from fastapi import HTTPException
 
 from factsynth_ultimate.api import routers
-from factsynth_ultimate.api.routers import validate_callback_url
+from factsynth_ultimate.api.routers import reload_allowed_hosts, validate_callback_url
 
 pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
@@ -44,7 +44,7 @@ def test_validate_callback_url_missing_host(monkeypatch, httpx_mock):
 
 def test_validate_callback_url_dynamic_allowlist(httpx_mock):
     httpx_mock.reset()
-    routers.get_allowed_hosts.cache_clear()
+    reload_allowed_hosts()
 
     env_a = {"CALLBACK_URL_ALLOWED_HOSTS": "a.com"}
     env_b = {"CALLBACK_URL_ALLOWED_HOSTS": "b.com"}
@@ -57,5 +57,5 @@ def test_validate_callback_url_dynamic_allowlist(httpx_mock):
             validate_callback_url("https://b.com/path")
         assert exc.value.detail == "Callback URL host not in allowlist"
 
-        routers.get_allowed_hosts.cache_clear()
+        reload_allowed_hosts()
         validate_callback_url("https://b.com/path")
