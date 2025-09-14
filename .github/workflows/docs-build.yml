@@ -1,6 +1,10 @@
 name: Docs Build
 on:
-  pull_request: { branches: [ main ] }
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
 permissions: { contents: read }
 jobs:
   build-docs:
