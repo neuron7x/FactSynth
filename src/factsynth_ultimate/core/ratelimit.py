@@ -13,8 +13,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from ..i18n import choose_language, translate
-from .config import load_config
 from .metrics import REQUESTS
+from .settings import load_settings
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -35,7 +35,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """Initialize rate limiter configuration."""
 
         super().__init__(app)
-        cfg = load_config()
+        cfg = load_settings()
         self.redis = redis
         self.per_key = per_key if per_key is not None else cfg.rate_limit_per_key
         self.per_ip = per_ip if per_ip is not None else cfg.rate_limit_per_ip

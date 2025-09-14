@@ -7,16 +7,15 @@ from collections.abc import Awaitable, Callable
 from contextlib import suppress
 
 from fastapi import FastAPI, Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from . import VERSION
 from .api.routers import api
 from .core.auth import APIKeyAuthMiddleware
 from .core.body_limit import BodySizeLimitMiddleware
-from .core.config import load_config
 from .core.errors import install_handlers
 from .core.ip_allowlist import IPAllowlistMiddleware
 from .core.logging import setup_logging
@@ -50,7 +49,6 @@ class _MetricsMiddleware(BaseHTTPMiddleware):
 def create_app(rate_limit_window: int | None = None) -> FastAPI:
     """Application factory used by tests and ASGI server."""
     settings = load_settings()
-    cfg = load_config()
     setup_logging()
 
     app = FastAPI(title="FactSynth Ultimate Pro API", version=VERSION)
@@ -59,9 +57,9 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
 
     window = rate_limit_window or 60
     limiter = Limiter(
-        key_func=lambda request: request.headers.get(cfg.auth_header_name, ""),
-        default_limits=[f"{cfg.rate_limit_per_key}/{window} second"],
-        storage_uri=cfg.rate_limit_redis_url,
+        key_func=lambda request: request.headers.get(settings.auth_header_name, ""),
+        default_limits=[f"{settings.rate_limit_per_key}/{window} second"],
+        storage_uri=settings.rate_limit_redis_url,
         headers_enabled=True,
     )
     app.state.limiter = limiter
@@ -87,18 +85,18 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
 
     # middleware stack (order matters: last added runs first)
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.https_redirect)
-    if cfg.ip_allowlist:
-        app.add_middleware(IPAllowlistMiddleware, cidrs=cfg.ip_allowlist)
+    if settings.ip_allowlist:
+        app.add_middleware(IPAllowlistMiddleware, cidrs=settings.ip_allowlist)
     app.add_middleware(BodySizeLimitMiddleware)
 
-    allowed_keys = cfg.allowed_api_keys or [cfg.api_key]
+    allowed_keys = settings.allowed_api_keys or [settings.api_key]
     if settings.env == "prod" and any(k in {"", "change-me"} for k in allowed_keys):
         raise RuntimeError("API key must be set in production")
 
     app.add_middleware(
         APIKeyAuthMiddleware,
         api_keys=allowed_keys,
-        header_name=cfg.auth_header_name,
+        header_name=settings.auth_header_name,
         skip=tuple(settings.skip_auth_paths),
     )
     app.add_middleware(_MetricsMiddleware)
