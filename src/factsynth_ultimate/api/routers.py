@@ -24,6 +24,7 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.responses import StreamingResponse
+from starlette.websockets import WebSocketState
 
 from factsynth_ultimate import VERSION
 
@@ -236,8 +237,17 @@ async def stream(  # noqa: C901
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
+def is_client_connected(ws: WebSocket) -> bool:
+    """Return ``True`` if the WebSocket connection is still active."""
+
+    return (
+        ws.client_state == WebSocketState.CONNECTED
+        and ws.application_state == WebSocketState.CONNECTED
+    )
+
+
 @api.websocket("/ws/stream")
-async def ws_stream(ws: WebSocket) -> None:  # noqa: C901
+async def ws_stream(ws: WebSocket) -> None:  # noqa: C901, PLR0912
     """Stream tokenization results over WebSocket with API-key auth."""
 
     cfg = load_settings()
@@ -258,11 +268,17 @@ async def ws_stream(ws: WebSocket) -> None:  # noqa: C901
             ):
                 if obj and (hasattr(obj, "close") or hasattr(obj, "aclose")):
                     resources.append(obj)
+            sent = 0
             try:
                 for t in tokens:
+                    if not is_client_connected(ws):
+                        break
                     await ws.send_json({"t": t})
-                await ws.send_json({"end": True})
+                    sent += 1
+                if is_client_connected(ws):
+                    await ws.send_json({"end": True})
             finally:
+                SSE_TOKENS.inc(sent)
                 for obj in resources:
                     try:
                         aclose = getattr(obj, "aclose", None)
