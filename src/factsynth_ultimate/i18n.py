@@ -2,27 +2,40 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
+import yaml
 from fastapi import Request
 
-MESSAGES: dict[str, dict[str, str]] = {
-    "en": {
-        "internal_server_error": "Internal Server Error",
-        "payload_too_large": "Payload Too Large",
-        "forbidden": "Forbidden",
-        "unauthorized": "Unauthorized",
-        "too_many_requests": "Too Many Requests",
-    },
-    "uk": {
-        "internal_server_error": "Внутрішня помилка сервера",
-        "payload_too_large": "Занадто великий запит",
-        "forbidden": "Заборонено",
-        "unauthorized": "Неавторизовано",
-        "too_many_requests": "Забагато запитів",
-    },
-}
+LOCALES_DIR = Path(__file__).parent / "locales"
+
+
+def _load_catalogs() -> dict[str, dict[str, str]]:
+    catalogs: dict[str, dict[str, str]] = {}
+    for path in LOCALES_DIR.glob("*"):
+        if path.suffix == ".json":
+            catalogs[path.stem] = json.loads(path.read_text())
+        elif path.suffix in {".yaml", ".yml"}:
+            catalogs[path.stem] = yaml.safe_load(path.read_text())
+    return catalogs
+
+
+MESSAGES: dict[str, dict[str, str]] = {}
+SUPPORTED_LANGS: set[str] = set()
+
+
+def refresh_catalogs() -> None:
+    """Reload locale catalogs from :data:`LOCALES_DIR`."""
+    MESSAGES.clear()
+    MESSAGES.update(_load_catalogs())
+    SUPPORTED_LANGS.clear()
+    SUPPORTED_LANGS.update(MESSAGES.keys())
+
+
+refresh_catalogs()
 
 DEFAULT_LANG = "en"
-SUPPORTED_LANGS = set(MESSAGES.keys())
 
 
 def choose_language(request: Request) -> str:
@@ -62,6 +75,4 @@ def choose_language(request: Request) -> str:
 
 def translate(lang: str, key: str) -> str:
     """Return localized message for given key."""
-    return MESSAGES.get(lang, MESSAGES[DEFAULT_LANG]).get(
-        key, MESSAGES[DEFAULT_LANG].get(key, key)
-    )
+    return MESSAGES.get(lang, MESSAGES[DEFAULT_LANG]).get(key, MESSAGES[DEFAULT_LANG].get(key, key))
