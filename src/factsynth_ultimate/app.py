@@ -64,7 +64,6 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
     )
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    app.add_middleware(SlowAPIMiddleware)
 
     # core routes
     app.include_router(api)
@@ -84,6 +83,7 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
         return Response(metrics_bytes(), media_type=metrics_content_type())
 
     # middleware stack (order matters: last added runs first)
+    # SlowAPIMiddleware is added last so rate limiting happens before auth
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.https_redirect)
     if settings.ip_allowlist:
         app.add_middleware(IPAllowlistMiddleware, cidrs=settings.ip_allowlist)
@@ -101,6 +101,7 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
     )
     app.add_middleware(_MetricsMiddleware)
     app.add_middleware(RequestIDMiddleware)
+    app.add_middleware(SlowAPIMiddleware)
 
     return app
 
