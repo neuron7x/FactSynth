@@ -34,6 +34,11 @@ npx markdownlint-cli2 README.md .github/PULL_REQUEST_TEMPLATE.md
 
     Отримаєш артефакти (wheel+sdist+checksums+SBOM) і контейнер у GHCR.
 
+## CI limits
+
+Документаційні пайплайни (`docs-build.yml`, `pages.yml`) мають обмеження `timeout-minutes: 20`,
+щоб запобігти зависанням і пришвидшити фідбек. Коригуй за потреби.
+
 ## Cleanup branches with failed checks
 
 Use the **Cleanup branches with failed checks** workflow to prune branches whose
