@@ -174,9 +174,9 @@ def feedback(req: FeedbackReq, request: Request) -> dict[str, str]:
 
 
 @api.post("/v1/stream")
-async def stream(
+async def stream(  # noqa: C901
     req: ScoreReq, request: Request, token_delay: float | None = None
-) -> StreamingResponse:  # noqa: C901
+) -> StreamingResponse:
     """Stream tokenized preview of ``req.text`` using Server-Sent Events."""
 
     delay = token_delay if token_delay is not None else load_config().token_delay
@@ -224,7 +224,7 @@ async def stream(
 
 
 @api.websocket("/ws/stream")
-async def ws_stream(ws: WebSocket) -> None:
+async def ws_stream(ws: WebSocket) -> None:  # noqa: C901
     """Stream tokenization results over WebSocket with API-key auth."""
 
     cfg = load_config()
@@ -236,9 +236,31 @@ async def ws_stream(ws: WebSocket) -> None:
     try:
         while True:
             data = await ws.receive_text()
-            for t in tokenize_preview(data, 128):
-                await ws.send_json({"t": t})
-            await ws.send_json({"end": True})
+            tokens = tokenize_preview(data, 128)
+            resources: list[object] = []
+            for obj in (
+                tokens,
+                getattr(tokens, "tokenizer", None),
+                getattr(tokens, "retriever", None),
+            ):
+                if obj and (hasattr(obj, "close") or hasattr(obj, "aclose")):
+                    resources.append(obj)
+            try:
+                for t in tokens:
+                    await ws.send_json({"t": t})
+                await ws.send_json({"end": True})
+            finally:
+                for obj in resources:
+                    try:
+                        aclose = getattr(obj, "aclose", None)
+                        if callable(aclose):
+                            await aclose()
+                            continue
+                        close = getattr(obj, "close", None)
+                        if callable(close):
+                            close()
+                    except Exception:  # noqa: BLE001
+                        logger.debug("Error closing resource", exc_info=True)
     except WebSocketDisconnect:
         return
 
