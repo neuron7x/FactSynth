@@ -55,7 +55,7 @@ def read_api_key(env: str, env_file: str, default: Optional[str], env_name: str)
             if val:
                 key = str(val)
         except VaultError as err:
-            logger.warning("Vault error: %s", err)
+            logger.warning("Vault error: %s", err, exc_info=True)
     # 3) environment
     if not key:
         val = os.getenv(env)
