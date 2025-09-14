@@ -10,9 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with: { node-version: 'lts/*', cache: 'npm' }
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
         with: { python-version: '3.11', cache: 'pip' }
       - name: Install deps
         run: |
@@ -26,6 +26,6 @@ jobs:
           mkdir -p dist
           git archive -o dist/factsynth-${{ github.ref_name }}.zip --format zip HEAD
       - name: Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836
         with: { files: dist/*.zip }
         env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
