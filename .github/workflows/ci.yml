@@ -25,16 +25,18 @@ jobs:
         with: { fetch-depth: 0 }
 
       - uses: actions/setup-node@v5
-        with: { node-version: 'lts/*', cache: 'npm' }
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
 
-        - uses: actions/setup-python@v6
-          with:
-            python-version: ${{ matrix.python-version }}
-            cache: 'pip'
-            cache-dependency-path: |
-              requirements.txt
-              requirements.lock
-              pyproject.toml
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements.lock
+            pyproject.toml
 
       - name: Install JS deps
         if: hashFiles('package.json') != ''
@@ -44,16 +46,16 @@ jobs:
           elif [ -f package-lock.json ]; then npm ci;
           else echo "No JS lockfile, skipping strict install"; fi
 
-        - name: Install Python deps
-          if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
-          run: |
-            python -m pip install -U pip
-            if [ -f requirements.lock ]; then
-              pip install -r requirements.lock
-            elif [ -f requirements.txt ]; then
-              pip install -r requirements.txt
-            fi
-            [ -f pyproject.toml ] && pip install -e .[dev] || true
+      - name: Install Python deps
+        if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
+        run: |
+          python -m pip install -U pip
+          if [ -f requirements.lock ]; then
+            pip install -r requirements.lock
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          [ -f pyproject.toml ] && pip install -e .[dev] || true
 
       - name: Check lockfile
         if: hashFiles('requirements.lock','pyproject.toml') != ''
@@ -95,11 +97,21 @@ jobs:
           pip install bandit
           bandit -r .
 
-        - name: Safety
-          if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
-          run: |
-            pip install safety
-            safety check --full-report
+      - name: Safety
+        if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
+        run: |
+          pip install safety
+          safety check --full-report
+
+      - name: pip-audit
+        if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
+        run: |
+          pip install pip-audit
+          pip-audit
+
+      - name: npm audit
+        if: hashFiles('package-lock.json') != ''
+        run: npm audit --production
 
       - name: Unit tests (JS)
         if: hashFiles('package.json') != ''

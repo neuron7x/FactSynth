@@ -10,6 +10,9 @@
     pytest --cov --cov-report=xml
     python tools/coverage_gate.py --xml coverage.xml --min 90
     python tools/validate_openapi.py || true
+    pip-audit -r requirements.lock
+    npm audit --production
+    bandit -r src
     ```
 
 > Contract tests rely on `requests`; they use `pytest.importorskip` to skip when it's absent.
