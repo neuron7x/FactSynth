@@ -66,11 +66,6 @@ def evaluate_claim(  # noqa: PLR0913,C901,PLR0912
     if retriever is not None:
         if not callable(getattr(retriever, "search", None)):
             raise TypeError("retriever must implement search()")
-        if not (
-            callable(getattr(retriever, "close", None))
-            or callable(getattr(retriever, "aclose", None))
-        ):
-            raise TypeError("retriever must implement close() or aclose()")
     with ExitStack() as stack:
         if retriever:
             aclose = getattr(retriever, "aclose", None)

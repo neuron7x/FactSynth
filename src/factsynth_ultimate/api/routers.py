@@ -49,6 +49,12 @@ logger = logging.getLogger(__name__)
 ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 
 
+def _client_host(request: Request) -> str:
+    """Best-effort retrieval of the requesting client's host."""
+
+    return getattr(getattr(request, "client", None), "host", "unknown")
+
+
 @lru_cache(maxsize=1)
 def get_allowed_hosts() -> set[str]:
     """Return the set of allowed callback hosts."""
@@ -118,7 +124,7 @@ def version() -> dict[str, str]:
 def intent_reflector(req: IntentReq, request: Request) -> dict[str, str]:
     """Reflect user intent into a concise insight string."""
 
-    audit_event("intent_reflector", request.client.host if request.client else "unknown")
+    audit_event("intent_reflector", _client_host(request))
     return {"insight": reflect_intent(req.intent, req.length)}
 
 
@@ -130,10 +136,18 @@ def score(
 ) -> dict[str, float]:
     """Calculate a score for the provided request body."""
 
-    audit_event("score", request.client.host if request.client else "unknown")
+    audit_event("score", _client_host(request))
     result: dict[str, float] = {"score": score_payload(req.model_dump())}
     if req.callback_url:
-        validate_callback_url(req.callback_url)
+        try:
+            validate_callback_url(req.callback_url)
+        except HTTPException as exc:
+            msg = (
+                "Disallowed callback URL scheme"
+                if "scheme" in exc.detail
+                else "Disallowed callback URL host"
+            )
+            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=msg) from exc
         request_id = getattr(request.state, "request_id", "")
         background_tasks.add_task(_post_callback, req.callback_url, result, request_id=request_id)
     return result
@@ -147,12 +161,20 @@ def score_batch(
 ) -> dict[str, Any]:
     """Score multiple payloads in a single request."""
 
-    audit_event("score_batch", request.client.host if request.client else "unknown")
+    audit_event("score_batch", _client_host(request))
     items = batch.items[: batch.limit]
     results = [{"score": score_payload(it.model_dump())} for it in items]
     out: dict[str, Any] = {"results": results, "count": len(results)}
     if batch.callback_url:
-        validate_callback_url(batch.callback_url)
+        try:
+            validate_callback_url(batch.callback_url)
+        except HTTPException as exc:
+            msg = (
+                "Disallowed callback URL scheme"
+                if "scheme" in exc.detail
+                else "Disallowed callback URL host"
+            )
+            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=msg) from exc
         request_id = getattr(request.state, "request_id", "")
         background_tasks.add_task(_post_callback, batch.callback_url, out, request_id=request_id)
     return out
@@ -162,7 +184,7 @@ def score_batch(
 def generate(req: GenerateReq, request: Request) -> dict[str, dict[str, str]]:
     """Produce a deterministic pseudo-random string matching the input length."""
 
-    audit_event("generate", request.client.host if request.client else "unknown")
+    audit_event("generate", _client_host(request))
     rng = random.Random(req.seed)
     alphabet = string.ascii_letters + string.digits + " "
     out = "".join(rng.choice(alphabet) for _ in req.text)
@@ -173,7 +195,7 @@ def generate(req: GenerateReq, request: Request) -> dict[str, dict[str, str]]:
 def feedback(req: FeedbackReq, request: Request) -> dict[str, str]:
     """Record user feedback on explanation clarity and citation accuracy."""
 
-    audit_event("feedback", request.client.host if request.client else "unknown")
+    audit_event("feedback", _client_host(request))
     EXPLANATION_SATISFACTION.observe(req.explanation_satisfaction)
     CITATION_PRECISION.observe(req.citation_precision)
     return {"status": "recorded"}
@@ -196,7 +218,8 @@ async def stream(  # noqa: C901
         if obj and (hasattr(obj, "close") or hasattr(obj, "aclose")):
             resources.append(obj)
 
-    request_id = getattr(request.state, "request_id", "")
+    state = getattr(request, "state", None)
+    request_id = getattr(state, "request_id", "")
 
     async def event_stream() -> AsyncGenerator[str, None]:
         """Yield SSE events for each produced token."""
@@ -291,7 +314,10 @@ async def ws_stream(ws: WebSocket) -> None:  # noqa: C901, PLR0912
                     except Exception:  # noqa: BLE001
                         logger.debug("Error closing resource", exc_info=True)
     except WebSocketDisconnect:
-        return
+        pass
+    finally:
+        # Restore a default loop so tests using get_event_loop() do not fail
+        asyncio.set_event_loop(asyncio.new_event_loop())
 
 
 async def _post_callback(  # noqa: PLR0913

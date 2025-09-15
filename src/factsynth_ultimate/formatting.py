@@ -84,25 +84,28 @@ def sanitize(
 
 
 def ensure_period(text: str) -> str:
-    """Ensure that ``text`` ends with a period.
+    """Ensure that ``text`` ends with terminal punctuation.
+
+    The function normalizes trailing whitespace and guarantees the result
+    terminates with ``.``, ``!`` or ``?``. A final ellipsis character ``…`` is
+    treated as a period. Existing terminal punctuation is preserved.
 
     Args:
         text: Sentence fragment to finalize.
 
     Returns:
-        The text without trailing whitespace and guaranteed to end with ``.``.
-        Text already ending with ``.`` or the ellipsis character ``…`` is returned
-        unchanged aside from trimming whitespace.
-
-    Edge cases:
-        If the input ends with other punctuation (e.g., ``!`` or ``?``), an extra
-        period is appended.
+        The normalized text ending with one of ``.``, ``!`` or ``?``.
 
     Example:
         ``ensure_period("done")`` → ``"done."``
     """
+
     t = text.rstrip()
-    return t if t.endswith((".", "…")) else (t + ".")
+    if t.endswith("…"):
+        t = t[:-1]
+    if t.endswith((".", "!", "?")):
+        return t
+    return t + "."
 
 
 def fit_length(text: str, target: int) -> str:

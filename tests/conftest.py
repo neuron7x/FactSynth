@@ -1,5 +1,6 @@
 """Shared test fixtures for FactSynth API tests."""
 
+import asyncio
 import json
 import os
 import random
@@ -17,6 +18,24 @@ os.environ.setdefault("RATE_LIMIT_PER_ORG", "1000")
 from factsynth_ultimate.app import create_app
 
 API_KEY = os.getenv("API_KEY", "change-me")
+
+# Ensure a default event loop for tests that rely on get_event_loop()
+asyncio.set_event_loop(asyncio.new_event_loop())
+
+# Provide a backwards-compatible get_event_loop for tests
+_orig_get_event_loop = asyncio.get_event_loop
+
+
+def _get_event_loop():
+    try:
+        return _orig_get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return loop
+
+
+asyncio.get_event_loop = _get_event_loop
 
 
 @pytest.fixture(scope="session")
@@ -97,7 +116,7 @@ def _stub_external_api(httpx_mock) -> None:
             return Response(200, json={"openapi": "3.1.0", "paths": {}})
         return Response(200, json={"stub": True})
 
-    httpx_mock.add_callback(handler)
+    httpx_mock.add_callback(handler, is_optional=True)
 
 
 @pytest.fixture(autouse=True)
