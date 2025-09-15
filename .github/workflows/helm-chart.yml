@@ -6,7 +6,6 @@ on:
   push:
     branches: [ main ]
     paths: [ 'charts/**' ]
-
 permissions:
   contents: read
 
@@ -31,12 +30,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Helm
         uses: azure/setup-helm@v4
         with:
           version: v3.14.4
-
       - name: Lint charts
         run: |
           set -euo pipefail
