@@ -1,5 +1,6 @@
 import pytest
 from pydantic import ValidationError
+from pydantic_settings import SettingsError
 
 from factsynth_ultimate.core.settings import Settings, load_settings
 
@@ -38,9 +39,9 @@ def test_cors_allow_origins_default_empty():
     assert settings.cors_allow_origins == []
 
 
-def test_invalid_rate_limit_per_key(monkeypatch):
-    monkeypatch.setenv("RATE_LIMIT_PER_KEY", "abc")
-    with pytest.raises(ValidationError):
+def test_invalid_rates_api(monkeypatch):
+    monkeypatch.setenv("RATES_API", "abc:def:ghi")
+    with pytest.raises(SettingsError):
         load_settings()
 
 

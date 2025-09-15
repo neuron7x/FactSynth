@@ -67,7 +67,15 @@ async def test_rate_limit_properties(monkeypatch, events):
     monkeypatch.setattr(rate_limit.time, "time", fake_time)
 
     redis = FakeRedis(fake_time)
-    rl = rate_limit.RateLimitMiddleware(lambda *a, **k: None, redis=redis, burst=burst, sustain=sustain, ttl=ttl)
+    quota = rate_limit.RateQuota(burst, sustain)
+    rl = rate_limit.RateLimitMiddleware(
+        lambda *a, **k: None,
+        redis=redis,
+        api=quota,
+        ip=quota,
+        org=quota,
+        ttl=ttl,
+    )
 
     tokens = burst
     key = "k"
@@ -77,13 +85,13 @@ async def test_rate_limit_properties(monkeypatch, events):
         for _ in range(count):
             allowed_expected = tokens >= 1
             tokens_expected = tokens - 1 if allowed_expected else tokens
-            allowed, remaining = await rl._take(key)
+            allowed, remaining = await rl._take(key, quota)
             assert allowed == allowed_expected
             assert remaining == pytest.approx(tokens_expected)
             assert 0 <= remaining <= burst
             tokens = tokens_expected
 
     current_time += ttl + 1
-    allowed, remaining = await rl._take(key)
+    allowed, remaining = await rl._take(key, quota)
     assert allowed is True
     assert remaining == pytest.approx(burst - 1)

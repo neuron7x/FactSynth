@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import re
+from typing import Any
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from .rate_limit import RateQuota
 from .secrets import read_api_key
 
 
@@ -36,9 +40,9 @@ class Settings(BaseSettings):
     rate_limit_redis_url: str = Field(
         default="redis://localhost:6379/0", env="RATE_LIMIT_REDIS_URL"
     )
-    rate_limit_per_key: int = Field(default=120, env="RATE_LIMIT_PER_KEY", ge=0)
-    rate_limit_per_ip: int = Field(default=120, env="RATE_LIMIT_PER_IP", ge=0)
-    rate_limit_per_org: int = Field(default=120, env="RATE_LIMIT_PER_ORG", ge=0)
+    rates_api: RateQuota = Field(default_factory=lambda: RateQuota(60, 1.0), env="RATES_API")
+    rates_ip: RateQuota = Field(default_factory=lambda: RateQuota(60, 1.0), env="RATES_IP")
+    rates_org: RateQuota = Field(default_factory=lambda: RateQuota(60, 1.0), env="RATES_ORG")
     token_delay: float = Field(default=0.002, env="TOKEN_DELAY", ge=0)
     health_tcp_checks: list[str] = Field(default_factory=list, env="HEALTH_TCP_CHECKS")
     source_store_backend: str = Field(default="memory", env="SOURCE_STORE_BACKEND")
@@ -60,6 +64,61 @@ class Settings(BaseSettings):
                 return []
             return [item for item in value.split(",") if item]
         return list(value)
+
+    @field_validator("rates_api", "rates_ip", "rates_org", mode="before")
+    @classmethod
+    def _parse_rate(cls, value: Any) -> RateQuota:
+        if value is None:
+            return RateQuota(0, 1.0)
+        if isinstance(value, RateQuota):
+            return value
+        if isinstance(value, str):
+            raw = value.strip()
+            if not raw:
+                return RateQuota(0, 1.0)
+            parts = [part for part in re.split(r"[:/,\s]+", raw) if part]
+            if len(parts) == 1:
+                burst = int(parts[0])
+                sustain = 1.0
+            elif len(parts) >= 2:
+                burst = int(parts[0])
+                sustain = float(parts[1])
+            else:  # pragma: no cover - defensive guard
+                raise ValueError("Invalid rate specification")
+            return RateQuota(burst, sustain)
+        if isinstance(value, (tuple, list)):
+            if len(value) != 2:
+                msg = "Rate tuples must contain burst and sustain"
+                raise ValueError(msg)
+            burst, sustain = value
+            return RateQuota(int(burst), float(sustain))
+        if isinstance(value, dict):
+            burst = value.get("burst")
+            sustain = value.get("sustain")
+            if burst is None or sustain is None:
+                msg = "Rate mappings must define 'burst' and 'sustain'"
+                raise ValueError(msg)
+            return RateQuota(int(burst), float(sustain))
+        msg = f"Unsupported rate configuration: {type(value)!r}"
+        raise TypeError(msg)
+
+    @property
+    def rate_limit_per_key(self) -> int:
+        """Backwards compatible accessor for legacy configuration."""
+
+        return self.rates_api.burst
+
+    @property
+    def rate_limit_per_ip(self) -> int:
+        """Backwards compatible accessor for legacy configuration."""
+
+        return self.rates_ip.burst
+
+    @property
+    def rate_limit_per_org(self) -> int:
+        """Backwards compatible accessor for legacy configuration."""
+
+        return self.rates_org.burst
 
 
 def load_settings() -> Settings:

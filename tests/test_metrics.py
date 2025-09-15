@@ -7,6 +7,7 @@ EXPECTED_METRICS = [
     "factsynth_request_latency_seconds_bucket",
     "factsynth_scoring_seconds_bucket",
     "factsynth_sse_tokens_total",
+    "factsynth_rate_limit_blocks_total",
     "factsynth_explanation_satisfaction_score_bucket",
     "factsynth_citation_precision_bucket",
 ]
