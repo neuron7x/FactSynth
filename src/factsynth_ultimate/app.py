@@ -48,7 +48,11 @@ class _MetricsMiddleware(BaseHTTPMiddleware):
 
 def create_app(rate_limit_window: int | None = None) -> FastAPI:
     """Application factory used by tests and ASGI server."""
-    settings = load_settings()
+
+    try:
+        settings = load_settings()
+    except Exception as exc:  # pragma: no cover - configuration errors
+        raise RuntimeError("Invalid configuration") from exc
     setup_logging()
 
     app = FastAPI(title="FactSynth Ultimate Pro API", version=VERSION)

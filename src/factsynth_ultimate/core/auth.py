@@ -82,7 +82,6 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
             "title": translate(lang, title_key),
             "status": status,
             "detail": detail,
-            "instance": request.url.path,
             "trace_id": request_id,
         }
         return JSONResponse(problem, status_code=status, media_type="application/problem+json")

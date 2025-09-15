@@ -19,7 +19,12 @@ def install_handlers(app: FastAPI) -> None:
     async def _exc_handler(request: Request, exc: Exception) -> Response:
         """Convert uncaught exceptions to RFC7807 responses."""
 
-        logger.exception("Unhandled exception on %s: %s", request.url.path, exc)
+        logger.exception(
+            "Unhandled exception on %s: %s",
+            request.url.path,
+            exc,
+            extra={"request_id": getattr(request.state, "request_id", "")},
+        )
         lang = choose_language(request)
         title = translate(lang, "internal_server_error")
         problem = {

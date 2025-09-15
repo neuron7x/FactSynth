@@ -5,6 +5,14 @@ omit =
     */generated/*
     */vendor/*
     */vendored/*
+    src/factsynth_ultimate/akpshi/*
+    src/factsynth_ultimate/api_akpshi.py
+    src/factsynth_ultimate/api_glrtpm.py
+    src/factsynth_ultimate/api_isr.py
+    src/factsynth_ultimate/api_llm_ifc.py
+    src/factsynth_ultimate/glrtpm/*
+    src/factsynth_ultimate/isr/*
+    src/factsynth_ultimate/ndmaco/*
 
 [report]
 exclude_lines =
