@@ -102,11 +102,15 @@ jobs:
           pip install bandit
           bandit -r .
 
-      - name: Safety
+      - name: Safety (PR, fail on high/critical)
         if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
         run: |
           pip install safety
-          safety check --full-report
+          if [ -n "$SFD" ]; then
+            safety check --full-report --policy-file "$SFD"
+          else
+            safety check --full-report
+          fi
 
       - name: pip-audit
         if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
