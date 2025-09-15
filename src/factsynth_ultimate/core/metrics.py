@@ -15,6 +15,11 @@ REQUESTS = Counter(
     "Total HTTP requests",
     ("method", "route", "status"),
 )
+RATE_LIMIT_BLOCKS = Counter(
+    "factsynth_rate_limit_blocks_total",
+    "Requests rejected by the rate limiter",
+    ("dimension",),
+)
 LATENCY = Histogram(
     "factsynth_request_latency_seconds",
     "Request latency seconds",
@@ -39,6 +44,10 @@ CITATION_PRECISION = Histogram(
     "User-perceived citation accuracy",
     buckets=(0.0, 0.25, 0.5, 0.75, 1.0),
 )
+REQUESTS.labels("bootstrap", "bootstrap", "200")
+LATENCY.labels("bootstrap")
+for _dimension in ("api", "ip", "org"):
+    RATE_LIMIT_BLOCKS.labels(_dimension)
 
 
 def metrics_bytes() -> bytes:
