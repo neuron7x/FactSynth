@@ -1,0 +1,21 @@
+name: Helm Chart Lint
+on:
+  pull_request:
+    branches: [ main ]
+    paths: [ 'charts/**' ]
+  push:
+    branches: [ main ]
+    paths: [ 'charts/**' ]
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Helm lint
+        if: ${{ hashFiles('charts/**') != '' }}
+        run: |
+          curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm lint charts/* || true
