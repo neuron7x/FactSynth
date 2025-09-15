@@ -17,6 +17,7 @@ import httpx
 from fastapi import (
     APIRouter,
     BackgroundTasks,
+    Depends,
     HTTPException,
     Request,
     WebSocket,
@@ -26,6 +27,8 @@ from fastapi.responses import StreamingResponse
 from starlette.websockets import WebSocketState
 
 from factsynth_ultimate import VERSION
+from facts import FactPipeline, FactPipelineError
+from factsynth_ultimate.stream import stream_facts
 
 from ..core.audit import audit_event
 from ..core.metrics import (
@@ -35,12 +38,32 @@ from ..core.metrics import (
 )
 from ..core.settings import load_settings
 from ..schemas.requests import FeedbackReq, IntentReq, ScoreBatchReq, ScoreReq
-from ..services.runtime import reflect_intent, score_payload, tokenize_preview
+from ..services.runtime import reflect_intent, score_payload
 from .v1 import generate_router
+from .v1.generate import get_fact_pipeline
 
 logger = logging.getLogger(__name__)
 
 ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
+DEFAULT_CHUNK_SIZE = 160
+
+
+def _last_event_id(request: Request) -> int | None:
+    raw = request.headers.get("last-event-id")
+    if raw is None:
+        return None
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return None
+
+
+def _sse_message(event: str, data: dict[str, Any], event_id: str | None = None) -> str:
+    payload = [f"event: {event}"]
+    if event_id is not None:
+        payload.append(f"id: {event_id}")
+    payload.append("data: " + json.dumps(data, ensure_ascii=False))
+    return "\n".join(payload) + "\n\n"
 
 
 def _client_host(request: Request) -> str:
@@ -185,63 +208,100 @@ def feedback(req: FeedbackReq, request: Request) -> dict[str, str]:
     return {"status": "recorded"}
 
 
-@api.post("/v1/stream")
-async def stream(  # noqa: C901
-    req: ScoreReq, request: Request, token_delay: float | None = None
+async def _sse_stream(
+    req: ScoreReq,
+    request: Request,
+    pipeline: FactPipeline,
+    *,
+    token_delay: float | None,
+    chunk_size: int | None,
+    cursor: int | None,
 ) -> StreamingResponse:
-    """Stream tokenized preview of ``req.text`` using Server-Sent Events."""
-
     delay = token_delay if token_delay is not None else load_settings().token_delay
-    tokens = tokenize_preview(req.text, max_tokens=256) or ["factsynth"]
-    resources: list[object] = []
-    for obj in (
-        tokens,
-        getattr(tokens, "tokenizer", None),
-        getattr(tokens, "retriever", None),
-    ):
-        if obj and (hasattr(obj, "close") or hasattr(obj, "aclose")):
-            resources.append(obj)
-
+    size = max(1, chunk_size or DEFAULT_CHUNK_SIZE)
+    start_at = max(0, cursor or 0)
+    last_id = _last_event_id(request)
+    if cursor is None and last_id is not None:
+        start_at = last_id + 1
+    replay = start_at > 0
     state = getattr(request, "state", None)
     request_id = getattr(state, "request_id", "")
 
-    async def event_stream() -> AsyncGenerator[str, None]:
-        """Yield SSE events for each produced token."""
+    async def is_disconnected() -> bool:
+        return await request.is_disconnected()
 
+    async def event_stream() -> AsyncGenerator[str, None]:
         sent = 0
         try:
-            yield "event: start\n" + "data: {}\n\n"
-            for t in tokens:
-                await asyncio.sleep(delay)
-                if await request.is_disconnected():
-                    break
+            yield _sse_message("start", {"cursor": start_at, "replay": replay})
+            async for chunk in stream_facts(
+                pipeline,
+                req.text,
+                chunk_size=size,
+                start_at=start_at,
+                delay=delay,
+                is_disconnected=is_disconnected,
+            ):
                 sent += 1
-                yield "event: token\n" + "data: " + json.dumps({"t": t, "n": sent}) + "\n\n"
-            yield "event: end\n" + "data: {}\n\n"
+                yield _sse_message(
+                    "chunk",
+                    {"id": chunk.index, "text": chunk.text, "replay": replay},
+                    event_id=str(chunk.index),
+                )
+            yield _sse_message("end", {"cursor": start_at + sent, "replay": replay})
+        except FactPipelineError as exc:
+            yield _sse_message("error", {"message": str(exc), "replay": replay})
         except asyncio.CancelledError:
             logger.info(
-                "SSE stream cancelled after %d tokens", sent, extra={"request_id": request_id}
+                "SSE stream cancelled after %d chunks", sent, extra={"request_id": request_id}
             )
             raise
         finally:
             SSE_TOKENS.inc(sent)
-            for obj in resources:
-                try:
-                    aclose = getattr(obj, "aclose", None)
-                    if callable(aclose):
-                        await aclose()
-                        continue
-                    close = getattr(obj, "close", None)
-                    if callable(close):
-                        close()
-                except Exception:  # noqa: BLE001
-                    logger.debug(
-                        "Error closing resource",
-                        exc_info=True,
-                        extra={"request_id": request_id},
-                    )
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@api.post("/sse/stream")
+async def sse_stream(
+    req: ScoreReq,
+    request: Request,
+    token_delay: float | None = None,
+    chunk_size: int | None = None,
+    cursor: int | None = None,
+    pipeline: FactPipeline = Depends(get_fact_pipeline),
+) -> StreamingResponse:
+    """Stream fact synthesis results over Server-Sent Events."""
+
+    return await _sse_stream(
+        req,
+        request,
+        pipeline,
+        token_delay=token_delay,
+        chunk_size=chunk_size,
+        cursor=cursor,
+    )
+
+
+@api.post("/v1/stream")
+async def stream(
+    req: ScoreReq,
+    request: Request,
+    token_delay: float | None = None,
+    chunk_size: int | None = None,
+    cursor: int | None = None,
+    pipeline: FactPipeline = Depends(get_fact_pipeline),
+) -> StreamingResponse:
+    """Backward compatible SSE endpoint for streaming fact synthesis."""
+
+    return await _sse_stream(
+        req,
+        request,
+        pipeline,
+        token_delay=token_delay,
+        chunk_size=chunk_size,
+        cursor=cursor,
+    )
 
 
 def is_client_connected(ws: WebSocket) -> bool:
@@ -254,8 +314,10 @@ def is_client_connected(ws: WebSocket) -> bool:
 
 
 @api.websocket("/ws/stream")
-async def ws_stream(ws: WebSocket) -> None:  # noqa: C901, PLR0912
-    """Stream tokenization results over WebSocket with API-key auth."""
+async def ws_stream(
+    ws: WebSocket, pipeline: FactPipeline = Depends(get_fact_pipeline)
+) -> None:  # noqa: C901, PLR0912
+    """Stream fact synthesis results over WebSocket with API-key auth."""
 
     cfg = load_settings()
     key = ws.headers.get(cfg.auth_header_name)
@@ -263,40 +325,74 @@ async def ws_stream(ws: WebSocket) -> None:  # noqa: C901, PLR0912
         await ws.close(code=4401, reason="Unauthorized")
         return
     await ws.accept()
+    default_delay = cfg.token_delay
     try:
         while True:
-            data = await ws.receive_text()
-            tokens = tokenize_preview(data, 128)
-            resources: list[object] = []
-            for obj in (
-                tokens,
-                getattr(tokens, "tokenizer", None),
-                getattr(tokens, "retriever", None),
-            ):
-                if obj and (hasattr(obj, "close") or hasattr(obj, "aclose")):
-                    resources.append(obj)
-            sent = 0
+            message = await ws.receive_text()
             try:
-                for t in tokens:
-                    if not is_client_connected(ws):
-                        break
-                    await ws.send_json({"t": t})
+                payload = json.loads(message)
+            except json.JSONDecodeError:
+                payload = {"text": message}
+
+            if not isinstance(payload, dict):
+                payload = {"text": str(payload)}
+
+            query = str(payload.get("text", "") or "")
+            if not query.strip():
+                await ws.send_json({"event": "error", "message": "Query must not be empty"})
+                continue
+
+            start_at = payload.get("cursor")
+            chunk_size = payload.get("chunk_size")
+            delay_override = payload.get("delay")
+
+            try:
+                start_index = max(0, int(start_at)) if start_at is not None else 0
+            except (TypeError, ValueError):
+                start_index = 0
+            try:
+                size = int(chunk_size) if chunk_size is not None else DEFAULT_CHUNK_SIZE
+            except (TypeError, ValueError):
+                size = DEFAULT_CHUNK_SIZE
+            size = max(1, size)
+            try:
+                delay = float(delay_override) if delay_override is not None else default_delay
+            except (TypeError, ValueError):
+                delay = default_delay
+            delay = max(0.0, delay)
+
+            replay = start_index > 0
+
+            async def is_disconnected() -> bool:
+                return not is_client_connected(ws)
+
+            sent = 0
+            await ws.send_json({"event": "start", "cursor": start_index, "replay": replay})
+            try:
+                async for chunk in stream_facts(
+                    pipeline,
+                    query,
+                    chunk_size=size,
+                    start_at=start_index,
+                    delay=delay,
+                    is_disconnected=is_disconnected,
+                ):
+                    await ws.send_json(
+                        {
+                            "event": "chunk",
+                            "id": chunk.index,
+                            "text": chunk.text,
+                            "replay": replay,
+                        }
+                    )
                     sent += 1
-                if is_client_connected(ws):
-                    await ws.send_json({"end": True})
+                await ws.send_json(
+                    {"event": "end", "cursor": start_index + sent, "replay": replay}
+                )
+            except FactPipelineError as exc:
+                await ws.send_json({"event": "error", "message": str(exc), "replay": replay})
             finally:
                 SSE_TOKENS.inc(sent)
-                for obj in resources:
-                    try:
-                        aclose = getattr(obj, "aclose", None)
-                        if callable(aclose):
-                            await aclose()
-                            continue
-                        close = getattr(obj, "close", None)
-                        if callable(close):
-                            close()
-                    except Exception:  # noqa: BLE001
-                        logger.debug("Error closing resource", exc_info=True)
     except WebSocketDisconnect:
         pass
     finally:
