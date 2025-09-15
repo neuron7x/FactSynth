@@ -1,0 +1,6 @@
+fail-scan-with-exit-code:
+  enabled: true
+  fail-on-any-of:
+    cvss-severity:
+      - critical
+      - high

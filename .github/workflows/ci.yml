@@ -66,14 +66,18 @@ jobs:
       - name: Check dev requirements
         if: ${{ hashFiles('pyproject.toml') != '' || hashFiles('requirements-dev.txt') != '' }}
         run: |
-          bash scripts/update_dev_requirements.sh
-          git diff --exit-code requirements-dev.txt
+          if [ -f scripts/update_dev_requirements.sh ]; then
+            bash scripts/update_dev_requirements.sh
+            git diff --exit-code requirements-dev.txt
+          else
+            echo "No updater script; skipping."
+          fi
 
       - name: Lint JS
         if: ${{ hashFiles('package.json') != '' }}
         run: |
           npx --yes eslint --version >/dev/null 2>&1 || npm i -D eslint
-          if [ -f .eslintrc* ] || npx --yes eslint --print-config . >/dev/null 2>&1; then
+          if compgen -G ".eslintrc*" > /dev/null || npx --yes eslint --print-config . >/dev/null 2>&1; then
             npx eslint . --max-warnings=0
           else
             echo "No ESLint config; skipping."
@@ -97,17 +101,33 @@ jobs:
           pip install bandit
           bandit -r .
 
-      - name: Safety
-        if: ${{ hashFiles('requirements.txt') != '' || hashFiles('requirements.lock') != '' || hashFiles('pyproject.toml') != '' }}
+      - name: Safety (PR, fail on high/critical)
+        if: ${{ github.event_name == 'pull_request' && (hashFiles('requirements.txt') != '' || hashFiles('requirements.lock') != '' || hashFiles('pyproject.toml') != '') }}
+        run: |
+          pip install "safety>=3.2.4"
+          safety check --full-report ${SFD:+"--policy-file" "$SFD"}
+        env:
+          SFD: .safety-policy.yml
+
+      - name: Safety (non-PR, report only)
+        if: ${{ github.event_name != 'pull_request' && (hashFiles('requirements.txt') != '' || hashFiles('requirements.lock') != '' || hashFiles('pyproject.toml') != '') }}
+        continue-on-error: true
         run: |
           pip install safety
-          safety check --full-report || true
+          safety check --full-report
 
-      - name: pip-audit
-        if: ${{ hashFiles('requirements.txt') != '' || hashFiles('requirements.lock') != '' || hashFiles('pyproject.toml') != '' }}
+      - name: pip-audit (PR, strict)
+        if: ${{ github.event_name == 'pull_request' && (hashFiles('requirements.txt') != '' || hashFiles('requirements.lock') != '' || hashFiles('pyproject.toml') != '') }}
         run: |
           pip install pip-audit
-          pip-audit --progress-spinner off || true
+          pip-audit --progress-spinner off
+
+      - name: pip-audit (non-PR, report only)
+        if: ${{ github.event_name != 'pull_request' && (hashFiles('requirements.txt') != '' || hashFiles('requirements.lock') != '' || hashFiles('pyproject.toml') != '') }}
+        continue-on-error: true
+        run: |
+          pip install pip-audit
+          pip-audit --progress-spinner off
 
       - name: npm audit (high+ only)
         if: ${{ hashFiles('package-lock.json') != '' }}
