@@ -6,6 +6,7 @@ import random
 import string
 
 import pytest
+import time_machine
 from httpx import ASGITransport, AsyncClient, MockTransport, Response
 
 os.environ.setdefault("RATE_LIMIT_REDIS_URL", "memory://")
@@ -13,7 +14,7 @@ os.environ.setdefault("RATE_LIMIT_PER_KEY", "1000")
 os.environ.setdefault("RATE_LIMIT_PER_IP", "1000")
 os.environ.setdefault("RATE_LIMIT_PER_ORG", "1000")
 
-from factsynth_ultimate.app import create_app  # noqa: E402
+from factsynth_ultimate.app import create_app
 
 API_KEY = os.getenv("API_KEY", "change-me")
 
@@ -26,6 +27,14 @@ def anyio_backend() -> str:
 @pytest.fixture(scope="session")
 def base_headers() -> dict[str, str]:
     return {"x-api-key": API_KEY, "content-type": "application/json"}
+
+
+@pytest.fixture()
+def time_travel():
+    """Provide a controllable clock for tests."""
+
+    with time_machine.travel(0, tick=False) as traveler:
+        yield traveler
 
 
 @pytest.fixture()

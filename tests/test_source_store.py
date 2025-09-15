@@ -1,4 +1,3 @@
-import time
 from datetime import UTC, datetime, timedelta
 
 import fakeredis
@@ -8,11 +7,11 @@ from factsynth_ultimate.core.source_store import MemorySourceStore, RedisSourceS
 
 
 @pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-def test_memory_store_ttl_cleanup():
+def test_memory_store_ttl_cleanup(time_travel):
     store = MemorySourceStore(ttl=1)
     sid = store.ingest_source("http://example.com", "payload", trust=0.9)
     assert store.get_metadata(sid) is not None
-    time.sleep(1.1)
+    time_travel.shift(1.1)
     assert store.get_metadata(sid) is None
 
 

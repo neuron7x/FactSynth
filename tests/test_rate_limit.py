@@ -1,4 +1,3 @@
-import time
 from http import HTTPStatus
 
 import pytest
@@ -45,14 +44,14 @@ def test_burst_limit_exceeded():
         assert "Retry-After" in resp.headers
 
 
-def test_limit_resets_after_window():
+def test_limit_resets_after_window(time_travel):
     app = _build_app()
     with TestClient(app) as client:
         headers = {"x-api-key": "k"}
         client.get("/route", headers=headers)
         client.get("/route", headers=headers)
         assert client.get("/route", headers=headers).status_code == HTTPStatus.TOO_MANY_REQUESTS
-        time.sleep(1.1)
+        time_travel.shift(1.1)
         resp = client.get("/route", headers=headers)
         assert resp.status_code == HTTPStatus.OK
         assert resp.headers["X-RateLimit-Remaining"] == "1"
@@ -71,8 +70,7 @@ def test_headers_on_success():
 def test_unauthorized_requests_are_rate_limited():
     app = FastAPI()
     limiter = Limiter(
-        key_func=lambda request: request.headers.get("x-api-key")
-        or request.client.host,
+        key_func=lambda request: request.headers.get("x-api-key") or request.client.host,
         default_limits=["2/1 second"],
         storage_uri="memory://",
         headers_enabled=True,
