@@ -15,4 +15,4 @@ pre-commit==4.3.0
 pytest-httpx==0.35.0
 pip-tools==7.5.0
 time-machine==2.19.0
-mutmut==3.2.0
+mutmut==3.3.1
