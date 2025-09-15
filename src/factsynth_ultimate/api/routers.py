@@ -6,7 +6,6 @@ import asyncio
 import json
 import logging
 import random
-import string
 import time
 from collections.abc import AsyncGenerator
 from functools import lru_cache
@@ -35,14 +34,9 @@ from ..core.metrics import (
     SSE_TOKENS,
 )
 from ..core.settings import load_settings
-from ..schemas.requests import (
-    FeedbackReq,
-    GenerateReq,
-    IntentReq,
-    ScoreBatchReq,
-    ScoreReq,
-)
+from ..schemas.requests import FeedbackReq, IntentReq, ScoreBatchReq, ScoreReq
 from ..services.runtime import reflect_intent, score_payload, tokenize_preview
+from .v1 import generate_router
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +105,7 @@ def validate_callback_url(url: str) -> None:
 
 
 api = APIRouter()
+api.include_router(generate_router)
 
 
 @api.get("/v1/version")
@@ -178,17 +173,6 @@ def score_batch(
         request_id = getattr(request.state, "request_id", "")
         background_tasks.add_task(_post_callback, batch.callback_url, out, request_id=request_id)
     return out
-
-
-@api.post("/v1/generate")
-def generate(req: GenerateReq, request: Request) -> dict[str, dict[str, str]]:
-    """Produce a deterministic pseudo-random string matching the input length."""
-
-    audit_event("generate", _client_host(request))
-    rng = random.Random(req.seed)
-    alphabet = string.ascii_letters + string.digits + " "
-    out = "".join(rng.choice(alphabet) for _ in req.text)
-    return {"output": {"text": out}}
 
 
 @api.post("/v1/feedback")
