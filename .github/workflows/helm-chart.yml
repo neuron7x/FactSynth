@@ -1,0 +1,13 @@
+name: Helm Chart
+on:
+  push: { paths: [ 'charts/**' ] }
+  pull_request: { paths: [ 'charts/**' ] }
+permissions: { contents: read }
+jobs:
+  lint:
+    if: ${{ hashFiles('charts/**') != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+      - name: Helm lint
+        run: helm lint charts/*
