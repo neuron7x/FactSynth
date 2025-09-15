@@ -1,4 +1,4 @@
-import time
+import asyncio
 
 import pytest
 from fastapi.testclient import TestClient as SyncClient
@@ -24,18 +24,20 @@ def test_ws_stream_slow_reader():
     with sc.websocket_connect("/ws/stream", headers={"x-api-key": "change-me"}) as ws:
         ws.send_text("alpha beta gamma")
         for tok in ("alpha", "beta", "gamma"):
-            time.sleep(0.01)
             assert ws.receive_json() == {"t": tok}
         assert ws.receive_json() == {"end": True}
 
 
 def test_ws_stream_disconnect_closes_resources(monkeypatch):
+    done = asyncio.Event()
+
     class DummyRetriever:
         def __init__(self) -> None:
             self.closed = False
 
         async def aclose(self) -> None:
             self.closed = True
+            done.set()
 
     retr = DummyRetriever()
 
@@ -64,7 +66,7 @@ def test_ws_stream_disconnect_closes_resources(monkeypatch):
     with sc.websocket_connect("/ws/stream", headers={"x-api-key": "change-me"}) as ws:
         ws.send_text("ping")
         ws.close()
-        time.sleep(0.05)
+    asyncio.get_event_loop().run_until_complete(asyncio.wait_for(done.wait(), timeout=1))
 
     diff = current_sse_tokens() - initial
     assert retr.closed
