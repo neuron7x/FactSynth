@@ -6,16 +6,44 @@ on:
   push:
     branches: [ main ]
     paths: [ 'charts/**' ]
+
 permissions:
   contents: read
 
 jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      has-charts: ${{ steps.check.outputs.has-charts }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          if compgen -G 'charts/*/Chart.yaml' > /dev/null; then
+            echo "has-charts=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-charts=false" >> "$GITHUB_OUTPUT"
+          fi
+
   lint:
+    needs: detect
+    if: needs.detect.outputs.has-charts == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Helm lint
-        if: ${{ hashFiles('charts/**') != '' }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Lint charts
         run: |
-          curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-          helm lint charts/* || true
+          set -euo pipefail
+          shopt -s nullglob
+          for chart in charts/*; do
+            if [ -d "$chart" ]; then
+              echo "==> helm lint $chart"
+              helm lint "$chart"
+            fi
+          done
