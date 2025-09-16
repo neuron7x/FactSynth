@@ -7,6 +7,8 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+
 def _pick_text(payload):
     if isinstance(payload, dict):
         for k in ("text",):

@@ -53,6 +53,9 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency guard
         def run(self, query: str) -> str:
             raise PipelineNotReadyError(self._reason)
 
+        async def arun(self, query: str) -> str:
+            raise PipelineNotReadyError(self._reason)
+
 
 PIPELINE_MIN_LEN = 16
 PIPELINE_MAX_LEN = 10_000
@@ -146,7 +149,7 @@ def _validate_generated_text(text: str) -> ProblemDetails | None:
 
 
 @router.post("/v1/generate")
-def generate(
+async def generate(
     req: GenerateReq,
     request: Request,
     pipeline: FactPipeline = Depends(get_fact_pipeline),
@@ -155,7 +158,7 @@ def generate(
 
     audit_event("generate", _client_host(request))
     try:
-        text = pipeline.run(req.text)
+        text = await pipeline.arun(req.text)
     except PipelineNotReadyError as exc:
         logger.warning("Fact pipeline unavailable: %s", exc.reason)
         return _problem(

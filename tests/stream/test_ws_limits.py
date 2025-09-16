@@ -23,6 +23,9 @@ class DummyPipeline:
         self.queries.append(query)
         return self._response if self._response else query
 
+    async def arun(self, query: str) -> str:
+        return self.run(query)
+
 
 def _flush_audit_log() -> list[str]:
     logger = logging.getLogger("factsynth.audit")

@@ -26,6 +26,9 @@ class StubPipeline:
             return value
         return self._responses[-1] if self._responses else ""
 
+    async def arun(self, query: str) -> str:
+        return self.run(query)
+
 
 def collect_chunks(ws) -> tuple[list[dict], dict]:
     messages: list[dict] = []

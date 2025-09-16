@@ -71,6 +71,11 @@ class LocalFixtureRetriever:
         results.sort(key=lambda d: d.score, reverse=True)
         return results[:k]
 
+    async def asearch(self, query: str, k: int = 5) -> list[RetrievedDoc]:
+        """Async wrapper around :meth:`search` for compatibility."""
+
+        return self.search(query, k=k)
+
 
 def create_fixture_retriever() -> Retriever:
     """Return a default retriever instance for entry-point loading."""

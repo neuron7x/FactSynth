@@ -13,6 +13,9 @@ from factsynth_ultimate.api.v1.generate import (
 )
 
 
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+
+
 class StubPipeline:
     """Minimal pipeline stub that records queries and returns a preset result."""
 
@@ -26,6 +29,9 @@ class StubPipeline:
         if self._error is not None:
             raise self._error
         return self._result
+
+    async def arun(self, query: str) -> str:
+        return self.run(query)
 
 
 @pytest.mark.anyio
@@ -74,6 +80,9 @@ class UnavailablePipeline:
     def run(self, query: str) -> str:  # pragma: no cover - trivial
         raise PipelineNotReadyError(self._reason)
 
+    async def arun(self, query: str) -> str:
+        raise PipelineNotReadyError(self._reason)
+
 
 @pytest.mark.anyio
 async def test_generate_reports_pipeline_unavailable(client, base_headers):
@@ -101,6 +110,9 @@ class ShortOutputPipeline:
     def run(self, query: str) -> str:  # pragma: no cover - trivial
         return "too short"
 
+    async def arun(self, query: str) -> str:
+        return self.run(query)
+
 
 @pytest.mark.anyio
 async def test_generate_rejects_short_output(client, base_headers):
@@ -124,6 +136,9 @@ class LowEntropyPipeline:
 
     def run(self, query: str) -> str:  # pragma: no cover - trivial
         return "a" * 32
+
+    async def arun(self, query: str) -> str:
+        return self.run(query)
 
 
 @pytest.mark.anyio

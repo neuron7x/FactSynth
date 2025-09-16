@@ -15,6 +15,9 @@ os.environ.setdefault("RATE_LIMIT_REDIS_URL", "memory://")
 os.environ.setdefault("RATE_LIMIT_PER_KEY", "1000")
 os.environ.setdefault("RATE_LIMIT_PER_IP", "1000")
 os.environ.setdefault("RATE_LIMIT_PER_ORG", "1000")
+os.environ.setdefault("RATES_API", '{"burst": 1000, "sustain": 1.0}')
+os.environ.setdefault("RATES_IP", '{"burst": 1000, "sustain": 1.0}')
+os.environ.setdefault("RATES_ORG", '{"burst": 1000, "sustain": 1.0}')
 
 from factsynth_ultimate.app import create_app
 
