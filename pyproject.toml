@@ -42,6 +42,11 @@ dev = [
     "time-machine==2.19.0",  # time travel for tests
     "mutmut==3.3.1",  # mutation testing
 ]
+science = [
+    "numpy==1.26.4",
+    "jax==0.4.38",
+    "diffrax==0.7.0",
+]
 ops = [
     "prometheus-client==0.22.1",
 ]
