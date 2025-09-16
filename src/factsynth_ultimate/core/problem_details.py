@@ -8,6 +8,8 @@ from typing import Any
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from .tracing import current_trace_id
+
 
 class ProblemDetails(BaseModel):
     """Representation of an RFC 9457 problem response."""
@@ -18,6 +20,7 @@ class ProblemDetails(BaseModel):
     type: str = "about:blank"
     instance: str | None = None
     extras: dict[str, Any] | None = None
+    trace_id: str | None = None
 
     def to_response(self) -> JSONResponse:
         """Return a :class:`JSONResponse` configured for problem+json."""
@@ -26,6 +29,9 @@ class ProblemDetails(BaseModel):
         extras = payload.pop("extras", None)
         if extras:
             payload.update(extras)
+        trace_id = payload.get("trace_id") or current_trace_id()
+        if trace_id:
+            payload["trace_id"] = trace_id
         return JSONResponse(
             payload,
             status_code=self.status,

@@ -31,6 +31,7 @@ from facts import FactPipeline, FactPipelineError
 from factsynth_ultimate.stream import stream_facts
 
 from ..auth.ws import WebSocketAuthError, authenticate_ws
+from ..core import tracing
 from ..core.audit import audit_event
 from ..core.metrics import (
     CITATION_PRECISION,
@@ -249,38 +250,65 @@ async def _sse_stream(
     replay = start_at > 0
     state = getattr(request, "state", None)
     request_id = getattr(state, "request_id", "")
+    tracer = tracing.get_tracer(__name__)
 
     async def is_disconnected() -> bool:
         return await request.is_disconnected()
 
     async def event_stream() -> AsyncGenerator[str, None]:
         sent = 0
-        try:
-            yield _sse_message("start", {"cursor": start_at, "replay": replay})
-            async for chunk in stream_facts(
-                pipeline,
-                req.text,
-                chunk_size=size,
-                start_at=start_at,
-                delay=delay,
-                is_disconnected=is_disconnected,
-            ):
-                sent += 1
-                yield _sse_message(
-                    "chunk",
-                    {"id": chunk.index, "text": chunk.text, "replay": replay},
-                    event_id=str(chunk.index),
+        outcome = "success"
+        with tracer.start_as_current_span("api.stream") as span:
+            if hasattr(span, "set_attribute"):
+                span.set_attribute("app.request_id", request_id)
+                span.set_attribute("stream.chunk_size", size)
+                span.set_attribute("stream.start_cursor", start_at)
+                span.set_attribute("stream.token_delay", delay)
+                span.set_attribute("stream.replay", replay)
+            try:
+                yield _sse_message("start", {"cursor": start_at, "replay": replay})
+                async for chunk in stream_facts(
+                    pipeline,
+                    req.text,
+                    chunk_size=size,
+                    start_at=start_at,
+                    delay=delay,
+                    is_disconnected=is_disconnected,
+                ):
+                    sent += 1
+                    if hasattr(span, "add_event"):
+                        span.add_event(
+                            "stream.chunk",
+                            {
+                                "stream.chunk.index": chunk.index,
+                                "stream.chunk.length": len(chunk.text),
+                            },
+                        )
+                    yield _sse_message(
+                        "chunk",
+                        {"id": chunk.index, "text": chunk.text, "replay": replay},
+                        event_id=str(chunk.index),
+                    )
+                yield _sse_message("end", {"cursor": start_at + sent, "replay": replay})
+            except FactPipelineError as exc:
+                outcome = "error"
+                if hasattr(span, "record_exception"):
+                    span.record_exception(exc)
+                if hasattr(span, "set_attribute"):
+                    span.set_attribute("stream.error.type", exc.__class__.__name__)
+                yield _sse_message("error", {"message": str(exc), "replay": replay})
+            except asyncio.CancelledError:
+                outcome = "cancelled"
+                logger.info(
+                    "SSE stream cancelled after %d chunks", sent, extra={"request_id": request_id}
                 )
-            yield _sse_message("end", {"cursor": start_at + sent, "replay": replay})
-        except FactPipelineError as exc:
-            yield _sse_message("error", {"message": str(exc), "replay": replay})
-        except asyncio.CancelledError:
-            logger.info(
-                "SSE stream cancelled after %d chunks", sent, extra={"request_id": request_id}
-            )
-            raise
-        finally:
-            SSE_TOKENS.inc(sent)
+                raise
+            finally:
+                if hasattr(span, "set_attribute"):
+                    span.set_attribute("stream.chunks_sent", sent)
+                    span.set_attribute("stream.outcome", outcome)
+                    span.set_attribute("stream.end_cursor", start_at + sent)
+                SSE_TOKENS.inc(sent)
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -466,45 +494,68 @@ async def _post_callback(  # noqa: PLR0913
 ) -> None:
     """POST ``data`` to ``url`` using exponential backoff."""
 
+    tracer = tracing.get_tracer(__name__)
     delay = base_delay
     last_err = None
     start = time.monotonic()
     attempt_num = 0
-    async with httpx.AsyncClient(timeout=2.0) as client:
-        for i in range(1, attempts + 1):
-            elapsed = time.monotonic() - start
-            if elapsed >= max_elapsed:
-                break
-            attempt_num = i
-            try:
-                r = await client.post(url, json=data)
-                if HTTPStatus.OK <= r.status_code < HTTPStatus.MULTIPLE_CHOICES:
-                    return
-                last_err = f"HTTP {r.status_code}"
-            except Exception as e:  # noqa: BLE001
-                last_err = str(e)
-            logger.warning(
-                "Callback attempt %d/%d failed: %s",
-                i,
-                attempts,
-                last_err,
-                extra={"request_id": request_id},
-            )
-            if i < attempts:
+    with tracer.start_as_current_span("callback.post") as span:
+        if hasattr(span, "set_attribute"):
+            span.set_attribute("callback.url", url)
+            span.set_attribute("callback.max_attempts", attempts)
+            span.set_attribute("callback.base_delay", base_delay)
+            span.set_attribute("callback.max_delay", max_delay)
+            span.set_attribute("callback.max_elapsed", max_elapsed)
+            span.set_attribute("app.request_id", request_id)
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            for i in range(1, attempts + 1):
                 elapsed = time.monotonic() - start
                 if elapsed >= max_elapsed:
                     break
-                jittered = delay * random.uniform(0.8, 1.2)
-                remaining = max_elapsed - elapsed
-                await _sleep(min(jittered, remaining))
-                delay = min(delay * 2, max_delay)
-    if last_err is not None:
-        logger.error(
-            "Callback failed after %d attempts: %s",
-            attempt_num,
-            last_err,
-            extra={"request_id": request_id},
-        )
+                attempt_num = i
+                if hasattr(span, "add_event"):
+                    span.add_event("callback.attempt", {"callback.attempt": i})
+                try:
+                    r = await client.post(url, json=data)
+                    if HTTPStatus.OK <= r.status_code < HTTPStatus.MULTIPLE_CHOICES:
+                        if hasattr(span, "set_attribute"):
+                            span.set_attribute("callback.success_attempt", i)
+                            span.set_attribute("callback.status", "success")
+                            span.set_attribute("callback.attempts_used", i)
+                        return
+                    last_err = f"HTTP {r.status_code}"
+                    if hasattr(span, "set_attribute"):
+                        span.set_attribute("callback.last_status", r.status_code)
+                except Exception as e:  # noqa: BLE001
+                    last_err = str(e)
+                    if hasattr(span, "record_exception"):
+                        span.record_exception(e)
+                logger.warning(
+                    "Callback attempt %d/%d failed: %s",
+                    i,
+                    attempts,
+                    last_err,
+                    extra={"request_id": request_id},
+                )
+                if i < attempts:
+                    elapsed = time.monotonic() - start
+                    if elapsed >= max_elapsed:
+                        break
+                    jittered = delay * random.uniform(0.8, 1.2)
+                    remaining = max_elapsed - elapsed
+                    await _sleep(min(jittered, remaining))
+                    delay = min(delay * 2, max_delay)
+        if last_err is not None:
+            if hasattr(span, "set_attribute"):
+                span.set_attribute("callback.status", "failed")
+                span.set_attribute("callback.failure_reason", last_err)
+                span.set_attribute("callback.attempts_used", attempt_num)
+            logger.error(
+                "Callback failed after %d attempts: %s",
+                attempt_num,
+                last_err,
+                extra={"request_id": request_id},
+            )
 
 
 async def _sleep(s: float) -> None:

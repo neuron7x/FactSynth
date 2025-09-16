@@ -7,10 +7,12 @@ import math
 from collections import Counter
 from functools import lru_cache
 from http import HTTPStatus
+from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
+from factsynth_ultimate.core import tracing
 from factsynth_ultimate.core.audit import audit_event
 from factsynth_ultimate.core.problem_details import ProblemDetails
 from factsynth_ultimate.schemas.requests import GenerateReq
@@ -145,6 +147,16 @@ def _validate_generated_text(text: str) -> ProblemDetails | None:
     return None
 
 
+def _record_generate_failure(span: Any, status: HTTPStatus, exc: Exception | None = None) -> None:
+    if hasattr(span, "set_attribute"):
+        span.set_attribute("generate.status_code", int(status))
+        span.set_attribute("generate.outcome", "error")
+        if exc is not None:
+            span.set_attribute("generate.error.type", exc.__class__.__name__)
+    if exc is not None and hasattr(span, "record_exception"):
+        span.record_exception(exc)
+
+
 @router.post("/v1/generate")
 def generate(
     req: GenerateReq,
@@ -153,42 +165,74 @@ def generate(
 ) -> JSONResponse | dict[str, dict[str, str]]:
     """Produce fact statements for ``req.text`` using the orchestrated pipeline."""
 
-    audit_event("generate", _client_host(request))
-    try:
-        text = pipeline.run(req.text)
-    except PipelineNotReadyError as exc:
-        logger.warning("Fact pipeline unavailable: %s", exc.reason)
-        return _problem(
-            HTTPStatus.SERVICE_UNAVAILABLE,
-            "Fact generation unavailable",
-            exc.reason,
-        ).to_response()
-    except EmptyQueryError as exc:
-        return _problem(HTTPStatus.BAD_REQUEST, "Invalid query", str(exc)).to_response()
-    except NoFactsFoundError as exc:
-        return _problem(HTTPStatus.NOT_FOUND, "Facts not found", str(exc)).to_response()
-    except SearchError as exc:
-        logger.warning("Fact search failed: %s", exc)
-        return _problem(HTTPStatus.BAD_GATEWAY, "Search failure", str(exc)).to_response()
-    except AggregationError as exc:
-        logger.warning("Fact aggregation failed: %s", exc)
-        return _problem(HTTPStatus.INTERNAL_SERVER_ERROR, "Aggregation failure", str(exc)).to_response()
-    except FactPipelineError as exc:
-        logger.warning("Fact pipeline error: %s", exc)
-        return _problem(HTTPStatus.INTERNAL_SERVER_ERROR, "Fact pipeline failure", str(exc)).to_response()
-    except Exception as exc:  # pragma: no cover - defensive
-        logger.exception("Unexpected fact generation error")
-        return _problem(
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-            "Internal server error",
-            "Failed to generate facts",
-        ).to_response()
+    tracer = tracing.get_tracer(__name__)
+    state = getattr(request, "state", None)
+    request_id = getattr(state, "request_id", "")
+    with tracer.start_as_current_span("api.generate") as span:
+        if hasattr(span, "set_attribute"):
+            span.set_attribute("app.request_id", request_id)
+            span.set_attribute("generate.request.length", len(req.text))
+            span.set_attribute("generate.pipeline", type(pipeline).__name__)
 
-    if problem := _validate_generated_text(text):
-        logger.warning("Rejected pipeline output: %s", problem.detail)
-        return problem.to_response()
+        audit_event("generate", _client_host(request))
+        try:
+            text = pipeline.run(req.text)
+        except PipelineNotReadyError as exc:
+            logger.warning("Fact pipeline unavailable: %s", exc.reason)
+            _record_generate_failure(span, HTTPStatus.SERVICE_UNAVAILABLE, exc)
+            return _problem(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                "Fact generation unavailable",
+                exc.reason,
+            ).to_response()
+        except EmptyQueryError as exc:
+            _record_generate_failure(span, HTTPStatus.BAD_REQUEST, exc)
+            return _problem(HTTPStatus.BAD_REQUEST, "Invalid query", str(exc)).to_response()
+        except NoFactsFoundError as exc:
+            _record_generate_failure(span, HTTPStatus.NOT_FOUND, exc)
+            return _problem(HTTPStatus.NOT_FOUND, "Facts not found", str(exc)).to_response()
+        except SearchError as exc:
+            logger.warning("Fact search failed: %s", exc)
+            _record_generate_failure(span, HTTPStatus.BAD_GATEWAY, exc)
+            return _problem(HTTPStatus.BAD_GATEWAY, "Search failure", str(exc)).to_response()
+        except AggregationError as exc:
+            logger.warning("Fact aggregation failed: %s", exc)
+            _record_generate_failure(span, HTTPStatus.INTERNAL_SERVER_ERROR, exc)
+            return _problem(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "Aggregation failure",
+                str(exc),
+            ).to_response()
+        except FactPipelineError as exc:
+            logger.warning("Fact pipeline error: %s", exc)
+            _record_generate_failure(span, HTTPStatus.INTERNAL_SERVER_ERROR, exc)
+            return _problem(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "Fact pipeline failure",
+                str(exc),
+            ).to_response()
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.exception("Unexpected fact generation error")
+            _record_generate_failure(span, HTTPStatus.INTERNAL_SERVER_ERROR, exc)
+            return _problem(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "Internal server error",
+                "Failed to generate facts",
+            ).to_response()
 
-    return {"output": {"text": text}}
+        if problem := _validate_generated_text(text):
+            logger.warning("Rejected pipeline output: %s", problem.detail)
+            if hasattr(span, "set_attribute"):
+                span.set_attribute("generate.outcome", "rejected")
+                span.set_attribute("generate.status_code", problem.status)
+            return problem.to_response()
+
+        if hasattr(span, "set_attribute"):
+            span.set_attribute("generate.status_code", int(HTTPStatus.OK))
+            span.set_attribute("generate.outcome", "success")
+            span.set_attribute("generate.output.length", len(text))
+
+        return {"output": {"text": text}}
 
 
 __all__ = ["ProblemDetails", "PipelineNotReadyError", "get_fact_pipeline", "generate", "router"]
