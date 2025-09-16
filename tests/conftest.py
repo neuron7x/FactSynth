@@ -6,6 +6,7 @@ import os
 import random
 import string
 
+import fakeredis
 import pytest
 import time_machine
 from httpx import ASGITransport, AsyncClient, MockTransport, Response
@@ -121,4 +122,9 @@ def _stub_external_api(httpx_mock) -> None:
 
 @pytest.fixture(autouse=True)
 def _reset_fake_redis() -> None:
-    pass
+    client = fakeredis.FakeRedis()
+    client.flushall()
+    try:
+        yield
+    finally:
+        client.flushall()
