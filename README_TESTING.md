@@ -6,7 +6,7 @@
 - `.github/workflows/release-on-tag.yml` — реліз при пуші тега: тести, покриття, збірка пакету,
   контейнер, SBOM, реліз.
 - `.github/workflows/codeql.yml` — CodeQL-скан.
-- `.github/dependabot.yml` — авто-оновлення залежностей.
+- `.github/dependabot.yml` — авто-оновлення залежностей і базового контейнера.
 - `pytest.ini`, `.coveragerc` — конфіг тесу та покриття.
 - `tools/coverage_gate.py` — скрипт, що валідуює coverage.xml.
 - `tests/` — адаптивні smoke/CLI/ASGI/конфіг-тести, що не ламають збірку,
