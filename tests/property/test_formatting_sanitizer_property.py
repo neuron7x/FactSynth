@@ -1,12 +1,7 @@
-import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from factsynth_ultimate import formatting
-
-try:
-    from hypothesis import given
-    from hypothesis import strategies as st
-except ModuleNotFoundError:  # pragma: no cover - optional
-    pytest.skip("hypothesis not installed", allow_module_level=True)
 
 
 @given(st.text(min_size=0, max_size=2000))
