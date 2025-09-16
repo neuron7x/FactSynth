@@ -1,11 +1,7 @@
-import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from factsynth_ultimate.core.request_id import RequestIDMiddleware, get_request_id
-
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
 
 def _make_app(header_name: str = "x-request-id") -> FastAPI:
     app = FastAPI()
@@ -16,7 +12,6 @@ def _make_app(header_name: str = "x-request-id") -> FastAPI:
         return {"state": request.state.request_id, "ctx": get_request_id()}
 
     return app
-
 
 def test_generates_request_id_when_missing_header():
     app = _make_app()
@@ -31,7 +26,6 @@ def test_generates_request_id_when_missing_header():
     assert data["ctx"] == rid
     assert get_request_id() is None
 
-
 def test_custom_header_name_preserves_incoming_id():
     header = "x-correlation-id"
     app = _make_app(header)
@@ -43,7 +37,6 @@ def test_custom_header_name_preserves_incoming_id():
     assert response.headers[header] == "abc"
     assert data["state"] == "abc"
     assert data["ctx"] == "abc"
-
 
 def test_get_request_id_resets_between_requests():
     app = _make_app()

@@ -14,8 +14,5 @@ OPENAPI_SPEC = {
 schema = schemathesis.openapi.from_dict(OPENAPI_SPEC)
 schema.validate()
 
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
-
 def test_openapi_schema_has_operations() -> None:
     assert list(schema.get_all_operations())

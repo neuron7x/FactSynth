@@ -1,11 +1,6 @@
-import pytest
 from fastapi.testclient import TestClient
 
 from factsynth_ultimate.app import create_app
-
-
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
 
 def test_api_key_allow_list(monkeypatch):
     monkeypatch.setenv("ALLOWED_API_KEYS", '["a","b"]')

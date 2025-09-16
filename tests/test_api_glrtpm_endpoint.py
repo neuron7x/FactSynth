@@ -1,13 +1,9 @@
 from http import HTTPStatus
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from factsynth_ultimate.api_glrtpm import GLRTPMPipeline, router
-
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
 
 def test_glrtpm_api(monkeypatch):
     app = FastAPI()

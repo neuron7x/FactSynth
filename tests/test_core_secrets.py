@@ -3,10 +3,7 @@ import logging
 
 import pytest
 
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
 from factsynth_ultimate.core import secrets
-
 
 def test_validate_key_prod(monkeypatch):
     monkeypatch.setenv("ENV", "prod")
@@ -15,7 +12,6 @@ def test_validate_key_prod(monkeypatch):
     monkeypatch.setenv("ENV", "dev")
     assert secrets._validate_key("abc") == "abc"
 
-
 def test_read_api_key_file(tmp_path, monkeypatch):
     fp = tmp_path / "key.txt"
     fp.write_text("filekey", encoding="utf-8")
@@ -23,20 +19,17 @@ def test_read_api_key_file(tmp_path, monkeypatch):
     key = secrets.read_api_key("KEY_ENV", "KEY_FILE", None, "unused")
     assert key == "filekey"
 
-
 def test_read_api_key_env(monkeypatch):
     monkeypatch.delenv("KEY_FILE", raising=False)
     monkeypatch.setenv("KEY_ENV", "envkey")
     key = secrets.read_api_key("KEY_ENV", "KEY_FILE", None, "unused")
     assert key == "envkey"
 
-
 def test_read_api_key_default(monkeypatch):
     monkeypatch.delenv("KEY_FILE", raising=False)
     monkeypatch.delenv("KEY_ENV", raising=False)
     key = secrets.read_api_key("KEY_ENV", "KEY_FILE", "def", "unused")
     assert key == "def"
-
 
 def test_read_api_key_vault(monkeypatch):
     class DummyClient:
@@ -63,7 +56,6 @@ def test_read_api_key_vault(monkeypatch):
     monkeypatch.delenv("VAULT_ADDR")
     monkeypatch.delenv("VAULT_TOKEN")
     monkeypatch.delenv("VAULT_PATH")
-
 
 def test_read_api_key_vault_logs_error(monkeypatch, caplog):
     class DummyClient:

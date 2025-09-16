@@ -8,9 +8,6 @@ from hypothesis import strategies as st
 
 API_KEY = os.getenv("API_KEY", "change-me")
 
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
-
 @st.composite
 def header_variations(draw):
     name_flags = draw(st.lists(st.booleans(), min_size=len("x-api-key"), max_size=len("x-api-key")))
@@ -23,7 +20,6 @@ def header_variations(draw):
     )
     return name, value
 
-
 @st.composite
 def wrong_headers(draw):
     alphabet = string.ascii_letters + string.digits + "-"
@@ -31,7 +27,6 @@ def wrong_headers(draw):
     assume(name.casefold() != "x-api-key")
     value = draw(st.text(alphabet=alphabet, min_size=1, max_size=20))
     return name, value
-
 
 @pytest.mark.anyio
 @given(header_variations())
@@ -43,7 +38,6 @@ async def test_api_key_case_insensitive(client, header_variations):
     )
     assert r.status_code == HTTPStatus.OK
 
-
 @st.composite
 def invalid_keys(draw):
     alphabet = string.ascii_letters + string.digits
@@ -52,7 +46,6 @@ def invalid_keys(draw):
     )
     assume(key.casefold() != API_KEY.casefold())
     return key
-
 
 @pytest.mark.anyio
 @given(invalid_keys())
@@ -63,7 +56,6 @@ async def test_invalid_key_rejected(client, invalid_keys):
         "/v1/generate", headers={"x-api-key": key}, json={"text": "hi"}
     )
     assert r.status_code == HTTPStatus.FORBIDDEN
-
 
 @pytest.mark.anyio
 @given(wrong_headers())

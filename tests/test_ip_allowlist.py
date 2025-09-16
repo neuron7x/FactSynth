@@ -4,16 +4,12 @@ import os
 from http import HTTPStatus
 from unittest.mock import patch
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from factsynth_ultimate.app import create_app
 from factsynth_ultimate.core import settings as settings_module
 from factsynth_ultimate.core.ip_allowlist import IPAllowlistMiddleware
-
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
 
 def test_forbidden_ip_returns_403():
     env = {"API_KEY": "secret", "IP_ALLOWLIST": '["127.0.0.2/32"]'}
@@ -31,7 +27,6 @@ def test_forbidden_ip_returns_403():
                 "status": HTTPStatus.FORBIDDEN,
                 "detail": "IP testclient not allowed",
             }
-
 
 def test_empty_allowlist_denied_by_default(caplog):
     app = FastAPI()
@@ -53,7 +48,6 @@ def test_empty_allowlist_denied_by_default(caplog):
         for rec in caplog.records
     )
 
-
 def test_unparseable_ip_logs_warning(caplog):
     app = FastAPI()
     app.add_middleware(IPAllowlistMiddleware, cidrs=["127.0.0.1/32"])
@@ -73,7 +67,6 @@ def test_unparseable_ip_logs_warning(caplog):
         for rec in caplog.records
     )
 
-
 def test_invalid_ip_logs_warning_and_returns_403(caplog):
     app = FastAPI()
     app.add_middleware(IPAllowlistMiddleware, cidrs=["127.0.0.1/32"])
@@ -91,7 +84,6 @@ def test_invalid_ip_logs_warning_and_returns_403(caplog):
         rec.levelno == logging.WARNING and "invalid client IP testclient" in rec.getMessage()
         for rec in caplog.records
     )
-
 
 def test_missing_api_key_returns_401():
     env = {"API_KEY": "secret", "IP_ALLOWLIST": "[]"}

@@ -3,11 +3,9 @@ from http import HTTPStatus
 
 import pytest
 
-
 @pytest.mark.anyio
 async def test_feedback_metrics(client, base_headers, httpx_mock):
     httpx_mock.reset()
-    httpx_mock.assert_all_responses_were_requested = False
     payload = {"explanation_satisfaction": 0.7, "citation_precision": 0.8}
     r = await client.post("/v1/feedback", json=payload, headers=base_headers)
     assert r.status_code == HTTPStatus.OK

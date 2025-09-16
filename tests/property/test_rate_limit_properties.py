@@ -4,10 +4,6 @@ from hypothesis import strategies as st
 
 from factsynth_ultimate.core import rate_limit
 
-
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
-
 class FakeRedis:
     """Minimal async Redis stub with TTL support."""
 
@@ -33,7 +29,6 @@ class FakeRedis:
         if exp is not None and self._now() >= exp:
             self._data.pop(key, None)
             self._expiry.pop(key, None)
-
 
 @pytest.mark.anyio
 @settings(

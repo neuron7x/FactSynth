@@ -6,11 +6,8 @@ from httpx import ASGITransport, AsyncClient
 
 from factsynth_ultimate.core.body_limit import BodySizeLimitMiddleware
 
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
 MAX_BYTES = 1024
 CHUNK = b"x" * 512
-
 
 def create_app() -> FastAPI:
     app = FastAPI()
@@ -22,7 +19,6 @@ def create_app() -> FastAPI:
         return {"received": len(data)}
 
     return app
-
 
 @pytest.mark.anyio
 async def test_streaming_request_exceeds_limit() -> None:
@@ -45,7 +41,6 @@ async def test_streaming_request_exceeds_limit() -> None:
     assert resp.status_code == HTTPStatus.REQUEST_ENTITY_TOO_LARGE
     assert calls < total_chunks  # server stopped reading early
     assert sent <= MAX_BYTES + len(CHUNK)
-
 
 @pytest.mark.anyio
 async def test_streaming_request_at_limit_ok() -> None:

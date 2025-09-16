@@ -12,11 +12,9 @@ EXPECTED_METRICS = [
     "factsynth_citation_precision_bucket",
 ]
 
-
 @pytest.mark.anyio
 async def test_prometheus_metrics_exposed(client, httpx_mock):
     httpx_mock.reset()
-    httpx_mock.assert_all_responses_were_requested = False
     r = await client.get("/metrics")
     assert r.status_code == HTTPStatus.OK
     text = r.text

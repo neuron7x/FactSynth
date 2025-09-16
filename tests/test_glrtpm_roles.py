@@ -1,4 +1,3 @@
-import pytest
 
 from factsynth_ultimate.glrtpm.roles import (
     Aesthete,
@@ -7,9 +6,6 @@ from factsynth_ultimate.glrtpm.roles import (
     Observer,
     Rationalist,
 )
-
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
 
 def test_roles_respond_include_name_and_thesis():
     thesis = "test case"

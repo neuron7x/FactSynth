@@ -11,10 +11,6 @@ from factsynth_ultimate.services.retrievers.base import RetrievedDoc
 SCORING_RESULT = 0.5
 DIVERSITY_RESULT = 0.1
 
-
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
-
 def test_evaluate_claim_composes_and_closes():
     class DummyRetriever:
         def __init__(self):
@@ -46,7 +42,6 @@ def test_evaluate_claim_composes_and_closes():
     assert result["evidence"][0]["source_id"]
     assert retriever.closed
 
-
 def test_evaluate_claim_handles_retriever_exception_and_closes():
     class DummyRetriever:
         def __init__(self):
@@ -64,7 +59,6 @@ def test_evaluate_claim_handles_retriever_exception_and_closes():
 
     assert result["evidence"] == []
     assert retriever.closed
-
 
 @pytest.mark.asyncio
 async def test_evaluate_claim_closes_async_retriever():
@@ -86,7 +80,6 @@ async def test_evaluate_claim_closes_async_retriever():
     assert result["evidence"] == []
     assert retriever.closed
 
-
 @pytest.mark.asyncio
 async def test_evaluate_claim_handles_async_retriever_exception_and_closes():
     class DummyRetriever:
@@ -107,7 +100,6 @@ async def test_evaluate_claim_handles_async_retriever_exception_and_closes():
     assert result["evidence"] == []
     assert retriever.closed
 
-
 def test_evaluate_claim_logs_retriever_exception(caplog):
     class DummyRetriever:
         def search(self, _):
@@ -122,7 +114,6 @@ def test_evaluate_claim_logs_retriever_exception(caplog):
     record = next(r for r in caplog.records if r.message == "retriever_search_error")
     assert record.claim == "beta"
     assert "boom" in record.error
-
 
 def test_evaluate_claim_loads_retriever_via_entrypoint(monkeypatch):
     from importlib import metadata
@@ -143,7 +134,6 @@ def test_evaluate_claim_loads_retriever_via_entrypoint(monkeypatch):
     result = evaluate_claim("alpha", retriever="fixture")
     assert result["evidence"]
     assert result["evidence"][0]["source"] == "default"
-
 
 def test_verify_exposes_models():
     assert issubclass(verify_mod.FactSynthLock, BaseModel)

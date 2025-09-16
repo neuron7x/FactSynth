@@ -5,8 +5,6 @@ from factsynth_ultimate.services.retrievers.local import (
     LocalFixtureRetriever,
 )
 
-
-@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 def test_ukrainian_query_matches_english_fixture():
     fixtures = [
         Fixture(id="en1", text="Microservices allow independent deployment."),
@@ -20,8 +18,6 @@ def test_ukrainian_query_matches_english_fixture():
     assert top_doc.id == "en1"
     assert top_doc.score > 0
 
-
-@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 @pytest.mark.parametrize(
     "query, expected_id, expected_translation",
     [

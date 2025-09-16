@@ -5,9 +5,6 @@ import pytest
 from factsynth_ultimate.services.evaluator import evaluate_claim
 from factsynth_ultimate.services.retrievers.base import RetrievedDoc
 
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
-
 def test_evaluate_claim_closes_sync_retriever():
     class DummyRetriever:
         def __init__(self):
@@ -24,7 +21,6 @@ def test_evaluate_claim_closes_sync_retriever():
     evaluate_claim("alpha", retriever=retriever)
 
     assert retriever.closed
-
 
 @pytest.mark.asyncio
 async def test_evaluate_claim_closes_async_retriever():
@@ -45,7 +41,6 @@ async def test_evaluate_claim_closes_async_retriever():
 
     assert retriever.closed
 
-
 def test_evaluate_claim_rejects_missing_search():
     class BadRetriever:
         def close(self):  # pragma: no cover - no-op
@@ -53,7 +48,6 @@ def test_evaluate_claim_rejects_missing_search():
 
     with pytest.raises(TypeError):
         evaluate_claim("gamma", retriever=BadRetriever())
-
 
 def test_evaluate_claim_rejects_noncallable_search():
     class BadRetriever:

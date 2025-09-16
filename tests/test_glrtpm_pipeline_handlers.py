@@ -11,9 +11,6 @@ from factsynth_ultimate.glrtpm.pipeline import (
     RationalistAestheteHandler,
 )
 
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
-
 def test_step_handlers_mapping_matches_enum():
     """Each enum member should map to its dedicated handler class."""
 
@@ -28,7 +25,6 @@ def test_step_handlers_mapping_matches_enum():
     for step, cls in expected.items():
         assert isinstance(STEP_HANDLERS[step], cls)
 
-
 def test_run_raises_for_unsupported_step(monkeypatch):
     """Pipeline should raise a clear error when handler is missing."""
 
@@ -37,7 +33,6 @@ def test_run_raises_for_unsupported_step(monkeypatch):
 
     with pytest.raises(ValueError, match="Unsupported GLRTPM step: R"):
         pipeline.run("thesis")
-
 
 def test_config_rejects_unknown_step():
     """Configuration should reject steps not defined in ``GLRTPMStep``."""

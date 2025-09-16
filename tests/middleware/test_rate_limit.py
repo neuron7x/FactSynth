@@ -7,9 +7,6 @@ from factsynth_ultimate.core import rate_limit
 from factsynth_ultimate.core.metrics import RATE_LIMIT_BLOCKS
 from factsynth_ultimate.core.rate_limit import RateLimitMiddleware, RateQuota
 
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
-
 class Clock:
     def __init__(self) -> None:
         self._value = 0.0
@@ -19,7 +16,6 @@ class Clock:
 
     def advance(self, delta: float) -> None:
         self._value += delta
-
 
 class FakeRedis:
     def __init__(self, now) -> None:
@@ -50,10 +46,8 @@ class FakeRedis:
             self._maybe_expire(key)
         return set(self._data.keys())
 
-
 async def _empty_receive():  # pragma: no cover - ASGI plumbing
     return {"type": "http.request", "body": b"", "more_body": False}
-
 
 def make_request(headers: dict[str, str], client_ip: str = "1.2.3.4", path: str = "/v1/test") -> Request:
     scope = {
@@ -70,13 +64,11 @@ def make_request(headers: dict[str, str], client_ip: str = "1.2.3.4", path: str 
     }
     return Request(scope, _empty_receive)
 
-
 @pytest.fixture(autouse=True)
 def _reset_metrics():
     RATE_LIMIT_BLOCKS._metrics.clear()  # type: ignore[attr-defined]
     yield
     RATE_LIMIT_BLOCKS._metrics.clear()  # type: ignore[attr-defined]
-
 
 @pytest.fixture
 def clock(monkeypatch) -> Clock:
@@ -84,14 +76,12 @@ def clock(monkeypatch) -> Clock:
     monkeypatch.setattr(rate_limit.time, "time", clk.time)
     return clk
 
-
 def _middleware(redis: FakeRedis, **kwargs) -> RateLimitMiddleware:
     return RateLimitMiddleware(  # type: ignore[arg-type]
         lambda scope, receive, send: None,
         redis=redis,
         **kwargs,
     )
-
 
 @pytest.mark.anyio
 async def test_all_limits_allow(clock: Clock) -> None:
@@ -112,7 +102,6 @@ async def test_all_limits_allow(clock: Clock) -> None:
     assert response.headers["X-RateLimit-Limit"] == "6"
     assert response.headers["X-RateLimit-Remaining"] == "3"
     assert redis.keys() == {"api:key", "ip:1.2.3.4", "org:org"}
-
 
 @pytest.mark.anyio
 async def test_block_when_api_exhausted(clock: Clock) -> None:
@@ -136,7 +125,6 @@ async def test_block_when_api_exhausted(clock: Clock) -> None:
     assert response.headers["X-RateLimit-Remaining"] == "2"
     assert RATE_LIMIT_BLOCKS.labels("api")._value.get() == 1  # type: ignore[attr-defined]
 
-
 @pytest.mark.anyio
 async def test_block_when_ip_exhausted(clock: Clock) -> None:
     redis = FakeRedis(clock.time)
@@ -158,7 +146,6 @@ async def test_block_when_ip_exhausted(clock: Clock) -> None:
     assert response.headers["X-RateLimit-Limit"] == "7"
     assert response.headers["X-RateLimit-Remaining"] == "4"
     assert RATE_LIMIT_BLOCKS.labels("ip")._value.get() == 1  # type: ignore[attr-defined]
-
 
 @pytest.mark.anyio
 async def test_block_when_org_exhausted(clock: Clock) -> None:
@@ -182,7 +169,6 @@ async def test_block_when_org_exhausted(clock: Clock) -> None:
     assert response.headers["X-RateLimit-Remaining"] == "4"
     assert RATE_LIMIT_BLOCKS.labels("org")._value.get() == 1  # type: ignore[attr-defined]
 
-
 @pytest.mark.anyio
 async def test_retry_after_uses_longest_wait(clock: Clock) -> None:
     redis = FakeRedis(clock.time)
@@ -204,7 +190,6 @@ async def test_retry_after_uses_longest_wait(clock: Clock) -> None:
     assert RATE_LIMIT_BLOCKS.labels("api")._value.get() == 1  # type: ignore[attr-defined]
     assert RATE_LIMIT_BLOCKS.labels("ip")._value.get() == 1  # type: ignore[attr-defined]
     assert RATE_LIMIT_BLOCKS.labels("org")._value.get() == 1  # type: ignore[attr-defined]
-
 
 @pytest.mark.anyio
 async def test_block_when_all_limits_exhausted(clock: Clock) -> None:

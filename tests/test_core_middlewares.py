@@ -2,11 +2,9 @@ from http import HTTPStatus
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-import pytest
 
 from factsynth_ultimate.core.body_limit import BodySizeLimitMiddleware
 from factsynth_ultimate.core.security_headers import SecurityHeadersMiddleware
-
 
 def _make_app():
     app = FastAPI()
@@ -23,7 +21,6 @@ def _make_app():
 
     return app
 
-
 def test_body_size_limit_triggers_413():
     app = _make_app()
     client = TestClient(app)
@@ -33,7 +30,6 @@ def test_body_size_limit_triggers_413():
     body = r.json()
     assert body["status"] == HTTPStatus.REQUEST_ENTITY_TOO_LARGE
     assert "exceeds limit" in body["detail"]
-
 
 def test_security_headers_added():
     app = _make_app()
@@ -46,8 +42,6 @@ def test_security_headers_added():
     assert headers["Content-Security-Policy"].startswith("default-src")
     assert headers["Strict-Transport-Security"].startswith("max-age")
 
-
-@pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 def test_security_headers_without_hsts():
     app = FastAPI()
     app.add_middleware(SecurityHeadersMiddleware, hsts=False)

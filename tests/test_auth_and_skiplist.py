@@ -4,14 +4,10 @@ from http import HTTPStatus
 
 import pytest
 
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
-
 @pytest.mark.anyio
 async def test_generate_requires_api_key(client):
     r = await client.post("/v1/generate", json={"text": "hello"})
     assert r.status_code in (401, 403)
-
 
 @pytest.mark.anyio
 async def test_metrics_and_health_are_public(client):

@@ -10,9 +10,6 @@ from factsynth_ultimate.api import routers
 from factsynth_ultimate.api.v1 import generate
 from factsynth_ultimate.app import create_app
 
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
-
 class StubPipeline:
     def __init__(self, output: str, *, error: Exception | None = None) -> None:
         self._output = output
@@ -26,7 +23,6 @@ class StubPipeline:
         if self._error is not None:
             raise self._error
         return self._output
-
 
 def parse_sse(body: bytes) -> list[dict[str, object]]:
     events: list[dict[str, object]] = []
@@ -47,7 +43,6 @@ def parse_sse(body: bytes) -> list[dict[str, object]]:
         data: object | None = json.loads(data_payload) if data_payload else None
         events.append({"event": event_type, "id": event_id, "data": data})
     return events
-
 
 @pytest.mark.anyio
 async def test_sse_stream_chunks_and_resume(base_headers):
@@ -104,7 +99,6 @@ async def test_sse_stream_chunks_and_resume(base_headers):
 
     assert pipeline.calls == 2
 
-
 @pytest.mark.anyio
 async def test_sse_rate_limiter_invoked(base_headers, monkeypatch):
     pipeline = StubPipeline("one two three four five")
@@ -135,7 +129,6 @@ async def test_sse_rate_limiter_invoked(base_headers, monkeypatch):
     chunk_events = [evt for evt in events if evt["event"] == "chunk"]
     assert len(calls) == max(len(chunk_events) - 1, 0)
     assert all(call == pytest.approx(0.1) for call in calls)
-
 
 @pytest.mark.anyio
 async def test_sse_pipeline_error_event(base_headers, monkeypatch):

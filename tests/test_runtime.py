@@ -5,9 +5,6 @@ from pydantic import ValidationError
 
 from factsynth_ultimate.services import runtime
 
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
-
 def test_text_stats_empty():
     assert runtime._text_stats("") == {
         "len": 0,
@@ -17,7 +14,6 @@ def test_text_stats_empty():
         "whitespace_ratio": 0.0,
         "entropy": 0.0,
     }
-
 
 def test_text_stats_mixed():
     text = "abc123"
@@ -31,7 +27,6 @@ def test_text_stats_mixed():
     assert s["whitespace_ratio"] == 0.0
     assert s["entropy"] == pytest.approx(entropy)
 
-
 def test_text_stats_non_ascii():
     text = "你好123"
     s = runtime._text_stats(text)
@@ -40,17 +35,14 @@ def test_text_stats_non_ascii():
     assert s["alpha_ratio"] == pytest.approx(2 / n)
     assert s["digit_ratio"] == pytest.approx(3 / n)
 
-
 def test_reflect_intent_trimming_and_collapse():
     assert runtime.reflect_intent("  Hello   world \n", 7) == "Hello w"
-
 
 def test_coverage_scenarios():
     text = "alpha beta gamma"
     assert runtime._coverage(text, []) == 0.0
     assert runtime._coverage(text, ["alpha", "delta", "gamma"]) == pytest.approx(2 / 3)
     assert runtime._coverage(text, ["alpha", "beta", "gamma"]) == 1.0
-
 
 def test_score_payload_varied():
     payload = {"text": "alpha beta 123", "targets": ["alpha", "gamma"]}
@@ -62,14 +54,12 @@ def test_score_payload_varied():
     expected = round(0.4 * cov + 0.3 * length_sat + 0.2 * alpha + 0.1 * ent, 4)
     assert runtime.score_payload(payload) == expected
 
-
 def test_tokenize_preview_truncation_and_non_ascii():
     text = "你好 世界 alpha beta"  # four tokens
     max_tokens = 3
     toks = runtime.tokenize_preview(text, max_tokens=max_tokens)
     assert toks == ["你好", "世界", "alpha"]
     assert len(toks) == max_tokens
-
 
 def test_score_payload_malformed_payload():
     with pytest.raises(ValidationError):

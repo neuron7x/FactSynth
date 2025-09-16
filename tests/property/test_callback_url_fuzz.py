@@ -13,17 +13,13 @@ from factsynth_ultimate.api.routers import (
     validate_callback_url,
 )
 
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
 ALLOWED_HOSTS = ["example.com", "домен.укр", "::1"]
-
 
 def _build_url(scheme: str, host: str, port: int, path: str) -> str:
     host_part = host
     if ":" in host and not host.startswith("["):
         host_part = f"[{host}]"
     return f"{scheme}://{host_part}:{port}/{path}"
-
 
 @given(
     scheme=st.sampled_from(["http", "https"]),
@@ -41,7 +37,6 @@ def test_validate_callback_url_allows_allowed_hosts(
         allowed = get_allowed_hosts()
         problem = validate_callback_url(url, allowed)
         assert problem is None
-
 
 @given(
     scheme=st.sampled_from(["http", "https"]),
@@ -65,7 +60,6 @@ def test_validate_callback_url_rejects_disallowed_host(
         assert problem.status == HTTPStatus.BAD_REQUEST
         assert problem.extras and problem.extras.get("reason") == "host_not_allowed"
 
-
 @given(
     scheme=st.text(alphabet=st.characters(min_codepoint=97, max_codepoint=122), min_size=1, max_size=10).filter(
         lambda s: s not in {"http", "https"}
@@ -86,7 +80,6 @@ def test_validate_callback_url_rejects_scheme(
         assert problem is not None
         assert problem.status == HTTPStatus.BAD_REQUEST
         assert problem.extras and problem.extras.get("reason") == "scheme_not_allowed"
-
 
 @pytest.mark.parametrize(
     "netloc",

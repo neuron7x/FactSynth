@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 
 from facts import FactPipelineError
@@ -6,9 +5,6 @@ from facts import FactPipelineError
 from factsynth_ultimate.api import routers
 from factsynth_ultimate.api.v1 import generate
 from factsynth_ultimate.app import create_app
-
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
 
 class StubPipeline:
     def __init__(self, responses: list[str | Exception] | None = None) -> None:
@@ -26,7 +22,6 @@ class StubPipeline:
             return value
         return self._responses[-1] if self._responses else ""
 
-
 def collect_chunks(ws) -> tuple[list[dict], dict]:
     messages: list[dict] = []
     while True:
@@ -37,7 +32,6 @@ def collect_chunks(ws) -> tuple[list[dict], dict]:
     end_event = messages[-1]
     chunk_messages = [msg for msg in messages if msg.get("event") == "chunk"]
     return chunk_messages, end_event
-
 
 def test_ws_stream_chunks():
     pipeline = StubPipeline(["alpha beta gamma delta epsilon"])
@@ -56,7 +50,6 @@ def test_ws_stream_chunks():
     assert len(chunk_texts) >= 3
     assert end == {"event": "end", "cursor": len(chunk_texts), "replay": False}
     assert pipeline.calls == 1
-
 
 def test_ws_stream_resume():
     query = "alpha beta gamma delta epsilon"
@@ -92,7 +85,6 @@ def test_ws_stream_resume():
         "replay": True,
     }
     assert pipeline.calls == 2
-
 
 def test_ws_stream_error_recovery():
     pipeline = StubPipeline(
