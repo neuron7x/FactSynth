@@ -62,17 +62,12 @@ jobs:
           pip install pre-commit
           pre-commit run --all-files --show-diff-on-failure
 
-      - name: Check lockfile
-        if: hashFiles('requirements.lock','pyproject.toml') != ''
+      - name: Verify dependency artifacts
+        if: hashFiles('pyproject.toml','requirements.lock','requirements-dev.txt') != ''
         run: |
-          pip-compile pyproject.toml --allow-unsafe --extra=dev --extra=isr --extra=numpy --generate-hashes --output-file=requirements.lock
-          git diff --exit-code requirements.lock
-
-      - name: Check dev requirements
-        if: hashFiles('pyproject.toml','requirements-dev.txt') != ''
-        run: |
+          pre-commit run pip-compile --files pyproject.toml requirements.lock
           scripts/update_dev_requirements.sh
-          git diff --exit-code requirements-dev.txt
+          git diff --exit-code
 
       - name: Lint JS
         if: hashFiles('package.json') != ''
