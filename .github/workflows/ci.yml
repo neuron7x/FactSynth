@@ -153,7 +153,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: coverage-${{ matrix.python-version }}
-          path: coverage.xml
+          path: |
+            coverage.xml
+            htmlcov
           if-no-files-found: warn
 
       - name: Integration tests (Redis)
@@ -162,18 +164,18 @@ jobs:
           RUN_REDIS_INTEGRATION_TESTS: "1"
           TEST_REDIS_URL: redis://localhost:6379/0
         run: |
-          pytest -m integration tests/integration
+          pytest --no-cov -m integration tests/integration
 
       - name: Property tests
         if: hashFiles('tests/property/**','tests/test_tokenization.py','pyproject.toml','requirements.txt') != ''
         run: |
-          pytest tests/property tests/test_tokenization.py
+          pytest --no-cov tests/property tests/test_tokenization.py
 
       - name: Fairness tests
         if: hashFiles('fairness_tests/**','pyproject.toml','requirements.txt') != ''
         run: |
           pip install pytest
-          pytest -q fairness_tests
+          pytest --no-cov fairness_tests
 
       - name: Build docs (MkDocs)
         if: hashFiles('mkdocs.yml') != ''
@@ -212,7 +214,7 @@ jobs:
           pip install pytest
 
       - name: Run science tests
-        run: pytest tests/test_isr.py
+        run: pytest --no-cov tests/test_isr.py
 
   container-scan:
     runs-on: ubuntu-latest

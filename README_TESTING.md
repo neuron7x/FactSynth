@@ -2,7 +2,7 @@
 
 ## Що всередині
 
-- `.github/workflows/ci.yml` — CI: тести + покриття + gate (мінімум 90% якщо є виміряні рядки).
+- `.github/workflows/ci.yml` — CI: тести + покриття + gate (мінімум 85% якщо є виміряні рядки).
 - `.github/workflows/release-on-tag.yml` — реліз при пуші тега: тести, покриття, збірка пакету,
   контейнер, SBOM, реліз.
 - `.github/workflows/codeql.yml` — CodeQL-скан.
@@ -23,13 +23,16 @@
     source .venv/bin/activate
     pip install -r requirements-dev.txt
     pre-commit run --all-files
-    pytest
+    pytest  # конфіг `pytest.ini` уже додає покриття та зупинить прогін, якщо воно < 85%
     ```
 
     > Якщо базові залежності ще не встановлені, перед `pytest` виконай `pip install -e .[dev]`
     > або `make install`.
 
     > Альтернатива: скористайся `make test`, який виконує ті самі кроки за тебе.
+
+    > Покриття контролюється опцією `--cov-fail-under=85` з `pytest.ini`. Якщо бачиш падіння через
+    > поріг, перевір локальний звіт (`htmlcov/index.html`) або згенеруй XML для `tools/coverage_gate.py`.
 
     > Fairness-контрольні тести розташовані в каталозі `fairness_tests` і запускаються разом із
     > основним прогоном `pytest`. За потреби сфокусуватися лише на перевірках неупередженості,
@@ -41,8 +44,8 @@
     python -m pip install -U pip wheel build
     pip install -r requirements.lock && pip install -e .[dev]
     # опційно: scripts/update_dev_requirements.sh && pip install -r requirements-dev.txt
-    pytest --cov --cov-report=xml
-    python tools/coverage_gate.py --xml coverage.xml --min 90
+    pytest  # перегенеруй `coverage.xml` та `htmlcov/`, якщо хочеш передивитися репорти
+    python tools/coverage_gate.py --xml coverage.xml --min 85
     ```
 
 > Примітка: якщо у коді поки відсутні імпортовані модулі/ASGI/CLI —

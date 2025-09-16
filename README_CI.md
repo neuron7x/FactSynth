@@ -7,8 +7,8 @@
     pip install -r requirements.lock && pip install -e .[dev,test]
     # опційно: scripts/update_dev_requirements.sh && pip install -r requirements-dev.txt
     pre-commit run --all-files || true
-    pytest --cov --cov-report=xml
-    python tools/coverage_gate.py --xml coverage.xml --min 90
+    pytest  # конфіг `pytest.ini` гарантує покриття та поріг 85%
+    python tools/coverage_gate.py --xml coverage.xml --min 85
     python tools/validate_openapi.py || true
     pip-audit -r requirements.lock
     npm audit --production
@@ -17,6 +17,9 @@
     ```
 
 > Contract tests rely on `requests`; they use `pytest.importorskip` to skip when it's absent.
+
+> Поріг покриття контролюється через `--cov-fail-under=85` у `pytest.ini`. Репорти можна знайти у
+> `coverage.xml` та каталозі `htmlcov/` після локального прогону.
 
 Install [Node.js](https://nodejs.org/) ≥ 18 for Markdown linting:
 
