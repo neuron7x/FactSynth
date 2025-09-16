@@ -12,7 +12,7 @@ from collections import deque
 from collections.abc import AsyncGenerator
 from functools import lru_cache
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Mapping
 
 import httpx
 from fastapi import (
@@ -457,7 +457,7 @@ async def ws_stream(
 
 async def _post_callback(  # noqa: PLR0913
     url: str,
-    data: dict,
+    data: Mapping[str, Any],
     attempts: int = 3,
     base_delay: float = 0.2,
     max_delay: float = 5.0,

@@ -10,7 +10,7 @@ repos:
     hooks:
       - id: mypy
         args: ["--warn-unused-ignores", "--strict"]
-        files: ^src/factsynth_ultimate/formatting.py$
+        files: ^src/factsynth_ultimate/
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:
