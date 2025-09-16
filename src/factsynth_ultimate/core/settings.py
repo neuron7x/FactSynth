@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings.sources import NoDecode
 
 from factsynth_ultimate.config import ConfigError, load_config
 
@@ -45,7 +46,7 @@ class Settings(BaseSettings):
     skip_auth_paths: list[str] = Field(
         default_factory=lambda: ["/v1/healthz", "/metrics"], env="SKIP_AUTH_PATHS"
     )
-    callback_url_allowed_hosts: list[str] = Field(
+    callback_url_allowed_hosts: Annotated[list[str], NoDecode] = Field(
         default_factory=_default_callback_allowed_hosts,
         env="CALLBACK_URL_ALLOWED_HOSTS",
     )
