@@ -10,6 +10,7 @@ from uuid import uuid4
 
 import redis
 
+from ..store import StoreFactory
 from .settings import load_settings
 
 
@@ -47,6 +48,10 @@ class MemorySourceStore:
         self._db: dict[str, SourceMetadata] = {}
         self.ttl = ttl
         self.min_trust = min_trust
+
+    def close(self) -> None:  # pragma: no cover - nothing to release
+        """Interface compatibility method."""
+        return None
 
     def ingest_source(
         self,
@@ -106,6 +111,13 @@ class RedisSourceStore:
         self.redis = redis_client
         self.ttl = ttl
         self.min_trust = min_trust
+
+    def close(self) -> None:
+        """Close the underlying Redis client if supported."""
+
+        close = getattr(self.redis, "close", None)
+        if callable(close):  # pragma: no branch - simple guard
+            close()
 
     def ingest_source(
         self,
@@ -172,7 +184,31 @@ def _build_store() -> SourceStore:
     return MemorySourceStore(ttl=settings.source_store_ttl_seconds)
 
 
-_STORE: SourceStore = _build_store()
+_FACTORY: StoreFactory[SourceStore] = StoreFactory("source", _build_store)
+
+
+def get_store() -> SourceStore:
+    """Return the active source store backend."""
+
+    return _FACTORY.get()
+
+
+def connect_store() -> SourceStore:
+    """Ensure the source store backend is initialized."""
+
+    return _FACTORY.connect()
+
+
+def reconnect_store() -> SourceStore:
+    """Rebuild the store backend, closing any existing connections."""
+
+    return _FACTORY.reconnect()
+
+
+def close_store() -> None:
+    """Close the active store backend and release resources."""
+
+    _FACTORY.close()
 
 
 def ingest_source(
@@ -183,22 +219,28 @@ def ingest_source(
 ) -> str:
     """Generate a unique ``source_id`` and persist metadata."""
 
-    return _STORE.ingest_source(url, content, trust, expires_at)
+    store = get_store()
+    return store.ingest_source(url, content, trust, expires_at)
 
 
 def get_metadata(source_id: str) -> SourceMetadata | None:
     """Return stored metadata for ``source_id`` if present."""
 
-    return _STORE.get_metadata(source_id)
+    store = get_store()
+    return store.get_metadata(source_id)
 
 
 def cleanup_expired_entries() -> None:
     """Remove expired entries for in-memory backend."""
 
-    _STORE.cleanup()
+    store = get_store()
+    store.cleanup()
 
 
 __all__ = [
+    "close_store",
+    "connect_store",
+    "get_store",
     "MemorySourceStore",
     "RedisSourceStore",
     "SourceMetadata",
