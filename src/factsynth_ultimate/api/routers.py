@@ -11,19 +11,17 @@ from collections.abc import AsyncGenerator
 from functools import lru_cache
 from http import HTTPStatus
 from typing import Any
-from urllib.parse import urlparse
 
 import httpx
 from fastapi import (
     APIRouter,
     BackgroundTasks,
     Depends,
-    HTTPException,
     Request,
     WebSocket,
     WebSocketDisconnect,
 )
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.websockets import WebSocketState
 
 from factsynth_ultimate import VERSION
@@ -37,6 +35,7 @@ from ..core.metrics import (
     SSE_TOKENS,
 )
 from ..core.settings import load_settings
+from ..validators.callback import validate_callback_url
 from ..schemas.requests import FeedbackReq, IntentReq, ScoreBatchReq, ScoreReq
 from ..services.runtime import reflect_intent, score_payload
 from .v1 import generate_router
@@ -44,7 +43,6 @@ from .v1.generate import get_fact_pipeline
 
 logger = logging.getLogger(__name__)
 
-ALLOWED_CALLBACK_SCHEMES = {"http", "https"}
 DEFAULT_CHUNK_SIZE = 160
 
 
@@ -73,59 +71,22 @@ def _client_host(request: Request) -> str:
 
 
 @lru_cache(maxsize=1)
-def get_allowed_hosts() -> set[str]:
-    """Return the set of allowed callback hosts."""
+def get_allowed_hosts() -> tuple[str, ...]:
+    """Return the tuple of allowed callback hosts."""
+
     hosts = load_settings().callback_url_allowed_hosts
-    return set(filter(None, hosts.split(",")))
+    unique: dict[str, None] = {}
+    for host in hosts:
+        if not host:
+            continue
+        normalized = host.lower()
+        unique.setdefault(normalized, None)
+    return tuple(unique.keys())
 
 
 def reload_allowed_hosts() -> None:
     """Clear the allowed hosts cache to reload settings."""
     get_allowed_hosts.cache_clear()
-
-
-def validate_callback_url(url: str) -> None:
-    """Validate that a callback URL uses an allowed scheme and host.
-
-    Args:
-        url: URL provided by the client.
-
-    Raises:
-        HTTPException: If the URL uses a disallowed scheme or host or the
-            allowlist is empty.
-    """
-    allowed_hosts = get_allowed_hosts()
-    try:
-        parsed = urlparse(url)
-    except Exception as exc:  # pragma: no cover
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid callback URL"
-        ) from exc
-
-    if parsed.scheme not in ALLOWED_CALLBACK_SCHEMES:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail="Callback URL scheme must be http or https",
-        )
-
-    if not parsed.hostname:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail="Missing callback URL host",
-        )
-
-    if not allowed_hosts:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail="Callback URL host allowlist is empty",
-        )
-
-    if parsed.hostname not in allowed_hosts:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail="Callback URL host not in allowlist",
-        )
-
 
 api = APIRouter()
 api.include_router(generate_router)
@@ -151,21 +112,15 @@ def score(
     req: ScoreReq,
     request: Request,
     background_tasks: BackgroundTasks,
-) -> dict[str, float]:
+) -> JSONResponse | dict[str, float]:
     """Calculate a score for the provided request body."""
 
     audit_event("score", _client_host(request))
     result: dict[str, float] = {"score": score_payload(req.model_dump())}
     if req.callback_url:
-        try:
-            validate_callback_url(req.callback_url)
-        except HTTPException as exc:
-            msg = (
-                "Disallowed callback URL scheme"
-                if "scheme" in exc.detail
-                else "Disallowed callback URL host"
-            )
-            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=msg) from exc
+        problem = validate_callback_url(req.callback_url, get_allowed_hosts())
+        if problem:
+            return problem.to_response()
         request_id = getattr(request.state, "request_id", "")
         background_tasks.add_task(_post_callback, req.callback_url, result, request_id=request_id)
     return result
@@ -176,7 +131,7 @@ def score_batch(
     batch: ScoreBatchReq,
     request: Request,
     background_tasks: BackgroundTasks,
-) -> dict[str, Any]:
+) -> JSONResponse | dict[str, Any]:
     """Score multiple payloads in a single request."""
 
     audit_event("score_batch", _client_host(request))
@@ -184,15 +139,9 @@ def score_batch(
     results = [{"score": score_payload(it.model_dump())} for it in items]
     out: dict[str, Any] = {"results": results, "count": len(results)}
     if batch.callback_url:
-        try:
-            validate_callback_url(batch.callback_url)
-        except HTTPException as exc:
-            msg = (
-                "Disallowed callback URL scheme"
-                if "scheme" in exc.detail
-                else "Disallowed callback URL host"
-            )
-            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=msg) from exc
+        problem = validate_callback_url(batch.callback_url, get_allowed_hosts())
+        if problem:
+            return problem.to_response()
         request_id = getattr(request.state, "request_id", "")
         background_tasks.add_task(_post_callback, batch.callback_url, out, request_id=request_id)
     return out

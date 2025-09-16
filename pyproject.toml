@@ -63,6 +63,7 @@ numpy = [
 fsu-api = "factsynth_ultimate.app:create_app"
 fsu-glrtpm = "factsynth_ultimate.glrtpm.pipeline:GLRTPMPipeline"
 fsu-isr = "factsynth_ultimate.cli_isr:app"
+fsctl = "factsynth_ultimate.cli:main"
 
 [project.entry-points."factsynth_ultimate.retrievers"]
 fixture = "factsynth_ultimate.services.retrievers.local:create_fixture_retriever"
