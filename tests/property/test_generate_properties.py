@@ -44,7 +44,10 @@ async def test_generate_entropy_and_length_stability(api_stub, base_headers, tex
     )
 
     if HTTPStatus.NOT_FOUND in {r1.status_code, r2.status_code}:
-        pytest.skip("generate endpoint not available")
+        pytest.fail(
+            "generate endpoint not available (received HTTP 404)",
+            pytrace=False,
+        )
 
     assert r1.status_code < HTTPStatus.INTERNAL_SERVER_ERROR
     assert r2.status_code < HTTPStatus.INTERNAL_SERVER_ERROR
@@ -64,7 +67,10 @@ async def test_generate_entropy_and_length_stability(api_stub, base_headers, tex
 async def test_generate_nonempty_output(api_stub, base_headers, text):
     r = await api_stub.post("/v1/generate", headers=base_headers, json={"text": text})
     if r.status_code == HTTPStatus.NOT_FOUND:
-        pytest.skip("generate endpoint not available")
+        pytest.fail(
+            "generate endpoint not available (received HTTP 404)",
+            pytrace=False,
+        )
     assert r.status_code < HTTPStatus.INTERNAL_SERVER_ERROR
     out = _pick_text(r.json())
     assert isinstance(out, str) and len(out.strip()) > 0
