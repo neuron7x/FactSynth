@@ -28,18 +28,19 @@ def test_cli_callbacks_allow_deduplicates(tmp_path):
 
 
 @pytest.mark.parametrize(
-    ("url", "allowed", "expect_problem"),
+    ("url", "allowed", "expect_problem", "expected_reason"),
     [
-        ("https://example.com/cb", ["example.com"], False),
-        ("https://evil.com/cb", ["example.com"], True),
-        ("https://example.com/cb", [], True),
+        ("https://example.com/cb", ["example.com"], False, None),
+        ("https://evil.com/cb", ["example.com"], True, "host_not_allowed"),
+        ("https://example.com/cb", [], True, "allowlist_empty"),
     ],
 )
-def test_validate_callback_url_allowlist(url, allowed, expect_problem):
+def test_validate_callback_url_allowlist(url, allowed, expect_problem, expected_reason):
     problem = validate_callback_url(url, allowed)
     assert (problem is not None) is expect_problem
     if problem:
         assert "callback" in problem.detail.lower()
+        assert problem.extras["reason"] == expected_reason
 
 
 def test_settings_respects_saved_allowlist(tmp_path, monkeypatch):
