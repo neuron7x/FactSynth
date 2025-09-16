@@ -132,6 +132,7 @@ async def test_block_when_api_exhausted(clock: Clock) -> None:
     response = await middleware.dispatch(request, call_next)
     assert response.status_code == 429
     assert response.headers["Retry-After"] == "1"
+    assert response.headers["X-RateLimit-Limit"] == "5"
     assert response.headers["X-RateLimit-Remaining"] == "2"
     assert RATE_LIMIT_BLOCKS.labels("api")._value.get() == 1  # type: ignore[attr-defined]
 
@@ -154,6 +155,8 @@ async def test_block_when_ip_exhausted(clock: Clock) -> None:
     response = await middleware.dispatch(request, call_next)
     assert response.status_code == 429
     assert response.headers["Retry-After"] == "1"
+    assert response.headers["X-RateLimit-Limit"] == "7"
+    assert response.headers["X-RateLimit-Remaining"] == "4"
     assert RATE_LIMIT_BLOCKS.labels("ip")._value.get() == 1  # type: ignore[attr-defined]
 
 
@@ -175,6 +178,8 @@ async def test_block_when_org_exhausted(clock: Clock) -> None:
     response = await middleware.dispatch(request, call_next)
     assert response.status_code == 429
     assert response.headers["Retry-After"] == "1"
+    assert response.headers["X-RateLimit-Limit"] == "7"
+    assert response.headers["X-RateLimit-Remaining"] == "4"
     assert RATE_LIMIT_BLOCKS.labels("org")._value.get() == 1  # type: ignore[attr-defined]
 
 
@@ -196,6 +201,31 @@ async def test_retry_after_uses_longest_wait(clock: Clock) -> None:
     response = await middleware.dispatch(request, call_next)
     assert response.status_code == 429
     assert response.headers["Retry-After"] == "4"
+    assert RATE_LIMIT_BLOCKS.labels("api")._value.get() == 1  # type: ignore[attr-defined]
+    assert RATE_LIMIT_BLOCKS.labels("ip")._value.get() == 1  # type: ignore[attr-defined]
+    assert RATE_LIMIT_BLOCKS.labels("org")._value.get() == 1  # type: ignore[attr-defined]
+
+
+@pytest.mark.anyio
+async def test_block_when_all_limits_exhausted(clock: Clock) -> None:
+    redis = FakeRedis(clock.time)
+    middleware = _middleware(
+        redis,
+        api=RateQuota(1, 1.0),
+        ip=RateQuota(1, 1.0),
+        org=RateQuota(1, 1.0),
+    )
+    request = make_request({"x-api-key": "theta", "x-organization": "squad"})
+
+    async def call_next(_: Request) -> Response:
+        return Response(status_code=200)
+
+    await middleware.dispatch(request, call_next)
+    response = await middleware.dispatch(request, call_next)
+    assert response.status_code == 429
+    assert response.headers["Retry-After"] == "1"
+    assert response.headers["X-RateLimit-Limit"] == "3"
+    assert response.headers["X-RateLimit-Remaining"] == "0"
     assert RATE_LIMIT_BLOCKS.labels("api")._value.get() == 1  # type: ignore[attr-defined]
     assert RATE_LIMIT_BLOCKS.labels("ip")._value.get() == 1  # type: ignore[attr-defined]
     assert RATE_LIMIT_BLOCKS.labels("org")._value.get() == 1  # type: ignore[attr-defined]
