@@ -9,12 +9,20 @@ from contextlib import asynccontextmanager, suppress
 
 import fastapi.routing as fastapi_routing
 import fastapi.utils as fastapi_utils
+from fastapi._compat import (
+    BaseConfig,
+    FieldInfo,
+    ModelField,
+    PydanticUndefined,
+    PydanticUndefinedType,
+)
 from fastapi import FastAPI, Request, Response
 from fastapi import exceptions as fastapi_exceptions
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from typing import Any, Literal
 
 from . import VERSION
 from .core.auth import APIKeyAuthMiddleware
@@ -32,12 +40,48 @@ from .store.redis import check_health
 
 logger = logging.getLogger(__name__)
 
-if not getattr(fastapi_utils, "_factsynth_safe_field", False):
-    _original_create_model_field = fastapi_utils.create_model_field
+_CreateModelField = Callable[
+    [
+        str,
+        Any,
+        dict[str, Any] | None,
+        Any,
+        bool | PydanticUndefinedType,
+        type[BaseConfig],
+        FieldInfo | None,
+        str | None,
+        Literal["validation", "serialization"],
+    ],
+    ModelField,
+]
 
-    def _safe_create_model_field(*args, **kwargs):  # noqa: ANN001
+
+if not getattr(fastapi_utils, "_factsynth_safe_field", False):
+    _original_create_model_field: _CreateModelField = fastapi_utils.create_model_field
+
+    def _safe_create_model_field(
+        name: str,
+        type_: Any,
+        class_validators: dict[str, Any] | None = None,
+        default: Any = PydanticUndefined,
+        required: bool | PydanticUndefinedType = PydanticUndefined,
+        model_config: type[BaseConfig] = BaseConfig,
+        field_info: FieldInfo | None = None,
+        alias: str | None = None,
+        mode: Literal["validation", "serialization"] = "validation",
+    ) -> ModelField | None:
         try:
-            return _original_create_model_field(*args, **kwargs)
+            return _original_create_model_field(
+                name,
+                type_,
+                class_validators=class_validators,
+                default=default,
+                required=required,
+                model_config=model_config,
+                field_info=field_info,
+                alias=alias,
+                mode=mode,
+            )
         except fastapi_exceptions.FastAPIError as exc:
             if "Invalid args for response field" not in str(exc):
                 raise

@@ -45,6 +45,16 @@ class LocalFixtureRetriever:
             q = re.sub(rf"\b{ua}\b", en, q)
         return q
 
+    def close(self) -> None:
+        """Close hook to satisfy the :class:`Retriever` protocol."""
+
+        return None
+
+    async def aclose(self) -> None:
+        """Async close hook to satisfy the :class:`Retriever` protocol."""
+
+        return None
+
     def search(self, query: str, k: int = 5) -> list[RetrievedDoc]:
         """Return top ``k`` fixtures ranked by similarity to ``query``."""
 

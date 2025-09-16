@@ -9,6 +9,7 @@ from functools import lru_cache
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 
 from factsynth_ultimate.core.audit import audit_event
 from factsynth_ultimate.core.problem_details import ProblemDetails
@@ -24,27 +25,27 @@ try:  # pragma: no cover - exercised indirectly when optional dependency is miss
         SearchError,
     )
 except ModuleNotFoundError:  # pragma: no cover - optional dependency guard
-    class FactPipelineError(RuntimeError):
+    class FactPipelineError(RuntimeError):  # type: ignore[no-redef]
         """Fallback base error when the optional ``facts`` package is missing."""
 
 
-    class EmptyQueryError(FactPipelineError):
+    class EmptyQueryError(FactPipelineError):  # type: ignore[no-redef]
         """Raised when the incoming query is blank."""
 
 
-    class SearchError(FactPipelineError):
+    class SearchError(FactPipelineError):  # type: ignore[no-redef]
         """Raised when the retrieval layer fails."""
 
 
-    class NoFactsFoundError(SearchError):
+    class NoFactsFoundError(SearchError):  # type: ignore[no-redef]
         """Raised when no supporting knowledge can be located."""
 
 
-    class AggregationError(FactPipelineError):
+    class AggregationError(FactPipelineError):  # type: ignore[no-redef]
         """Raised when the aggregation/formatting stage produces invalid output."""
 
 
-    class FactPipeline:  # type: ignore[override]
+    class FactPipeline:  # type: ignore[no-redef]
         """Minimal pipeline stub used when the real implementation is unavailable."""
 
         _reason = "facts package is not installed"
@@ -149,7 +150,7 @@ def generate(
     req: GenerateReq,
     request: Request,
     pipeline: FactPipeline = Depends(get_fact_pipeline),
-) -> dict[str, dict[str, str]]:
+) -> JSONResponse | dict[str, dict[str, str]]:
     """Produce fact statements for ``req.text`` using the orchestrated pipeline."""
 
     audit_event("generate", _client_host(request))

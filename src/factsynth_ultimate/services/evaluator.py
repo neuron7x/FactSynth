@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from contextlib import ExitStack
 from importlib import metadata
-from typing import Any
+from importlib.metadata import EntryPoint
+from typing import Any, cast
 
 from ..core.trace import index, normalize_trace, parse, start_trace
 from .redaction import redact_pii
@@ -21,16 +22,33 @@ ResultDict = dict[str, Any]
 def _load_retriever(name: str) -> Retriever:
     """Load a retriever registered under the given entry-point ``name``."""
 
-    eps = metadata.entry_points()
-    group = (
-        eps.select(group="factsynth_ultimate.retrievers")
-        if hasattr(eps, "select")
-        else eps.get("factsynth_ultimate.retrievers", [])
-    )
-    for ep in group:
-        if ep.name == name:
-            obj = ep.load()
-            return obj() if callable(obj) else obj
+    try:
+        candidates: Iterable[EntryPoint] = metadata.entry_points(
+            group="factsynth_ultimate.retrievers"
+        )
+    except TypeError:
+        eps = metadata.entry_points()
+        get_group = getattr(eps, "get", None)
+        if callable(get_group):
+            candidates = cast(
+                Iterable[EntryPoint],
+                get_group("factsynth_ultimate.retrievers", ()),
+            )
+        else:
+            candidates = ()
+    for ep in candidates:
+        if ep.name != name:
+            continue
+        loaded = ep.load()
+        if isinstance(loaded, Retriever):
+            return loaded
+        if callable(loaded):
+            candidate = loaded()
+            if isinstance(candidate, Retriever):
+                return candidate
+        raise TypeError(
+            f"Entry point '{name}' must provide a Retriever instance or factory",
+        )
     raise LookupError(f"Retriever '{name}' not found")
 
 
