@@ -2,6 +2,10 @@ target-version = "py311"
 line-length = 100
 
 [lint]
-select = ["E","F","I","B","BLE","C4","SIM","ARG","PL","RUF"]
+select = ["E","F","I","B","BLE","C4","SIM","ARG","PL","RUF","S"]
 ignore = ["E501"]
 extend-select = ["B","C","F","I","UP"]
+
+[lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+"fairness_tests/**/*.py" = ["S101"]

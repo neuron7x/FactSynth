@@ -97,9 +97,22 @@ jobs:
 
       - name: Ruff
         if: hashFiles('pyproject.toml','requirements.txt') != ''
+        id: ruff
+        continue-on-error: true
         run: |
           pip install ruff
-          ruff check .
+          ruff check . --output-format sarif --output-file ruff.sarif
+
+      - name: Upload Ruff SARIF report
+        if: always() && steps.ruff.outcome != 'skipped'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ruff.sarif
+          category: ruff
+
+      - name: Fail job if Ruff reported issues
+        if: always() && steps.ruff.outcome == 'failure'
+        run: exit 1
 
       - name: Mypy
         if: hashFiles('pyproject.toml','requirements.txt') != ''
@@ -134,6 +147,30 @@ jobs:
         run: |
           pip install pip-audit==2.7.2
           pip-audit -v --progress-spinner off -r requirements.lock --require-hashes
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sudo sh -s -- -b /usr/local/bin
+
+      - name: Trivy filesystem scan
+        id: trivy
+        continue-on-error: true
+        env:
+          TRIVY_NO_PROGRESS: "1"
+        run: |
+          trivy fs --exit-code 1 --format sarif --output trivy.sarif .
+
+      - name: Upload Trivy SARIF report
+        if: always() && steps.trivy.outcome != 'skipped'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+          category: trivy
+
+      - name: Fail job if Trivy reported issues
+        if: always() && steps.trivy.outcome == 'failure'
+        run: exit 1
 
       - name: npm audit
         if: hashFiles('package-lock.json') != ''
