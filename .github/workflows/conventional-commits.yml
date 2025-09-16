@@ -1,0 +1,54 @@
+name: Conventional Commits
+
+on:
+  push: {}
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - edited
+
+permissions:
+  contents: read
+
+jobs:
+  commitlint:
+    name: Validate commits
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+        with:
+          fetch-depth: 0
+      - name: Run commitlint
+        uses: wagoid/commitlint-github-action@9763196e10f27aef304c9b8b660d31d97fce0f99
+
+  pr-title:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    steps:
+      - uses: amannn/action-semantic-pull-request@e32d7e603df1aa1ba07e981f2a23455dee596825
+        with:
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            revert
+            style
+            test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
