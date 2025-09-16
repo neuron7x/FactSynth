@@ -5,8 +5,10 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import math
 import random
 import time
+from collections import deque
 from collections.abc import AsyncGenerator
 from functools import lru_cache
 from http import HTTPStatus
@@ -28,6 +30,7 @@ from factsynth_ultimate import VERSION
 from facts import FactPipeline, FactPipelineError
 from factsynth_ultimate.stream import stream_facts
 
+from ..auth.ws import WebSocketAuthError, authenticate_ws
 from ..core.audit import audit_event
 from ..core.metrics import (
     CITATION_PRECISION,
@@ -44,6 +47,77 @@ from .v1.generate import get_fact_pipeline
 logger = logging.getLogger(__name__)
 
 DEFAULT_CHUNK_SIZE = 160
+
+
+class SessionRateLimiter:
+    """Simple fixed-window rate limiter used for WebSocket sessions."""
+
+    def __init__(self, limit: int = 0, window: float = 60.0) -> None:
+        self.limit = int(limit)
+        self.window = float(window)
+        self._events: dict[str, deque[float]] = {}
+
+    def allow(self, client_id: str) -> tuple[bool, int]:
+        """Record an event for ``client_id`` and return allowance/remaining."""
+
+        if self.limit <= 0 or self.window <= 0:
+            return True, self.limit
+
+        now = time.monotonic()
+        bucket = self._events.setdefault(client_id, deque())
+        while bucket and now - bucket[0] > self.window:
+            bucket.popleft()
+        if len(bucket) >= self.limit:
+            return False, 0
+        bucket.append(now)
+        remaining = max(0, self.limit - len(bucket))
+        return True, remaining
+
+    def retry_after(self, client_id: str) -> int:
+        """Return seconds until another event is allowed for ``client_id``."""
+
+        if self.limit <= 0 or self.window <= 0:
+            return 0
+        bucket = self._events.get(client_id)
+        if not bucket:
+            return 0
+        now = time.monotonic()
+        oldest = bucket[0]
+        wait = self.window - (now - oldest)
+        if wait <= 0:
+            return 0
+        return max(1, int(math.ceil(wait)))
+
+    def reset(self, client_id: str) -> None:
+        """Clear tracking data for ``client_id``."""
+
+        self._events.pop(client_id, None)
+
+
+def _client_identifier(ws: WebSocket) -> str:
+    client = ws.client
+    if client is None:
+        return "unknown:0"
+    host = getattr(client, "host", None)
+    port = getattr(client, "port", None)
+    if host is None and isinstance(client, tuple):
+        host, port = client
+    host_str = host or "unknown"
+    port_val = port if port is not None else 0
+    return f"{host_str}:{port_val}"
+
+
+def _session_limiter(ws: WebSocket) -> SessionRateLimiter:
+    existing = getattr(ws.app.state, "ws_rate_limiter", None)
+    if isinstance(existing, SessionRateLimiter):
+        return existing
+    settings = load_settings()
+    burst = getattr(settings.rates_ip, "burst", 0)
+    sustain = getattr(settings.rates_ip, "sustain", 1.0) or 1.0
+    window = max(1.0, float(burst) / float(sustain)) if burst > 0 else 60.0
+    limiter = SessionRateLimiter(limit=int(burst), window=window)
+    ws.app.state.ws_rate_limiter = limiter
+    return limiter
 
 
 def _last_event_id(request: Request) -> int | None:
@@ -270,11 +344,21 @@ async def ws_stream(
 
     cfg = load_settings()
     key = ws.headers.get(cfg.auth_header_name)
-    if key != cfg.api_key:
-        await ws.close(code=4401, reason="Unauthorized")
+    client_id = _client_identifier(ws)
+    try:
+        user = authenticate_ws(key)
+    except WebSocketAuthError as exc:
+        audit_event("ws_denied", f"{client_id} reason={exc.reason}")
+        await ws.close(code=exc.code, reason=exc.reason)
         return
+
+    ws.scope["user"] = user
+    limiter = _session_limiter(ws)
+
     await ws.accept()
+    audit_event("ws_connect", f"{client_id} org={user.organization}")
     default_delay = cfg.token_delay
+    rate_limited = False
     try:
         while True:
             message = await ws.receive_text()
@@ -294,6 +378,25 @@ async def ws_stream(
             start_at = payload.get("cursor")
             chunk_size = payload.get("chunk_size")
             delay_override = payload.get("delay")
+
+            allowed, _remaining = limiter.allow(client_id)
+            if not allowed:
+                retry_after = limiter.retry_after(client_id)
+                audit_event(
+                    "ws_rate_limit",
+                    f"{client_id} org={user.organization} retry={retry_after}",
+                )
+                error_payload: dict[str, Any] = {
+                    "event": "error",
+                    "message": "Rate limit exceeded",
+                    "replay": False,
+                }
+                if retry_after:
+                    error_payload["retry_after"] = retry_after
+                await ws.send_json(error_payload)
+                await ws.close(code=4429, reason="Rate limit exceeded")
+                rate_limited = True
+                break
 
             try:
                 start_index = max(0, int(start_at)) if start_at is not None else 0
@@ -345,6 +448,9 @@ async def ws_stream(
     except WebSocketDisconnect:
         pass
     finally:
+        limiter.reset(client_id)
+        event = "ws_disconnect_rate_limited" if rate_limited else "ws_disconnect"
+        audit_event(event, f"{client_id} org={user.organization}")
         # Restore a default loop so tests using get_event_loop() do not fail
         asyncio.set_event_loop(asyncio.new_event_loop())
 

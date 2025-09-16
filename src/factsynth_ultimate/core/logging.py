@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from contextlib import suppress
 
 from pythonjsonlogger import jsonlogger
 
@@ -31,3 +32,15 @@ def setup_logging() -> None:
     root.setLevel(level)
     root.handlers.clear()
     root.addHandler(handler)
+
+    audit_logger = logging.getLogger("factsynth.audit")
+    for existing in list(audit_logger.handlers):
+        audit_logger.removeHandler(existing)
+        with suppress(Exception):
+            existing.close()
+    audit_handler = logging.FileHandler("audit.log", encoding="utf-8")
+    audit_handler.setFormatter(jsonlogger.JsonFormatter())
+    audit_handler.addFilter(RequestIdFilter())
+    audit_logger.addHandler(audit_handler)
+    audit_logger.setLevel(level)
+    audit_logger.propagate = False
