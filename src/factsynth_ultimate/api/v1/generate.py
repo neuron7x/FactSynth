@@ -50,7 +50,7 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency guard
 
         _reason = "facts package is not installed"
 
-        def run(self, query: str) -> str:
+        def run(self, query: str, locale: str | None = None) -> str:
             raise PipelineNotReadyError(self._reason)
 
 
@@ -155,7 +155,7 @@ def generate(
 
     audit_event("generate", _client_host(request))
     try:
-        text = pipeline.run(req.text)
+        text = pipeline.run(req.text, locale=req.locale)
     except PipelineNotReadyError as exc:
         logger.warning("Fact pipeline unavailable: %s", exc.reason)
         return _problem(

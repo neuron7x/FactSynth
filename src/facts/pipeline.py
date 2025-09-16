@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Iterable, Sequence
 
+import pycountry
+
 from factsynth_ultimate.formatting import ensure_period, sanitize
 from factsynth_ultimate.services.retrievers.base import RetrievedDoc, Retriever
 from factsynth_ultimate.services.retrievers.local import create_fixture_retriever
@@ -33,6 +35,12 @@ class AggregationError(FactPipelineError):
 Ranker = Callable[[Iterable[RetrievedDoc], int], Sequence[RetrievedDoc]]
 Aggregator = Callable[[Sequence[RetrievedDoc]], str]
 Formatter = Callable[[str], str]
+
+LANGUAGE_CODES = {
+    lang.alpha_2
+    for lang in pycountry.languages
+    if hasattr(lang, "alpha_2") and len(lang.alpha_2) == 2
+}
 
 
 def default_ranker(results: Iterable[RetrievedDoc], limit: int) -> list[RetrievedDoc]:
@@ -91,22 +99,47 @@ class FactPipeline:
     ranker: Ranker = default_ranker
     aggregator: Aggregator = default_aggregator
     formatter: Formatter = default_formatter
+    locale: str = "en"
 
     def __post_init__(self) -> None:
-        if self.retriever is None:
-            self.retriever = create_fixture_retriever()
+        self.locale = self._normalise_locale(self.locale)
+        self._custom_retriever = self.retriever is not None
+        default_retriever = self.retriever or create_fixture_retriever(
+            locale=self.locale
+        )
+        self._retrievers: dict[str, Retriever] = {self.locale: default_retriever}
+        self.retriever = default_retriever
         if self.top_k <= 0:
             raise ValueError("top_k must be positive")
 
-    def run(self, query: str) -> str:
+    def _normalise_locale(self, locale: str) -> str:
+        normalised = locale.lower()
+        if normalised not in LANGUAGE_CODES:
+            raise ValueError("locale must be a valid ISO 639-1 code")
+        return normalised
+
+    def _resolve_retriever(self, locale: str | None) -> Retriever:
+        if self._custom_retriever:
+            return self.retriever
+
+        target_locale = self.locale if locale is None else self._normalise_locale(locale)
+        retriever = self._retrievers.get(target_locale)
+        if retriever is None:
+            retriever = create_fixture_retriever(locale=target_locale)
+            self._retrievers[target_locale] = retriever
+        return retriever
+
+    def run(self, query: str, locale: str | None = None) -> str:
         """Execute the pipeline and return formatted supporting facts."""
 
         prepared = query.strip()
         if not prepared:
             raise EmptyQueryError("Query must not be empty")
 
+        retriever = self._resolve_retriever(locale)
+
         try:
-            results = list(self.retriever.search(prepared, k=max(1, self.top_k)))
+            results = list(retriever.search(prepared, k=max(1, self.top_k)))
         except FactPipelineError:
             raise
         except Exception as exc:  # pragma: no cover - defensive

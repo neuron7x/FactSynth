@@ -12,6 +12,8 @@ from factsynth_ultimate.api.v1.generate import (
     get_fact_pipeline,
 )
 
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
+
 
 class StubPipeline:
     """Minimal pipeline stub that records queries and returns a preset result."""
@@ -19,13 +21,26 @@ class StubPipeline:
     def __init__(self, result: str = "synthesized fact.", error: Exception | None = None) -> None:
         self._result = result
         self._error = error
-        self.queries: list[str] = []
+        self.calls: list[tuple[str, str]] = []
 
-    def run(self, query: str) -> str:
-        self.queries.append(query)
+    def run(self, query: str, locale: str = "en") -> str:
+        self.calls.append((query, locale))
         if self._error is not None:
             raise self._error
         return self._result
+
+
+class LocaleAwarePipeline:
+    """Pipeline stub that returns locale-specific responses."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str]] = []
+
+    def run(self, query: str, locale: str = "en") -> str:
+        self.calls.append((query, locale))
+        if locale == "uk":
+            return "Київ — столиця України."
+        return "Kyiv is the capital of Ukraine."
 
 
 @pytest.mark.anyio
@@ -42,7 +57,33 @@ async def test_generate_returns_pipeline_output(client, base_headers):
 
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {"output": {"text": "Curated facts about Kyiv."}}
-    assert pipeline.queries == ["Kyiv"]
+    assert pipeline.calls == [("Kyiv", "en")]
+
+
+@pytest.mark.anyio
+async def test_generate_switches_locale(client, base_headers):
+    pipeline = LocaleAwarePipeline()
+    app = client._transport.app
+    app.dependency_overrides[get_fact_pipeline] = lambda: pipeline
+    try:
+        response_en = await client.post(
+            "/v1/generate",
+            headers=base_headers,
+            json={"text": "Kyiv", "locale": "en"},
+        )
+        response_uk = await client.post(
+            "/v1/generate",
+            headers=base_headers,
+            json={"text": "Kyiv", "locale": "uk"},
+        )
+    finally:
+        app.dependency_overrides.pop(get_fact_pipeline, None)
+
+    assert response_en.status_code == HTTPStatus.OK
+    assert response_en.json() == {"output": {"text": "Kyiv is the capital of Ukraine."}}
+    assert response_uk.status_code == HTTPStatus.OK
+    assert response_uk.json() == {"output": {"text": "Київ — столиця України."}}
+    assert pipeline.calls == [("Kyiv", "en"), ("Kyiv", "uk")]
 
 
 @pytest.mark.anyio
@@ -71,7 +112,7 @@ class UnavailablePipeline:
     def __init__(self, reason: str = "facts backend missing") -> None:
         self._reason = reason
 
-    def run(self, query: str) -> str:  # pragma: no cover - trivial
+    def run(self, query: str, locale: str = "en") -> str:  # pragma: no cover - trivial
         raise PipelineNotReadyError(self._reason)
 
 
@@ -98,7 +139,7 @@ async def test_generate_reports_pipeline_unavailable(client, base_headers):
 class ShortOutputPipeline:
     """Pipeline stub that returns output failing the length validation."""
 
-    def run(self, query: str) -> str:  # pragma: no cover - trivial
+    def run(self, query: str, locale: str = "en") -> str:  # pragma: no cover - trivial
         return "too short"
 
 
@@ -122,7 +163,7 @@ async def test_generate_rejects_short_output(client, base_headers):
 class LowEntropyPipeline:
     """Pipeline stub that returns deterministic but low-entropy output."""
 
-    def run(self, query: str) -> str:  # pragma: no cover - trivial
+    def run(self, query: str, locale: str = "en") -> str:  # pragma: no cover - trivial
         return "a" * 32
 
 

@@ -117,6 +117,25 @@ class GenerateReq(BaseModel):
 
     text: NonNegativeStr = ""
     seed: int | None = None
+    locale: Annotated[
+        str,
+        Field(
+            pattern=ISO_LANGUAGE_PATTERN,
+            description="ISO 639-1 locale code used to select fact sources",
+        ),
+    ] = "en"
+
+    @field_validator("locale", mode="before")
+    def normalise_locale(cls, v: str) -> str:
+        if isinstance(v, str):
+            v = v.lower()
+        return v
+
+    @field_validator("locale")
+    def validate_locale(cls, v: str) -> str:
+        if v not in LANGUAGE_CODES:
+            raise ValueError("invalid ISO 639-1 language code")
+        return v
 
 
 class FeedbackReq(BaseModel):
