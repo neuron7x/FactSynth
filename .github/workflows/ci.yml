@@ -154,14 +154,6 @@ jobs:
           pip install pytest pytest-cov hypothesis
           pytest --cov --cov-report=xml --ignore=tests/property --ignore=tests/test_tokenization.py
 
-      - name: Upload coverage artifact
-        if: hashFiles('tests/**','pyproject.toml','requirements.txt') != ''
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: coverage-${{ matrix.python-version }}
-          path: coverage.xml
-          if-no-files-found: warn
-
       - name: Integration tests (Redis)
         if: hashFiles('tests/**','pyproject.toml','requirements.txt') != ''
         env:
