@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
@@ -22,6 +22,11 @@ class Retriever(Protocol):
 
     def search(self, query: str, k: int = 5) -> Iterable[RetrievedDoc]:
         """Return up to ``k`` documents relevant to ``query``."""
+
+    async def asearch(
+        self, query: str, k: int = 5
+    ) -> Iterable[RetrievedDoc] | AsyncIterable[RetrievedDoc]:
+        """Asynchronously return documents relevant to ``query``."""
 
     def close(self) -> None:  # pragma: no cover - optional
         """Release any open resources."""

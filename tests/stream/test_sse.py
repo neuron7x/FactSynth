@@ -27,6 +27,9 @@ class StubPipeline:
             raise self._error
         return self._output
 
+    async def arun(self, query: str) -> str:
+        return self.run(query)
+
 
 def parse_sse(body: bytes) -> list[dict[str, object]]:
     events: list[dict[str, object]] = []

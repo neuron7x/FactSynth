@@ -65,7 +65,7 @@ async def stream_facts(
     start_index = max(0, int(start_at))
     sleep_delay = max(0.0, float(delay))
 
-    chunks = _chunk_text(pipeline.run(query), limit=chunk_size)
+    chunks = _chunk_text(await pipeline.arun(query), limit=chunk_size)
     if not chunks or start_index >= len(chunks):
         return
 

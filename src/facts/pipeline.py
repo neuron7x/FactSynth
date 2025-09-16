@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterable, Callable, Iterable, Sequence
 from dataclasses import dataclass
-from typing import Callable, Iterable, Sequence
 
 from factsynth_ultimate.formatting import ensure_period, sanitize
 from factsynth_ultimate.services.retrievers.base import RetrievedDoc, Retriever
@@ -98,24 +98,17 @@ class FactPipeline:
         if self.top_k <= 0:
             raise ValueError("top_k must be positive")
 
-    def run(self, query: str) -> str:
-        """Execute the pipeline and return formatted supporting facts."""
-
+    def _prepare_query(self, query: str) -> str:
         prepared = query.strip()
         if not prepared:
             raise EmptyQueryError("Query must not be empty")
+        return prepared
 
-        try:
-            results = list(self.retriever.search(prepared, k=max(1, self.top_k)))
-        except FactPipelineError:
-            raise
-        except Exception as exc:  # pragma: no cover - defensive
-            raise SearchError("Search backend failed") from exc
-
-        if not results:
+    def _process_documents(self, docs: Sequence[RetrievedDoc], prepared: str) -> str:
+        if not docs:
             raise NoFactsFoundError(f"No facts found for '{prepared}'")
 
-        ranked = list(self.ranker(results, self.top_k))
+        ranked = list(self.ranker(docs, self.top_k))
         if not ranked:
             raise NoFactsFoundError(f"No facts found for '{prepared}'")
 
@@ -140,6 +133,42 @@ class FactPipeline:
             raise AggregationError("Formatted output is empty")
 
         return formatted
+
+    async def _collect_async_results(
+        self, results: Iterable[RetrievedDoc] | AsyncIterable[RetrievedDoc]
+    ) -> list[RetrievedDoc]:
+        if isinstance(results, AsyncIterable):
+            return [doc async for doc in results]
+        return list(results)
+
+    def run(self, query: str) -> str:
+        """Execute the pipeline and return formatted supporting facts."""
+
+        prepared = self._prepare_query(query)
+
+        try:
+            results = list(self.retriever.search(prepared, k=max(1, self.top_k)))
+        except FactPipelineError:
+            raise
+        except Exception as exc:  # pragma: no cover - defensive
+            raise SearchError("Search backend failed") from exc
+
+        return self._process_documents(results, prepared)
+
+    async def arun(self, query: str) -> str:
+        """Asynchronously execute the pipeline for ``query``."""
+
+        prepared = self._prepare_query(query)
+
+        try:
+            results = await self.retriever.asearch(prepared, k=max(1, self.top_k))
+        except FactPipelineError:
+            raise
+        except Exception as exc:  # pragma: no cover - defensive
+            raise SearchError("Search backend failed") from exc
+
+        collected = await self._collect_async_results(results)
+        return self._process_documents(collected, prepared)
 
 
 __all__ = [
