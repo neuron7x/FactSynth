@@ -1,9 +1,6 @@
 import pytest
 
-try:
-    import schemathesis
-except ModuleNotFoundError as e:  # pragma: no cover - dependency missing in some envs
-    pytest.skip(f"Missing dependency: {e}", allow_module_level=True)
+schemathesis = pytest.importorskip("schemathesis")
 
 OPENAPI_SPEC = {
     "openapi": "3.1.0",
