@@ -16,7 +16,22 @@
 
 1. Розпакуй у корінь репозиторію.
 2. Налаштуй секрети (за потреби): `PYPI_API_TOKEN`, `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`.
-3. Встанови залежності та запусти тести:
+3. Налаштуй локальне середовище та переконайся, що всі перевірки проходять **перед пушем**:
+
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate
+    pip install -r requirements-dev.txt
+    pre-commit run --all-files
+    pytest
+    ```
+
+    > Якщо базові залежності ще не встановлені, перед `pytest` виконай `pip install -e .[dev]`
+    > або `make install`.
+
+    > Альтернатива: скористайся `make test`, який виконує ті самі кроки за тебе.
+
+4. За потреби згенеруй повний звіт покриття й перевір його:
 
     ```bash
     python -m pip install -U pip wheel build
