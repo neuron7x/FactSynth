@@ -3,22 +3,69 @@
 from __future__ import annotations
 
 import logging
+import math
+from collections import Counter
 from functools import lru_cache
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Request
 
-from facts import (
-    AggregationError,
-    EmptyQueryError,
-    FactPipeline,
-    FactPipelineError,
-    NoFactsFoundError,
-    SearchError,
-)
 from factsynth_ultimate.core.audit import audit_event
 from factsynth_ultimate.core.problem_details import ProblemDetails
 from factsynth_ultimate.schemas.requests import GenerateReq
+
+try:  # pragma: no cover - exercised indirectly when optional dependency is missing
+    from facts import (
+        AggregationError,
+        EmptyQueryError,
+        FactPipeline,
+        FactPipelineError,
+        NoFactsFoundError,
+        SearchError,
+    )
+except ModuleNotFoundError:  # pragma: no cover - optional dependency guard
+    class FactPipelineError(RuntimeError):
+        """Fallback base error when the optional ``facts`` package is missing."""
+
+
+    class EmptyQueryError(FactPipelineError):
+        """Raised when the incoming query is blank."""
+
+
+    class SearchError(FactPipelineError):
+        """Raised when the retrieval layer fails."""
+
+
+    class NoFactsFoundError(SearchError):
+        """Raised when no supporting knowledge can be located."""
+
+
+    class AggregationError(FactPipelineError):
+        """Raised when the aggregation/formatting stage produces invalid output."""
+
+
+    class FactPipeline:  # type: ignore[override]
+        """Minimal pipeline stub used when the real implementation is unavailable."""
+
+        _reason = "facts package is not installed"
+
+        def run(self, query: str) -> str:
+            raise PipelineNotReadyError(self._reason)
+
+
+PIPELINE_MIN_LEN = 16
+PIPELINE_MAX_LEN = 10_000
+PIPELINE_MIN_ENTROPY = 0.4
+PIPELINE_MAX_ENTROPY = 6.5
+
+
+class PipelineNotReadyError(FactPipelineError):
+    """Raised when the fact pipeline cannot satisfy a generation request."""
+
+    def __init__(self, reason: str | None = None) -> None:
+        self.reason = reason or "Fact pipeline is not available"
+        super().__init__(self.reason)
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +94,56 @@ def _problem(status: HTTPStatus, title: str, detail: str) -> ProblemDetails:
     return ProblemDetails(title=title, detail=detail, status=int(status))
 
 
+def _entropy_bits_per_char(text: str) -> float:
+    if not text:
+        return 0.0
+    counts = Counter(text)
+    total = len(text)
+    return -sum((count / total) * math.log2(count / total) for count in counts.values())
+
+
+def _validate_generated_text(text: str) -> ProblemDetails | None:
+    trimmed = text.strip()
+    if not trimmed:
+        return _problem(
+            HTTPStatus.BAD_GATEWAY,
+            "Invalid generation output",
+            "Pipeline returned an empty result",
+        )
+
+    length = len(trimmed)
+    if length < PIPELINE_MIN_LEN:
+        return _problem(
+            HTTPStatus.BAD_GATEWAY,
+            "Generated text too short",
+            f"Received {length} characters but require at least {PIPELINE_MIN_LEN}",
+        )
+
+    if length > PIPELINE_MAX_LEN:
+        return _problem(
+            HTTPStatus.BAD_GATEWAY,
+            "Generated text too long",
+            f"Received {length} characters but the maximum is {PIPELINE_MAX_LEN}",
+        )
+
+    entropy = _entropy_bits_per_char(trimmed)
+    if entropy < PIPELINE_MIN_ENTROPY:
+        return _problem(
+            HTTPStatus.BAD_GATEWAY,
+            "Generated text entropy too low",
+            f"Entropy {entropy:.2f} bits/char below minimum {PIPELINE_MIN_ENTROPY}",
+        )
+
+    if entropy > PIPELINE_MAX_ENTROPY:
+        return _problem(
+            HTTPStatus.BAD_GATEWAY,
+            "Generated text entropy too high",
+            f"Entropy {entropy:.2f} bits/char above maximum {PIPELINE_MAX_ENTROPY}",
+        )
+
+    return None
+
+
 @router.post("/v1/generate")
 def generate(
     req: GenerateReq,
@@ -58,6 +155,13 @@ def generate(
     audit_event("generate", _client_host(request))
     try:
         text = pipeline.run(req.text)
+    except PipelineNotReadyError as exc:
+        logger.warning("Fact pipeline unavailable: %s", exc.reason)
+        return _problem(
+            HTTPStatus.SERVICE_UNAVAILABLE,
+            "Fact generation unavailable",
+            exc.reason,
+        ).to_response()
     except EmptyQueryError as exc:
         return _problem(HTTPStatus.BAD_REQUEST, "Invalid query", str(exc)).to_response()
     except NoFactsFoundError as exc:
@@ -79,7 +183,11 @@ def generate(
             "Failed to generate facts",
         ).to_response()
 
+    if problem := _validate_generated_text(text):
+        logger.warning("Rejected pipeline output: %s", problem.detail)
+        return problem.to_response()
+
     return {"output": {"text": text}}
 
 
-__all__ = ["ProblemDetails", "get_fact_pipeline", "generate", "router"]
+__all__ = ["ProblemDetails", "PipelineNotReadyError", "get_fact_pipeline", "generate", "router"]

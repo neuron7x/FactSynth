@@ -7,7 +7,10 @@ from http import HTTPStatus
 import pytest
 
 from facts import NoFactsFoundError
-from factsynth_ultimate.api.v1.generate import get_fact_pipeline
+from factsynth_ultimate.api.v1.generate import (
+    PipelineNotReadyError,
+    get_fact_pipeline,
+)
 
 
 class StubPipeline:
@@ -60,3 +63,81 @@ async def test_generate_maps_pipeline_error_to_problem_details(client, base_head
     assert payload["title"] == "Facts not found"
     assert payload["detail"] == "no supporting knowledge"
     assert payload["type"] == "about:blank"
+
+
+class UnavailablePipeline:
+    """Pipeline stub that mimics missing optional dependencies."""
+
+    def __init__(self, reason: str = "facts backend missing") -> None:
+        self._reason = reason
+
+    def run(self, query: str) -> str:  # pragma: no cover - trivial
+        raise PipelineNotReadyError(self._reason)
+
+
+@pytest.mark.anyio
+async def test_generate_reports_pipeline_unavailable(client, base_headers):
+    app = client._transport.app
+    app.dependency_overrides[get_fact_pipeline] = lambda: UnavailablePipeline(
+        reason="facts dependency not installed"
+    )
+    try:
+        response = await client.post(
+            "/v1/generate", headers=base_headers, json={"text": "Kyiv"}
+        )
+    finally:
+        app.dependency_overrides.pop(get_fact_pipeline, None)
+
+    assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
+    payload = response.json()
+    assert payload["status"] == HTTPStatus.SERVICE_UNAVAILABLE
+    assert payload["title"] == "Fact generation unavailable"
+    assert payload["detail"] == "facts dependency not installed"
+
+
+class ShortOutputPipeline:
+    """Pipeline stub that returns output failing the length validation."""
+
+    def run(self, query: str) -> str:  # pragma: no cover - trivial
+        return "too short"
+
+
+@pytest.mark.anyio
+async def test_generate_rejects_short_output(client, base_headers):
+    app = client._transport.app
+    app.dependency_overrides[get_fact_pipeline] = ShortOutputPipeline
+    try:
+        response = await client.post(
+            "/v1/generate", headers=base_headers, json={"text": "Kyiv"}
+        )
+    finally:
+        app.dependency_overrides.pop(get_fact_pipeline, None)
+
+    assert response.status_code == HTTPStatus.BAD_GATEWAY
+    payload = response.json()
+    assert payload["status"] == HTTPStatus.BAD_GATEWAY
+    assert payload["title"] == "Generated text too short"
+
+
+class LowEntropyPipeline:
+    """Pipeline stub that returns deterministic but low-entropy output."""
+
+    def run(self, query: str) -> str:  # pragma: no cover - trivial
+        return "a" * 32
+
+
+@pytest.mark.anyio
+async def test_generate_rejects_low_entropy_output(client, base_headers):
+    app = client._transport.app
+    app.dependency_overrides[get_fact_pipeline] = LowEntropyPipeline
+    try:
+        response = await client.post(
+            "/v1/generate", headers=base_headers, json={"text": "Kyiv"}
+        )
+    finally:
+        app.dependency_overrides.pop(get_fact_pipeline, None)
+
+    assert response.status_code == HTTPStatus.BAD_GATEWAY
+    payload = response.json()
+    assert payload["status"] == HTTPStatus.BAD_GATEWAY
+    assert payload["title"] == "Generated text entropy too low"
