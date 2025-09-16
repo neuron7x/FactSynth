@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
@@ -24,6 +25,10 @@ from .core.request_id import RequestIDMiddleware
 from .core.security_headers import SecurityHeadersMiddleware
 from .core.settings import load_settings
 from .core.tracing import try_enable_otel
+from .store.redis import check_health
+
+
+logger = logging.getLogger(__name__)
 
 
 class _MetricsMiddleware(BaseHTTPMiddleware):
@@ -68,6 +73,18 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
     )
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    @app.on_event("startup")
+    async def _verify_rate_limit_backend() -> None:
+        try:
+            healthy = await check_health(settings.rate_limit_redis_url)
+        except Exception:  # pragma: no cover - defensive guard
+            logger.warning("Failed to run Redis health check", exc_info=True)
+            return
+        if not healthy:
+            logger.warning(
+                "Redis health check failed for rate limit backend", extra={"redis_url": settings.rate_limit_redis_url}
+            )
 
     # core routes
     app.include_router(api)

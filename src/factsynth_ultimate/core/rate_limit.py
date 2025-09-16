@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import math
 import time
 from contextlib import suppress
@@ -11,10 +13,12 @@ from typing import Awaitable, Callable, Iterable
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from redis.asyncio import Redis
+from redis.exceptions import RedisError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from ..i18n import choose_language, translate
+from ..store.memory import MemoryStore
 from .metrics import RATE_LIMIT_BLOCKS, REQUESTS
 
 
@@ -67,6 +71,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         key_header: str = "x-api-key",
         org_header: str = "x-organization",
         ttl: int = 300,
+        memory_store: MemoryStore | None = None,
+        fallback_timeout: float = 30.0,
     ) -> None:
         """Configure middleware with independent quotas for API/IP/org."""
 
@@ -81,6 +87,54 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.api_quota = default_quota
         self.ip_quota = ip or default_quota
         self.org_quota = org or default_quota
+        self._memory_store = memory_store or MemoryStore()
+        self._fallback_timeout = max(0.0, float(fallback_timeout))
+        self._fallback_until = 0.0
+        self._using_memory = False
+        self._logger = logging.getLogger(__name__)
+
+    def _should_use_redis(self) -> bool:
+        if self._fallback_timeout <= 0:
+            return True
+        if not self._using_memory:
+            return True
+        return time.monotonic() >= self._fallback_until
+
+    def _activate_fallback(self, exc: Exception) -> None:
+        if self._fallback_timeout <= 0:
+            raise exc
+        now = time.monotonic()
+        self._fallback_until = now + self._fallback_timeout
+        if not self._using_memory:
+            self._logger.warning(
+                "Redis backend unavailable, using in-memory fallback for %.1fs: %s",
+                self._fallback_timeout,
+                exc,
+            )
+        self._using_memory = True
+
+    def _on_redis_success(self) -> None:
+        if self._using_memory:
+            self._using_memory = False
+            self._fallback_until = 0.0
+            self._logger.info("Redis backend recovered; resuming primary store")
+
+    async def _call_store(self, method: str, *args, **kwargs):
+        use_redis = self._should_use_redis()
+        store = self.redis if use_redis else self._memory_store
+        try:
+            func = getattr(store, method)
+            result = await func(*args, **kwargs)
+        except (RedisError, OSError, asyncio.TimeoutError) as exc:
+            if use_redis and self._fallback_timeout > 0:
+                self._activate_fallback(exc)
+                fallback_func = getattr(self._memory_store, method)
+                return await fallback_func(*args, **kwargs)
+            raise
+        else:
+            if use_redis:
+                self._on_redis_success()
+            return result
 
     async def _take(
         self,
@@ -92,7 +146,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """Attempt to take a token from the bucket identified by ``redis_key``."""
 
         now = time.time()
-        data = await self.redis.hgetall(redis_key)
+        data = await self._call_store("hgetall", redis_key)
         raw_tokens = data.get("tokens") or data.get(b"tokens")
         raw_ts = data.get("ts") or data.get(b"ts")
         tokens = float(raw_tokens) if raw_tokens is not None else float(quota.burst)
@@ -101,11 +155,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         tokens = min(float(quota.burst), tokens + delta * quota.sustain)
         allowed = tokens >= 1.0
         new_tokens = tokens - 1.0 if allowed and consume else tokens
-        await self.redis.hset(
+        await self._call_store(
+            "hset",
             redis_key,
             mapping={"tokens": new_tokens if consume and allowed else tokens, "ts": now},
         )
-        await self.redis.expire(redis_key, self.ttl)
+        await self._call_store("expire", redis_key, self.ttl)
         return allowed, new_tokens if consume and allowed else tokens
 
     @staticmethod
