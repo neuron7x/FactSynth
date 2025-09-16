@@ -4,59 +4,19 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from contextlib import ExitStack
-from importlib import metadata
-from importlib.metadata import EntryPoint
-from typing import Any, cast
+from typing import Any
 
+from ..config import ConfigError
 from ..core.trace import index, normalize_trace, parse, start_trace
 from .redaction import redact_pii
 from .retrievers.base import Retriever
+from .retrievers.registry import load_configured_retriever, load_retriever
 
 logger = logging.getLogger(__name__)
 
 ResultDict = dict[str, Any]
-
-
-def _load_retriever(name: str) -> Retriever:
-    """Load a retriever registered under the given entry-point ``name``."""
-
-    try:
-        candidates: Iterable[EntryPoint] = metadata.entry_points(
-            group="factsynth_ultimate.retrievers"
-        )
-    except TypeError:
-        eps = metadata.entry_points()
-        select = getattr(eps, "select", None)
-        if callable(select):
-            candidates = cast(
-                Iterable[EntryPoint],
-                select(group="factsynth_ultimate.retrievers"),
-            )
-        else:
-            get_group = getattr(eps, "get", None)
-            if callable(get_group):
-                candidates = cast(
-                    Iterable[EntryPoint],
-                    get_group("factsynth_ultimate.retrievers", ()),
-                )
-            else:
-                candidates = ()
-    for ep in candidates:
-        if ep.name != name:
-            continue
-        loaded = ep.load()
-        if isinstance(loaded, Retriever):
-            return loaded
-        if callable(loaded):
-            candidate = loaded()
-            if isinstance(candidate, Retriever):
-                return candidate
-        raise TypeError(
-            f"Entry point '{name}' must provide a Retriever instance or factory",
-        )
-    raise LookupError(f"Retriever '{name}' not found")
 
 
 def evaluate_claim(  # noqa: PLR0913,C901,PLR0912
@@ -80,14 +40,36 @@ def evaluate_claim(  # noqa: PLR0913,C901,PLR0912
         corresponding keys. Missing callables simply yield ``None``.
     retriever:
         Either an instance implementing :class:`Retriever` or the name of a
-        registered entry point in the ``factsynth_ultimate.retrievers`` group.
+        registered entry point in the ``factsynth.retrievers`` group. When
+        omitted the configured default retriever (if any) will be used.
         Loaded retrievers may optionally define ``close`` or ``aclose`` methods
         which will be invoked when evaluation completes.
     """
 
     out: ResultDict = {}
+    if retriever is None:
+        try:
+            retriever = load_configured_retriever()
+        except ConfigError as exc:
+            logger.warning(
+                "retriever_config_error",
+                extra={"error": str(exc)},
+            )
+            retriever = None
+        except (LookupError, TypeError) as exc:
+            logger.warning(
+                "retriever_initialisation_failed",
+                extra={"error": str(exc)},
+            )
+            retriever = None
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.exception(
+                "retriever_initialisation_failed",
+                extra={"error": str(exc)},
+            )
+            retriever = None
     if isinstance(retriever, str):
-        retriever = _load_retriever(retriever)
+        retriever = load_retriever(retriever)
     if retriever is not None:
         if not callable(getattr(retriever, "search", None)):
             raise TypeError("retriever must implement search()")

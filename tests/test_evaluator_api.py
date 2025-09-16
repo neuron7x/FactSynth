@@ -130,13 +130,13 @@ def test_evaluate_claim_loads_retriever_via_entrypoint(monkeypatch):
     ep = metadata.EntryPoint(
         name="fixture",
         value="factsynth_ultimate.services.retrievers.local:create_fixture_retriever",
-        group="factsynth_ultimate.retrievers",
+        group="factsynth.retrievers",
     )
 
     def fake_entry_points():
         if hasattr(metadata, "EntryPoints"):
             return metadata.EntryPoints([ep])
-        return {"factsynth_ultimate.retrievers": [ep]}
+        return {"factsynth.retrievers": [ep]}
 
     monkeypatch.setattr(metadata, "entry_points", fake_entry_points)
 

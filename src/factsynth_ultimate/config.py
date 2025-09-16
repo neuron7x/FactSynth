@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -23,11 +23,24 @@ class Config:
     """Application configuration persisted on disk."""
 
     CALLBACK_URL_ALLOWED_HOSTS: list[str] = field(default_factory=list)
+    RETRIEVER_NAME: str | None = None
+    RETRIEVER_OPTIONS: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Return a serialisable representation of the config."""
 
-        return {"CALLBACK_URL_ALLOWED_HOSTS": list(self.CALLBACK_URL_ALLOWED_HOSTS)}
+        payload: dict[str, Any] = {
+            "CALLBACK_URL_ALLOWED_HOSTS": _normalize_hosts(
+                self.CALLBACK_URL_ALLOWED_HOSTS
+            ),
+        }
+        if name := _normalize_retriever_name(self.RETRIEVER_NAME):
+            payload["RETRIEVER_NAME"] = name
+        if self.RETRIEVER_OPTIONS:
+            payload["RETRIEVER_OPTIONS"] = _normalize_retriever_options(
+                self.RETRIEVER_OPTIONS
+            )
+        return payload
 
 
 def config_path() -> Path:
@@ -61,7 +74,18 @@ def load_config(path: Path | None = None) -> Config:
         raise ConfigError("CALLBACK_URL_ALLOWED_HOSTS must be a list or string")
 
     parsed_hosts = _normalize_hosts(items)
-    return Config(CALLBACK_URL_ALLOWED_HOSTS=parsed_hosts)
+
+    retriever_name = _normalize_retriever_name(raw.get("RETRIEVER_NAME"))
+    retriever_options = _normalize_retriever_options(
+        raw.get("RETRIEVER_OPTIONS", {}),
+        strict=True,
+    )
+
+    return Config(
+        CALLBACK_URL_ALLOWED_HOSTS=parsed_hosts,
+        RETRIEVER_NAME=retriever_name,
+        RETRIEVER_OPTIONS=retriever_options,
+    )
 
 
 def save_config(config: Config, path: Path | None = None) -> Path:
@@ -69,8 +93,7 @@ def save_config(config: Config, path: Path | None = None) -> Path:
 
     cfg_path = Path(path) if path is not None else config_path()
     cfg_path.parent.mkdir(parents=True, exist_ok=True)
-    normalized = _normalize_hosts(config.CALLBACK_URL_ALLOWED_HOSTS)
-    payload = {"CALLBACK_URL_ALLOWED_HOSTS": normalized}
+    payload = config.to_dict()
     cfg_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     return cfg_path
 
@@ -111,6 +134,51 @@ def set_callback_hosts(hosts: Iterable[Any], path: Path | None = None) -> Config
     return config
 
 
+def configure_retriever(
+    name: str,
+    *,
+    options: Mapping[str, Any] | None = None,
+    path: Path | None = None,
+    merge: bool = False,
+) -> Config:
+    """Set the active retriever and optionally update its options."""
+
+    normalized = _normalize_retriever_name(name)
+    if not normalized:
+        raise ConfigError("Retriever name must not be empty")
+
+    config = load_config(path)
+    previous = config.RETRIEVER_NAME
+    config.RETRIEVER_NAME = normalized
+
+    if merge and normalized == previous:
+        merged = dict(config.RETRIEVER_OPTIONS)
+        if options:
+            merged.update(_normalize_retriever_options(options, strict=True))
+        config.RETRIEVER_OPTIONS = merged
+    else:
+        if options is None:
+            config.RETRIEVER_OPTIONS = {}
+        else:
+            config.RETRIEVER_OPTIONS = _normalize_retriever_options(
+                options,
+                strict=True,
+            )
+
+    save_config(config, path)
+    return config
+
+
+def clear_retriever(path: Path | None = None) -> Config:
+    """Remove the active retriever configuration."""
+
+    config = load_config(path)
+    config.RETRIEVER_NAME = None
+    config.RETRIEVER_OPTIONS = {}
+    save_config(config, path)
+    return config
+
+
 def _normalize_hosts(hosts: Iterable[Any]) -> list[str]:
     """Return a sorted, deduplicated list of normalised hosts."""
 
@@ -128,10 +196,48 @@ def _normalize_hosts(hosts: Iterable[Any]) -> list[str]:
     return cleaned
 
 
+def _normalize_retriever_name(raw: Any) -> str | None:
+    """Return a stripped retriever name or ``None`` if not set."""
+
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    return text or None
+
+
+def _normalize_retriever_options(
+    options: Any,
+    *,
+    strict: bool = False,
+) -> dict[str, Any]:
+    """Normalize retriever option mappings."""
+
+    if options is None:
+        return {}
+    if isinstance(options, Mapping):
+        iterable = options.items()
+    elif isinstance(options, Iterable) and not isinstance(options, (str, bytes)):
+        iterable = options
+    else:
+        if strict:
+            raise ConfigError("RETRIEVER_OPTIONS must be a mapping")
+        return {}
+
+    cleaned: dict[str, Any] = {}
+    for key, value in iterable:
+        normalized_key = _normalize_retriever_name(key)
+        if not normalized_key:
+            continue
+        cleaned[normalized_key] = value
+    return cleaned
+
+
 __all__ = [
     "Config",
     "ConfigError",
     "add_callback_host",
+    "configure_retriever",
+    "clear_retriever",
     "remove_callback_host",
     "set_callback_hosts",
     "config_path",

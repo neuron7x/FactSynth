@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Callable, Iterable, Sequence
 
 from factsynth_ultimate.formatting import ensure_period, sanitize
 from factsynth_ultimate.services.retrievers.base import RetrievedDoc, Retriever
+from factsynth_ultimate.services.retrievers.registry import (
+    load_configured_retriever,
+)
 from factsynth_ultimate.services.retrievers.local import create_fixture_retriever
 
 
@@ -33,6 +37,8 @@ class AggregationError(FactPipelineError):
 Ranker = Callable[[Iterable[RetrievedDoc], int], Sequence[RetrievedDoc]]
 Aggregator = Callable[[Sequence[RetrievedDoc]], str]
 Formatter = Callable[[str], str]
+
+logger = logging.getLogger(__name__)
 
 
 def default_ranker(results: Iterable[RetrievedDoc], limit: int) -> list[RetrievedDoc]:
@@ -93,6 +99,15 @@ class FactPipeline:
     formatter: Formatter = default_formatter
 
     def __post_init__(self) -> None:
+        if self.retriever is None:
+            try:
+                self.retriever = load_configured_retriever()
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning(
+                    "retriever_initialisation_failed",
+                    extra={"error": str(exc)},
+                )
+                self.retriever = None
         if self.retriever is None:
             self.retriever = create_fixture_retriever()
         if self.top_k <= 0:
