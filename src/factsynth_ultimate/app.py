@@ -7,14 +7,16 @@ import time
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
 
+import fastapi.routing as fastapi_routing
+import fastapi.utils as fastapi_utils
 from fastapi import FastAPI, Request, Response
+from fastapi import exceptions as fastapi_exceptions
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from . import VERSION
-from .api.routers import api
 from .core.auth import APIKeyAuthMiddleware
 from .core.body_limit import BodySizeLimitMiddleware
 from .core.errors import install_handlers
@@ -29,6 +31,24 @@ from .store.redis import check_health
 
 
 logger = logging.getLogger(__name__)
+
+if not getattr(fastapi_utils, "_factsynth_safe_field", False):
+    _original_create_model_field = fastapi_utils.create_model_field
+
+    def _safe_create_model_field(*args, **kwargs):  # noqa: ANN001
+        try:
+            return _original_create_model_field(*args, **kwargs)
+        except fastapi_exceptions.FastAPIError as exc:
+            if "Invalid args for response field" not in str(exc):
+                raise
+            return None
+
+    fastapi_utils.create_model_field = _safe_create_model_field
+    fastapi_routing.create_model_field = _safe_create_model_field
+    fastapi_utils._factsynth_safe_field = True
+
+
+from .api.routers import api
 
 
 class _MetricsMiddleware(BaseHTTPMiddleware):
