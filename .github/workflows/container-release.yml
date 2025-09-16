@@ -14,6 +14,7 @@ concurrency:
 permissions:
   contents: read
   packages: write
+  id-token: write
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -21,10 +22,14 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      image-ref: ${{ steps.image_ref.outputs.image_ref }}
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
       - uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392
       - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
+      - uses: anchore/sbom-action/download-syft@v0
+      - uses: sigstore/cosign-installer@v3.5.0
       - uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1
         with:
           registry: ${{ env.REGISTRY }}
@@ -39,7 +44,8 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
             type=sha
-      - uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25
+      - id: build
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25
         with:
           context: .
           push: true
@@ -48,3 +54,53 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Prepare image reference
+        id: image_ref
+        run: |
+          IMAGE_REF="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
+          echo "image_ref=${IMAGE_REF}" >>"$GITHUB_OUTPUT"
+          echo "IMAGE_REF=${IMAGE_REF}" >>"$GITHUB_ENV"
+      - name: Generate SBOM
+        id: sbom
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          mkdir -p release
+          REF_SLUG="${REF_NAME//\//-}"
+          SBOM_PATH="release/${REF_SLUG:-ref}-${GITHUB_SHA}.sbom.spdx.json"
+          syft packages "registry:${IMAGE_REF}" -o spdx-json >"${SBOM_PATH}"
+          echo "sbom_path=${SBOM_PATH}" >>"$GITHUB_OUTPUT"
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sbom-${{ github.sha }}
+          path: release/
+          if-no-files-found: error
+      - name: Attach SBOM to image
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+          COSIGN_YES: "true"
+        run: cosign attach sbom --sbom "${{ steps.sbom.outputs.sbom_path }}" "${IMAGE_REF}"
+      - name: Sign image
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+          COSIGN_YES: "true"
+        run: cosign sign --attachments sbom "${IMAGE_REF}"
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: sigstore/cosign-installer@v3.5.0
+      - uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify signature
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+          COSIGN_YES: "true"
+        run: cosign verify --attachments sbom "${{ needs.build-and-push.outputs.image-ref }}"
+      - name: Deploy
+        run: echo "Deploying image ${{ needs.build-and-push.outputs.image-ref }}"
