@@ -25,25 +25,21 @@ try:  # pragma: no cover - exercised indirectly when optional dependency is miss
         SearchError,
     )
 except ModuleNotFoundError:  # pragma: no cover - optional dependency guard
+
     class FactPipelineError(RuntimeError):  # type: ignore[no-redef]
         """Fallback base error when the optional ``facts`` package is missing."""
-
 
     class EmptyQueryError(FactPipelineError):  # type: ignore[no-redef]
         """Raised when the incoming query is blank."""
 
-
     class SearchError(FactPipelineError):  # type: ignore[no-redef]
         """Raised when the retrieval layer fails."""
-
 
     class NoFactsFoundError(SearchError):  # type: ignore[no-redef]
         """Raised when no supporting knowledge can be located."""
 
-
     class AggregationError(FactPipelineError):  # type: ignore[no-redef]
         """Raised when the aggregation/formatting stage produces invalid output."""
-
 
     class FactPipeline:  # type: ignore[no-redef]
         """Minimal pipeline stub used when the real implementation is unavailable."""
@@ -71,6 +67,7 @@ class PipelineNotReadyError(FactPipelineError):
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
 
 def _client_host(request: Request) -> str:
     """Best-effort retrieval of the requesting client's host."""
@@ -145,11 +142,11 @@ def _validate_generated_text(text: str) -> ProblemDetails | None:
     return None
 
 
-@router.post("/v1/generate")
+@router.post("/v1/generate", response_model=None)
 def generate(
     req: GenerateReq,
     request: Request,
-    pipeline: FactPipeline = Depends(get_fact_pipeline),
+    pipeline: FactPipeline = Depends(get_fact_pipeline),  # noqa: B008
 ) -> JSONResponse | dict[str, dict[str, str]]:
     """Produce fact statements for ``req.text`` using the orchestrated pipeline."""
 
@@ -172,11 +169,15 @@ def generate(
         return _problem(HTTPStatus.BAD_GATEWAY, "Search failure", str(exc)).to_response()
     except AggregationError as exc:
         logger.warning("Fact aggregation failed: %s", exc)
-        return _problem(HTTPStatus.INTERNAL_SERVER_ERROR, "Aggregation failure", str(exc)).to_response()
+        return _problem(
+            HTTPStatus.INTERNAL_SERVER_ERROR, "Aggregation failure", str(exc)
+        ).to_response()
     except FactPipelineError as exc:
         logger.warning("Fact pipeline error: %s", exc)
-        return _problem(HTTPStatus.INTERNAL_SERVER_ERROR, "Fact pipeline failure", str(exc)).to_response()
-    except Exception as exc:  # pragma: no cover - defensive
+        return _problem(
+            HTTPStatus.INTERNAL_SERVER_ERROR, "Fact pipeline failure", str(exc)
+        ).to_response()
+    except Exception:  # pragma: no cover - defensive
         logger.exception("Unexpected fact generation error")
         return _problem(
             HTTPStatus.INTERNAL_SERVER_ERROR,

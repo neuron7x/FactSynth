@@ -68,12 +68,14 @@ def test_ws_scope_contains_authenticated_user():
     app.dependency_overrides[routers.get_fact_pipeline] = lambda: pipeline
     app.dependency_overrides[generate.get_fact_pipeline] = lambda: pipeline
 
-    with TestClient(app) as client:
-        with client.websocket_connect("/ws/stream", headers={"x-api-key": "change-me"}) as ws:
-            stored = ws.scope.get("user")
-            assert stored is user
-            ws.send_json({"text": "alpha"})
-            _consume_until_end(ws)
+    with (
+        TestClient(app) as client,
+        client.websocket_connect("/ws/stream", headers={"x-api-key": "change-me"}) as ws,
+    ):
+        stored = ws.scope.get("user")
+        assert stored is user
+        ws.send_json({"text": "alpha"})
+        _consume_until_end(ws)
 
 
 def test_ws_rate_limit_triggers_and_logs():
@@ -86,20 +88,22 @@ def test_ws_rate_limit_triggers_and_logs():
     app.dependency_overrides[generate.get_fact_pipeline] = lambda: pipeline
     app.state.ws_rate_limiter = routers.SessionRateLimiter(limit=1, window=60.0)
 
-    with TestClient(app) as client:
-        with client.websocket_connect("/ws/stream", headers={"x-api-key": "change-me"}) as ws:
-            ws.send_json({"text": "one"})
-            _consume_until_end(ws)
-            assert pipeline.calls == 1
+    with (
+        TestClient(app) as client,
+        client.websocket_connect("/ws/stream", headers={"x-api-key": "change-me"}) as ws,
+    ):
+        ws.send_json({"text": "one"})
+        _consume_until_end(ws)
+        assert pipeline.calls == 1
 
-            ws.send_json({"text": "two"})
-            error = ws.receive_json()
-            assert error.get("event") == "error"
-            assert error.get("message") == "Rate limit exceeded"
-            assert error.get("replay") is False
+        ws.send_json({"text": "two"})
+        error = ws.receive_json()
+        assert error.get("event") == "error"
+        assert error.get("message") == "Rate limit exceeded"
+        assert error.get("replay") is False
 
-            with pytest.raises((RuntimeError, WebSocketDisconnect)):
-                ws.receive_json()
+        with pytest.raises((RuntimeError, WebSocketDisconnect)):
+            ws.receive_json()
 
     entries = _flush_audit_log()
     assert any("ws_connect" in line for line in entries)

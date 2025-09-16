@@ -25,6 +25,13 @@ Run checks on staged files:
 pre-commit run --files <path/to/file.py>
 ```
 
+Before committing, run the security scanners on the full tree:
+
+```bash
+pre-commit run bandit --all-files
+pre-commit run pip-audit --all-files
+```
+
 Before committing, refresh dependency artifacts:
 
 ```bash

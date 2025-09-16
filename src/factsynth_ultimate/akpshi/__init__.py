@@ -1,2 +1,1 @@
 """AKP-SHI statistical metrics."""
-

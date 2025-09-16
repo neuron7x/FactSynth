@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from importlib import metadata
 
 import pytest
 from pydantic import BaseModel
@@ -125,18 +126,20 @@ def test_evaluate_claim_logs_retriever_exception(caplog):
 
 
 def test_evaluate_claim_loads_retriever_via_entrypoint(monkeypatch):
-    from importlib import metadata
-
     ep = metadata.EntryPoint(
         name="fixture",
         value="factsynth_ultimate.services.retrievers.local:create_fixture_retriever",
         group="factsynth_ultimate.retrievers",
     )
 
-    def fake_entry_points():
+    def fake_entry_points(*, group: str | None = None):
         if hasattr(metadata, "EntryPoints"):
-            return metadata.EntryPoints([ep])
-        return {"factsynth_ultimate.retrievers": [ep]}
+            selected = [ep] if group in (None, "factsynth_ultimate.retrievers") else []
+            return metadata.EntryPoints(selected)
+        groups: dict[str, list[metadata.EntryPoint]] = {"factsynth_ultimate.retrievers": [ep]}
+        if group is None:
+            return groups
+        return {group: groups.get(group, [])}
 
     monkeypatch.setattr(metadata, "entry_points", fake_entry_points)
 

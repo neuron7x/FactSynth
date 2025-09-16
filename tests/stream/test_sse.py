@@ -5,7 +5,6 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from facts import FactPipelineError
-
 from factsynth_ultimate.api import routers
 from factsynth_ultimate.api.v1 import generate
 from factsynth_ultimate.app import create_app
@@ -28,10 +27,14 @@ class StubPipeline:
         return self._output
 
 
+MIN_CHUNK_EVENTS = 3
+EXPECTED_REPLAY_CALLS = 2
+
+
 def parse_sse(body: bytes) -> list[dict[str, object]]:
     events: list[dict[str, object]] = []
-    for block in body.decode().split("\n\n"):
-        block = block.strip()
+    for raw_block in body.decode().split("\n\n"):
+        block = raw_block.strip()
         if not block:
             continue
         event_type: str | None = None
@@ -60,7 +63,7 @@ async def test_sse_stream_chunks_and_resume(base_headers):
     app.dependency_overrides[routers.get_fact_pipeline] = lambda: pipeline
     app.dependency_overrides[generate.get_fact_pipeline] = lambda: pipeline
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="http://test") as client:  # noqa: SIM117
         async with client.stream(
             "POST",
             "/sse/stream",
@@ -74,7 +77,7 @@ async def test_sse_stream_chunks_and_resume(base_headers):
         events = parse_sse(body)
         assert [evt["event"] for evt in events[:2]] == ["start", "chunk"]
         chunk_events = [evt for evt in events if evt["event"] == "chunk"]
-        assert len(chunk_events) >= 3
+        assert len(chunk_events) >= MIN_CHUNK_EVENTS
         chunk_texts = [evt["data"]["text"] for evt in chunk_events]
 
         resume_source = next(evt for evt in chunk_events if evt["data"]["id"] == 1)
@@ -102,7 +105,8 @@ async def test_sse_stream_chunks_and_resume(base_headers):
     assert [evt["data"]["text"] for evt in resumed_chunks] == chunk_texts[next_cursor:]
     assert all(evt["data"]["replay"] is True for evt in resumed_chunks)
 
-    assert pipeline.calls == 2
+    expected_calls = EXPECTED_REPLAY_CALLS
+    assert pipeline.calls == expected_calls
 
 
 @pytest.mark.anyio
@@ -120,7 +124,7 @@ async def test_sse_rate_limiter_invoked(base_headers, monkeypatch):
     app.dependency_overrides[routers.get_fact_pipeline] = lambda: pipeline
     app.dependency_overrides[generate.get_fact_pipeline] = lambda: pipeline
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="http://test") as client:  # noqa: SIM117
         async with client.stream(
             "POST",
             "/sse/stream",
@@ -138,7 +142,7 @@ async def test_sse_rate_limiter_invoked(base_headers, monkeypatch):
 
 
 @pytest.mark.anyio
-async def test_sse_pipeline_error_event(base_headers, monkeypatch):
+async def test_sse_pipeline_error_event(base_headers):
     error = FactPipelineError("boom")
     pipeline = StubPipeline("", error=error)
 
@@ -146,7 +150,7 @@ async def test_sse_pipeline_error_event(base_headers, monkeypatch):
     app.dependency_overrides[routers.get_fact_pipeline] = lambda: pipeline
     app.dependency_overrides[generate.get_fact_pipeline] = lambda: pipeline
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="http://test") as client:  # noqa: SIM117
         async with client.stream(
             "POST",
             "/sse/stream",

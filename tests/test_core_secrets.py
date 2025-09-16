@@ -1,11 +1,10 @@
-
 import logging
 
 import pytest
 
-pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
-
 from factsynth_ultimate.core import secrets
+
+pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
 
 def test_validate_key_prod(monkeypatch):
@@ -47,7 +46,7 @@ def test_read_api_key_vault(monkeypatch):
             class kv:
                 class v2:
                     @staticmethod
-                    def read_secret_version(path):
+                    def read_secret_version(path, **_kwargs):  # noqa: ANN001
                         _ = path
                         return {"data": {"data": {"API": "vaultkey"}}}
 
@@ -74,7 +73,8 @@ def test_read_api_key_vault_logs_error(monkeypatch, caplog):
             class kv:
                 class v2:
                     @staticmethod
-                    def read_secret_version(path):
+                    def read_secret_version(path, **_kwargs):  # noqa: ANN001
+                        _ = path
                         raise secrets.VaultError("fail")
 
     class DummyHVAC:
@@ -89,8 +89,6 @@ def test_read_api_key_vault_logs_error(monkeypatch, caplog):
         secrets.read_api_key("MISSING", "MISSING_FILE", None, "API")
 
     assert any(
-        r.levelno == logging.WARNING
-        and "Vault error" in r.message
-        and "fail" in r.message
+        r.levelno == logging.WARNING and "Vault error" in r.message and "fail" in r.message
         for r in caplog.records
     )

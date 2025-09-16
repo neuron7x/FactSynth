@@ -14,7 +14,7 @@ def _stub_external_api():
 
 
 def test_isr_shapes_and_peak():
-    jax = pytest.importorskip("jax", reason="JAX is required for ISR simulations")
+    pytest.importorskip("jax", reason="JAX is required for ISR simulations")
     pytest.importorskip("diffrax", reason="Diffrax is required for ISR simulations")
     from factsynth_ultimate.isr import (
         ISRParams,
@@ -24,7 +24,6 @@ def test_isr_shapes_and_peak():
         simulate_isr,
     )
 
-    jnp = jax.numpy
     out = simulate_isr(params=ISRParams(steps=512, t1=5.12))
     fs = estimate_fs(out["t"])
     spec = gamma_spectrum(out["y"], idx=5, fs=fs, ts=out["t"])

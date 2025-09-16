@@ -9,10 +9,10 @@ import math
 import random
 import time
 from collections import deque
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Mapping
 from functools import lru_cache
 from http import HTTPStatus
-from typing import Any, Mapping
+from typing import Any
 
 import httpx
 from fastapi import (
@@ -26,8 +26,8 @@ from fastapi import (
 from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.websockets import WebSocketState
 
-from factsynth_ultimate import VERSION
 from facts import FactPipeline, FactPipelineError
+from factsynth_ultimate import VERSION
 from factsynth_ultimate.stream import stream_facts
 
 from ..auth.ws import WebSocketAuthError, authenticate_ws
@@ -38,9 +38,9 @@ from ..core.metrics import (
     SSE_TOKENS,
 )
 from ..core.settings import load_settings
-from ..validators.callback import validate_callback_url
 from ..schemas.requests import FeedbackReq, IntentReq, ScoreBatchReq, ScoreReq
 from ..services.runtime import reflect_intent, score_payload
+from ..validators.callback import validate_callback_url
 from .v1 import generate_router
 from .v1.generate import get_fact_pipeline
 
@@ -86,7 +86,7 @@ class SessionRateLimiter:
         wait = self.window - (now - oldest)
         if wait <= 0:
             return 0
-        return max(1, int(math.ceil(wait)))
+        return max(1, math.ceil(wait))
 
     def reset(self, client_id: str) -> None:
         """Clear tracking data for ``client_id``."""
@@ -162,6 +162,7 @@ def reload_allowed_hosts() -> None:
     """Clear the allowed hosts cache to reload settings."""
     get_allowed_hosts.cache_clear()
 
+
 api = APIRouter()
 api.include_router(generate_router)
 
@@ -173,7 +174,7 @@ def version() -> dict[str, str]:
     return {"name": "factsynth-ultimate-pro", "version": VERSION}
 
 
-@api.post("/v1/intent_reflector")
+@api.post("/v1/intent_reflector", response_model=None)
 def intent_reflector(req: IntentReq, request: Request) -> dict[str, str]:
     """Reflect user intent into a concise insight string."""
 
@@ -181,7 +182,7 @@ def intent_reflector(req: IntentReq, request: Request) -> dict[str, str]:
     return {"insight": reflect_intent(req.intent, req.length)}
 
 
-@api.post("/v1/score")
+@api.post("/v1/score", response_model=None)
 def score(
     req: ScoreReq,
     request: Request,
@@ -200,7 +201,7 @@ def score(
     return result
 
 
-@api.post("/v1/score/batch")
+@api.post("/v1/score/batch", response_model=None)
 def score_batch(
     batch: ScoreBatchReq,
     request: Request,
@@ -221,7 +222,7 @@ def score_batch(
     return out
 
 
-@api.post("/v1/feedback")
+@api.post("/v1/feedback", response_model=None)
 def feedback(req: FeedbackReq, request: Request) -> dict[str, str]:
     """Record user feedback on explanation clarity and citation accuracy."""
 
@@ -285,14 +286,14 @@ async def _sse_stream(
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
-@api.post("/sse/stream")
+@api.post("/sse/stream", response_model=None)
 async def sse_stream(
     req: ScoreReq,
     request: Request,
     token_delay: float | None = None,
     chunk_size: int | None = None,
     cursor: int | None = None,
-    pipeline: FactPipeline = Depends(get_fact_pipeline),
+    pipeline: FactPipeline = Depends(get_fact_pipeline),  # noqa: B008
 ) -> StreamingResponse:
     """Stream fact synthesis results over Server-Sent Events."""
 
@@ -306,14 +307,14 @@ async def sse_stream(
     )
 
 
-@api.post("/v1/stream")
+@api.post("/v1/stream", response_model=None)
 async def stream(
     req: ScoreReq,
     request: Request,
     token_delay: float | None = None,
     chunk_size: int | None = None,
     cursor: int | None = None,
-    pipeline: FactPipeline = Depends(get_fact_pipeline),
+    pipeline: FactPipeline = Depends(get_fact_pipeline),  # noqa: B008
 ) -> StreamingResponse:
     """Backward compatible SSE endpoint for streaming fact synthesis."""
 
@@ -337,9 +338,10 @@ def is_client_connected(ws: WebSocket) -> bool:
 
 
 @api.websocket("/ws/stream")
-async def ws_stream(
-    ws: WebSocket, pipeline: FactPipeline = Depends(get_fact_pipeline)
-) -> None:  # noqa: C901, PLR0912
+async def ws_stream(  # noqa: C901, PLR0912, PLR0915
+    ws: WebSocket,
+    pipeline: FactPipeline = Depends(get_fact_pipeline),  # noqa: B008
+) -> None:
     """Stream fact synthesis results over WebSocket with API-key auth."""
 
     cfg = load_settings()
@@ -438,9 +440,7 @@ async def ws_stream(
                         }
                     )
                     sent += 1
-                await ws.send_json(
-                    {"event": "end", "cursor": start_index + sent, "replay": replay}
-                )
+                await ws.send_json({"event": "end", "cursor": start_index + sent, "replay": replay})
             except FactPipelineError as exc:
                 await ws.send_json({"event": "error", "message": str(exc), "replay": replay})
             finally:

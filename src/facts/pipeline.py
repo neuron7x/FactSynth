@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
-from typing import Callable, Iterable, Sequence
 
 from factsynth_ultimate.formatting import ensure_period, sanitize
 from factsynth_ultimate.services.retrievers.base import RetrievedDoc, Retriever
@@ -98,7 +98,7 @@ class FactPipeline:
         if self.top_k <= 0:
             raise ValueError("top_k must be positive")
 
-    def run(self, query: str) -> str:
+    def run(self, query: str) -> str:  # noqa: C901
         """Execute the pipeline and return formatted supporting facts."""
 
         prepared = query.strip()

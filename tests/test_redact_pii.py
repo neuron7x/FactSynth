@@ -24,7 +24,7 @@ def test_redact_ssn():
 
 def test_evaluate_claim_redacts_evidence_content():
     class DummyRetriever:
-        def search(self, q):
+        def search(self, _query):
             return [RetrievedDoc(id="src", text="Email test@example.com now", score=1.0)]
 
         def close(self):  # pragma: no cover - no-op

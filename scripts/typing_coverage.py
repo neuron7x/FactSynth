@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import argparse
 import ast
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 
 @dataclass
@@ -38,7 +38,7 @@ def _annotate_parents(node: ast.AST) -> None:
 
 def _iter_functions(tree: ast.AST) -> Iterable[ast.FunctionDef | ast.AsyncFunctionDef]:
     for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             yield node
 
 
@@ -49,9 +49,7 @@ def _is_method(node: ast.AST) -> bool:
 def _parameter_is_typed(arg: ast.arg, ignore_untyped_self: bool) -> bool:
     if arg.annotation is not None:
         return True
-    if ignore_untyped_self and arg.arg in {"self", "cls"}:
-        return True
-    return False
+    return ignore_untyped_self and arg.arg in {"self", "cls"}
 
 
 def _function_is_typed(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
@@ -73,10 +71,7 @@ def _function_is_typed(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     if node.args.kwarg and node.args.kwarg.annotation is None:
         return False
 
-    if node.returns is None and node.name != "__init__":
-        return False
-
-    return True
+    return node.returns is not None or node.name == "__init__"
 
 
 def analyse_file(path: Path) -> FunctionStats:

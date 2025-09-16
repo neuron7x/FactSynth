@@ -1,8 +1,9 @@
+from http import HTTPStatus
+
 import pytest
 from fastapi.testclient import TestClient
 
 from factsynth_ultimate.app import create_app
-
 
 pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
@@ -14,6 +15,6 @@ def test_api_key_allow_list(monkeypatch):
     with TestClient(app) as client:
         headers = {"x-api-key": "a"}
         resp = client.post("/v1/generate", json={"text": "hi"}, headers=headers)
-        assert resp.status_code == 200
+        assert resp.status_code == HTTPStatus.OK
         resp = client.post("/v1/generate", json={"text": "hi"}, headers={"x-api-key": "c"})
-        assert resp.status_code == 403
+        assert resp.status_code == HTTPStatus.FORBIDDEN

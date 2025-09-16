@@ -6,9 +6,12 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager, suppress
+from typing import Any, Literal
 
 import fastapi.routing as fastapi_routing
 import fastapi.utils as fastapi_utils
+from fastapi import FastAPI, Request, Response
+from fastapi import exceptions as fastapi_exceptions
 from fastapi._compat import (
     BaseConfig,
     FieldInfo,
@@ -16,15 +19,13 @@ from fastapi._compat import (
     PydanticUndefined,
     PydanticUndefinedType,
 )
-from fastapi import FastAPI, Request, Response
-from fastapi import exceptions as fastapi_exceptions
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from typing import Any, Literal
 
 from . import VERSION
+from .api.routers import api
 from .core.auth import APIKeyAuthMiddleware
 from .core.body_limit import BodySizeLimitMiddleware
 from .core.errors import install_handlers
@@ -36,7 +37,6 @@ from .core.security_headers import SecurityHeadersMiddleware
 from .core.settings import load_settings
 from .core.tracing import try_enable_otel
 from .store.redis import check_health
-
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ if not getattr(fastapi_utils, "_factsynth_safe_field", False):
         field_info: FieldInfo | None = None,
         alias: str | None = None,
         mode: Literal["validation", "serialization"] = "validation",
-    ) -> ModelField | None:
+    ) -> ModelField | None:  # noqa: PLR0913
         try:
             return _original_create_model_field(
                 name,
@@ -90,9 +90,6 @@ if not getattr(fastapi_utils, "_factsynth_safe_field", False):
     fastapi_utils.create_model_field = _safe_create_model_field
     fastapi_routing.create_model_field = _safe_create_model_field
     fastapi_utils._factsynth_safe_field = True
-
-
-from .api.routers import api
 
 
 class _MetricsMiddleware(BaseHTTPMiddleware):
@@ -125,7 +122,7 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
     setup_logging()
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI):
+    async def lifespan(_app: FastAPI):
         try:
             healthy = await check_health(settings.rate_limit_redis_url)
         except Exception:  # pragma: no cover - defensive guard

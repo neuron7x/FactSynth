@@ -9,11 +9,11 @@ from hypothesis import strategies as st
 def _pick_score(payload):
     if isinstance(payload, dict):
         for k in ("coverage", "score"):
-            if k in payload and isinstance(payload[k], (int, float)):
+            if k in payload and isinstance(payload[k], int | float):
                 return float(payload[k])
         if "data" in payload and isinstance(payload["data"], dict):
             for k in ("coverage", "score"):
-                if k in payload["data"] and isinstance(payload["data"][k], (int, float)):
+                if k in payload["data"] and isinstance(payload["data"][k], int | float):
                     return float(payload["data"][k])
     return None
 
@@ -22,15 +22,11 @@ async def _assert_monotonic_coverage(api_client: AsyncClient, base_headers, quer
     A = base
     B = base + [e for e in extra if e not in base]
 
-    r1 = await api_client.post(
-        "/v1/score", headers=base_headers, json={"query": query, "facts": A}
-    )
-    r2 = await api_client.post(
-        "/v1/score", headers=base_headers, json={"query": query, "facts": B}
-    )
+    r1 = await api_client.post("/v1/score", headers=base_headers, json={"query": query, "facts": A})
+    r2 = await api_client.post("/v1/score", headers=base_headers, json={"query": query, "facts": B})
 
     if HTTPStatus.NOT_FOUND in {r1.status_code, r2.status_code}:
-        assert False, (
+        raise AssertionError(
             "score endpoint '/v1/score' is unavailable (received HTTP 404). "
             f"statuses: first={r1.status_code} second={r2.status_code}"
         )
@@ -42,7 +38,7 @@ async def _assert_monotonic_coverage(api_client: AsyncClient, base_headers, quer
     s2 = _pick_score(payload2)
 
     if s1 is None or s2 is None:
-        assert False, (
+        raise AssertionError(
             "score response payload missing numeric 'score' or 'coverage' fields. "
             f"payload1={payload1!r} payload2={payload2!r}"
         )
@@ -52,7 +48,9 @@ async def _assert_monotonic_coverage(api_client: AsyncClient, base_headers, quer
 
 
 @pytest.mark.anyio
-@settings(max_examples=40, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(
+    max_examples=40, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture]
+)
 @given(
     query=st.text(min_size=5, max_size=80),
     base=st.lists(st.text(min_size=1, max_size=30), min_size=1, max_size=4, unique=True),

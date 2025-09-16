@@ -38,9 +38,7 @@ class Settings(BaseSettings):
             "Allowed CORS origins. Defaults to empty list; set explicitly to enable cross-origin access."
         ),
     )
-    auth_header_name: str = Field(
-        default="x-api-key", alias="AUTH_HEADER_NAME", min_length=1
-    )
+    auth_header_name: str = Field(default="x-api-key", alias="AUTH_HEADER_NAME", min_length=1)
     api_key: str = Field(
         default_factory=lambda: read_api_key("API_KEY", "API_KEY_FILE", "change-me", "API_KEY"),
         min_length=1,
@@ -48,9 +46,7 @@ class Settings(BaseSettings):
     allowed_api_keys: Annotated[list[str], NoDecode] = Field(
         default_factory=list, alias="ALLOWED_API_KEYS"
     )
-    ip_allowlist: Annotated[list[str], NoDecode] = Field(
-        default_factory=list, alias="IP_ALLOWLIST"
-    )
+    ip_allowlist: Annotated[list[str], NoDecode] = Field(default_factory=list, alias="IP_ALLOWLIST")
     skip_auth_paths: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["/v1/healthz", "/metrics"], alias="SKIP_AUTH_PATHS"
     )
@@ -61,26 +57,16 @@ class Settings(BaseSettings):
     rate_limit_redis_url: str = Field(
         default="redis://localhost:6379/0", alias="RATE_LIMIT_REDIS_URL"
     )
-    rates_api: RateQuota = Field(
-        default_factory=lambda: RateQuota(60, 1.0), alias="RATES_API"
-    )
-    rates_ip: RateQuota = Field(
-        default_factory=lambda: RateQuota(60, 1.0), alias="RATES_IP"
-    )
-    rates_org: RateQuota = Field(
-        default_factory=lambda: RateQuota(60, 1.0), alias="RATES_ORG"
-    )
+    rates_api: RateQuota = Field(default_factory=lambda: RateQuota(60, 1.0), alias="RATES_API")
+    rates_ip: RateQuota = Field(default_factory=lambda: RateQuota(60, 1.0), alias="RATES_IP")
+    rates_org: RateQuota = Field(default_factory=lambda: RateQuota(60, 1.0), alias="RATES_ORG")
     token_delay: float = Field(default=0.002, ge=0, alias="TOKEN_DELAY")
     health_tcp_checks: Annotated[list[str], NoDecode] = Field(
         default_factory=list, alias="HEALTH_TCP_CHECKS"
     )
     source_store_backend: str = Field(default="memory", alias="SOURCE_STORE_BACKEND")
-    source_store_ttl_seconds: int | None = Field(
-        default=3600, alias="SOURCE_STORE_TTL_SECONDS"
-    )
-    source_store_redis_url: str | None = Field(
-        default=None, alias="SOURCE_STORE_REDIS_URL"
-    )
+    source_store_ttl_seconds: int | None = Field(default=3600, alias="SOURCE_STORE_TTL_SECONDS")
+    source_store_redis_url: str | None = Field(default=None, alias="SOURCE_STORE_REDIS_URL")
 
     @field_validator(
         "cors_allow_origins",
@@ -109,7 +95,7 @@ class Settings(BaseSettings):
 
     @field_validator("rates_api", "rates_ip", "rates_org", mode="before")
     @classmethod
-    def _parse_rate(cls, value: Any) -> RateQuota:
+    def _parse_rate(cls, value: Any) -> RateQuota:  # noqa: C901
         if value is None:
             return RateQuota(0, 1.0)
         if isinstance(value, RateQuota):
@@ -128,7 +114,7 @@ class Settings(BaseSettings):
             else:  # pragma: no cover - defensive guard
                 raise ValueError("Invalid rate specification")
             return RateQuota(burst, sustain)
-        if isinstance(value, (tuple, list)):
+        if isinstance(value, tuple | list):
             if len(value) != 2:
                 msg = "Rate tuples must contain burst and sustain"
                 raise ValueError(msg)
