@@ -8,6 +8,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+from starlette.types import ASGIApp
 
 from ..i18n import choose_language, translate
 
@@ -15,7 +16,7 @@ from ..i18n import choose_language, translate
 class BodySizeLimitMiddleware(BaseHTTPMiddleware):
     """Reject requests whose body exceeds ``max_bytes``."""
 
-    def __init__(self, app, max_bytes: int = 2_000_000) -> None:
+    def __init__(self, app: ASGIApp, max_bytes: int = 2_000_000) -> None:
         """Configure the middleware with a byte limit."""
 
         super().__init__(app)

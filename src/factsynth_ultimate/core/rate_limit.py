@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import math
 import time
+from collections.abc import Awaitable, Callable, Iterable, Mapping
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Iterable
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -21,8 +21,13 @@ from ..i18n import choose_language, translate
 from ..store.memory import MemoryStore
 from .metrics import RATE_LIMIT_BLOCKS, REQUESTS
 
+if TYPE_CHECKING:
+    from .settings import Settings
 
-def _load_rate_settings():
+T = TypeVar("T")
+
+
+def _load_rate_settings() -> Settings:
     """Load application settings lazily to avoid circular imports."""
 
     from .settings import load_settings  # Imported here to avoid cycles.
@@ -37,7 +42,7 @@ class RateQuota:
     burst: int
     sustain: float
 
-    def __post_init__(self) -> None:  # noqa: D401
+    def __post_init__(self) -> None:
         if self.burst < 0:
             msg = "burst must be non-negative"
             raise ValueError(msg)
@@ -70,7 +75,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self,
         app: ASGIApp,
         *,
-        redis: Redis,
+        redis: Redis[Any],
         api: RateQuota | None = None,
         ip: RateQuota | None = None,
         org: RateQuota | None = None,
@@ -147,16 +152,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             self._fallback_until = 0.0
             self._logger.info("Redis backend recovered; resuming primary store")
 
-    async def _call_store(self, method: str, *args, **kwargs):
+    async def _call_store(self, method: str, *args: Any, **kwargs: Any) -> T:
         use_redis = self._should_use_redis()
         store = self.redis if use_redis else self._memory_store
         try:
-            func = getattr(store, method)
+            func = cast(Callable[..., Awaitable[T]], getattr(store, method))
             result = await func(*args, **kwargs)
-        except (RedisError, OSError, asyncio.TimeoutError) as exc:
+        except (TimeoutError, RedisError, OSError) as exc:
             if use_redis and self._fallback_timeout > 0:
                 self._activate_fallback(exc)
-                fallback_func = getattr(self._memory_store, method)
+                fallback_func = cast(
+                    Callable[..., Awaitable[T]], getattr(self._memory_store, method)
+                )
                 return await fallback_func(*args, **kwargs)
             raise
         else:
@@ -174,7 +181,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """Attempt to take a token from the bucket identified by ``redis_key``."""
 
         now = time.time()
-        data = await self._call_store("hgetall", redis_key)
+        data: Mapping[str | bytes, str | bytes] = await self._call_store(
+            "hgetall", redis_key
+        )
         raw_tokens = data.get("tokens") or data.get(b"tokens")
         raw_ts = data.get("ts") or data.get(b"ts")
         tokens = float(raw_tokens) if raw_tokens is not None else float(quota.burst)

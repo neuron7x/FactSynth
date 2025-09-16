@@ -162,7 +162,7 @@ def reload_allowed_hosts() -> None:
     """Clear the allowed hosts cache to reload settings."""
     get_allowed_hosts.cache_clear()
 
-api = APIRouter()
+api: APIRouter = APIRouter()
 api.include_router(generate_router)
 
 

@@ -135,12 +135,12 @@ class Settings(BaseSettings):
             burst, sustain = value
             return RateQuota(int(burst), float(sustain))
         if isinstance(value, dict):
-            burst = value.get("burst")
-            sustain = value.get("sustain")
-            if burst is None or sustain is None:
+            burst_value = value.get("burst")
+            sustain_value = value.get("sustain")
+            if burst_value is None or sustain_value is None:
                 msg = "Rate mappings must define 'burst' and 'sustain'"
                 raise ValueError(msg)
-            return RateQuota(int(burst), float(sustain))
+            return RateQuota(int(burst_value), float(sustain_value))
         msg = f"Unsupported rate configuration: {type(value)!r}"
         raise TypeError(msg)
 

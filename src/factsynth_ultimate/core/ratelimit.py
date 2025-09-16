@@ -5,6 +5,7 @@ from __future__ import annotations
 import hmac
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
+from typing import Any
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -24,7 +25,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self,
         app: ASGIApp,
         *,
-        redis: Redis,
+        redis: Redis[Any],
         per_key: int | None = None,
         per_ip: int | None = None,
         per_org: int | None = None,
