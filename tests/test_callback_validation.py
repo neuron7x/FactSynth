@@ -1,14 +1,11 @@
 import os
 from http import HTTPStatus
-from http import HTTPStatus
-import os
 from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
 
 from factsynth_ultimate.app import create_app
-
 
 pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
