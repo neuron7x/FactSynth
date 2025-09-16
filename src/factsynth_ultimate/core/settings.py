@@ -70,6 +70,9 @@ class Settings(BaseSettings):
     rates_org: RateQuota = Field(
         default_factory=lambda: RateQuota(60, 1.0), alias="RATES_ORG"
     )
+    ws_max_sessions_per_key: int = Field(
+        default=0, alias="WS_MAX_SESSIONS_PER_KEY", ge=0
+    )
     token_delay: float = Field(default=0.002, ge=0, alias="TOKEN_DELAY")
     health_tcp_checks: Annotated[list[str], NoDecode] = Field(
         default_factory=list, alias="HEALTH_TCP_CHECKS"

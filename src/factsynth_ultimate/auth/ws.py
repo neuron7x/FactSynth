@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping, MutableMapping
+from typing import Any, Mapping, MutableMapping
 
 from ..core.settings import load_settings
 
@@ -13,8 +13,38 @@ class WebSocketUser:
     """Immutable user record returned after successful authentication."""
 
     api_key: str
-    organization: str
+    user: Mapping[str, Any]
+    organization: Mapping[str, Any]
     status: str = "active"
+
+    @property
+    def user_id(self) -> str:
+        """Best-effort identifier for the authenticated user."""
+
+        for key in ("id", "user_id", "email", "name"):
+            value = self.user.get(key)
+            if value:
+                return str(value)
+        return ""
+
+    @property
+    def organization_slug(self) -> str:
+        """Return the slug-like identifier for the organization."""
+
+        for key in ("slug", "key", "id", "name"):
+            value = self.organization.get(key)
+            if value:
+                return str(value)
+        return ""
+
+    @property
+    def organization_name(self) -> str:
+        """Return the human friendly organization name if available."""
+
+        value = self.organization.get("name")
+        if value:
+            return str(value)
+        return self.organization_slug
 
 
 class WebSocketAuthError(Exception):
@@ -32,7 +62,12 @@ _REGISTRY: MutableMapping[str, WebSocketUser] | None = None
 def _default_registry() -> MutableMapping[str, WebSocketUser]:
     settings = load_settings()
     key = settings.api_key
-    user = WebSocketUser(api_key=key, organization="default", status="active")
+    user = WebSocketUser(
+        api_key=key,
+        user={"id": "default", "name": "Default User"},
+        organization={"slug": "default", "name": "Default Org"},
+        status="active",
+    )
     return {key.casefold(): user}
 
 
@@ -68,7 +103,10 @@ def authenticate_ws(api_key: str | None) -> WebSocketUser:
     if entry is None:
         raise WebSocketAuthError(4401, "Invalid API key")
 
-    if not entry.organization:
+    if not entry.user:
+        raise WebSocketAuthError(4401, "User data required")
+
+    if not entry.organization or not entry.organization_slug:
         raise WebSocketAuthError(4403, "Organization required")
 
     if entry.status.casefold() not in {"active", "enabled"}:

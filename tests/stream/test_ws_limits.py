@@ -60,7 +60,12 @@ def _reset_ws_registry():
 
 
 def test_ws_scope_contains_authenticated_user():
-    user = ws_auth.WebSocketUser(api_key="change-me", organization="qa", status="active")
+    user = ws_auth.WebSocketUser(
+        api_key="change-me",
+        user={"id": "qa-user", "email": "qa@example.com"},
+        organization={"slug": "qa", "name": "QA"},
+        status="active",
+    )
     ws_auth.set_ws_registry({user.api_key: user})
 
     pipeline = DummyPipeline("hello world")
@@ -72,19 +77,26 @@ def test_ws_scope_contains_authenticated_user():
         with client.websocket_connect("/ws/stream", headers={"x-api-key": "change-me"}) as ws:
             stored = ws.scope.get("user")
             assert stored is user
+            assert stored.organization_slug == "qa"
+            assert stored.user["email"] == "qa@example.com"
             ws.send_json({"text": "alpha"})
             _consume_until_end(ws)
 
 
 def test_ws_rate_limit_triggers_and_logs():
-    user = ws_auth.WebSocketUser(api_key="change-me", organization="ops", status="active")
+    user = ws_auth.WebSocketUser(
+        api_key="change-me",
+        user={"id": "ops-user"},
+        organization={"slug": "ops", "name": "Ops"},
+        status="active",
+    )
     ws_auth.set_ws_registry({user.api_key: user})
 
     pipeline = DummyPipeline("alpha beta gamma")
     app = create_app()
     app.dependency_overrides[routers.get_fact_pipeline] = lambda: pipeline
     app.dependency_overrides[generate.get_fact_pipeline] = lambda: pipeline
-    app.state.ws_rate_limiter = routers.SessionRateLimiter(limit=1, window=60.0)
+    app.state.ws_rate_limiter = lambda: routers.SessionRateLimiter(limit=1, window=60.0)
 
     with TestClient(app) as client:
         with client.websocket_connect("/ws/stream", headers={"x-api-key": "change-me"}) as ws:
@@ -101,7 +113,41 @@ def test_ws_rate_limit_triggers_and_logs():
             with pytest.raises((RuntimeError, WebSocketDisconnect)):
                 ws.receive_json()
 
+        with client.websocket_connect("/ws/stream", headers={"x-api-key": "change-me"}) as ws:
+            ws.send_json({"text": "three"})
+            _consume_until_end(ws)
+
     entries = _flush_audit_log()
     assert any("ws_connect" in line for line in entries)
     assert any("ws_rate_limit" in line for line in entries)
     assert any("ws_disconnect_rate_limited" in line for line in entries)
+    assert any("user=ops-user" in line for line in entries)
+
+
+def test_ws_parallel_limit_enforced(monkeypatch):
+    monkeypatch.setenv("WS_MAX_SESSIONS_PER_KEY", "1")
+
+    user = ws_auth.WebSocketUser(
+        api_key="change-me",
+        user={"id": "ops-user"},
+        organization={"slug": "ops"},
+        status="active",
+    )
+    ws_auth.set_ws_registry({user.api_key: user})
+
+    pipeline = DummyPipeline("alpha")
+    app = create_app()
+    app.dependency_overrides[routers.get_fact_pipeline] = lambda: pipeline
+    app.dependency_overrides[generate.get_fact_pipeline] = lambda: pipeline
+
+    with TestClient(app) as client:
+        with client.websocket_connect("/ws/stream", headers={"x-api-key": "change-me"}):
+            with pytest.raises(WebSocketDisconnect):
+                with client.websocket_connect(
+                    "/ws/stream", headers={"x-api-key": "change-me"}
+                ):
+                    pass
+
+    entries = _flush_audit_log()
+    assert any("ws_parallel_limit" in line for line in entries)
+    assert any("limit=1" in line for line in entries)

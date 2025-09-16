@@ -30,7 +30,7 @@ from factsynth_ultimate import VERSION
 from facts import FactPipeline, FactPipelineError
 from factsynth_ultimate.stream import stream_facts
 
-from ..auth.ws import WebSocketAuthError, authenticate_ws
+from ..auth.ws import WebSocketAuthError, WebSocketUser, authenticate_ws
 from ..core.audit import audit_event
 from ..core.metrics import (
     CITATION_PRECISION,
@@ -94,6 +94,41 @@ class SessionRateLimiter:
         self._events.pop(client_id, None)
 
 
+class ParallelConnectionTracker:
+    """Track active websocket sessions per API key."""
+
+    def __init__(self) -> None:
+        self._counts: dict[str, int] = {}
+
+    def acquire(self, api_key: str, limit: int) -> tuple[bool, int]:
+        """Try to register a connection and return (allowed, active_count)."""
+
+        normalized = api_key.casefold()
+        current = self._counts.get(normalized, 0)
+        if limit > 0 and current >= limit:
+            return False, current
+        current += 1
+        self._counts[normalized] = current
+        return True, current
+
+    def release(self, api_key: str) -> int:
+        """Decrement active connection count and return remaining."""
+
+        normalized = api_key.casefold()
+        current = self._counts.get(normalized, 0)
+        if current <= 1:
+            self._counts.pop(normalized, None)
+            return 0
+        current -= 1
+        self._counts[normalized] = current
+        return current
+
+    def active(self, api_key: str) -> int:
+        """Return the number of active connections for ``api_key``."""
+
+        return self._counts.get(api_key.casefold(), 0)
+
+
 def _client_identifier(ws: WebSocket) -> str:
     client = ws.client
     if client is None:
@@ -108,16 +143,35 @@ def _client_identifier(ws: WebSocket) -> str:
 
 
 def _session_limiter(ws: WebSocket) -> SessionRateLimiter:
-    existing = getattr(ws.app.state, "ws_rate_limiter", None)
+    scope = ws.scope
+    existing = scope.get("session_rate_limiter")
     if isinstance(existing, SessionRateLimiter):
         return existing
-    settings = load_settings()
-    burst = getattr(settings.rates_ip, "burst", 0)
-    sustain = getattr(settings.rates_ip, "sustain", 1.0) or 1.0
-    window = max(1.0, float(burst) / float(sustain)) if burst > 0 else 60.0
-    limiter = SessionRateLimiter(limit=int(burst), window=window)
-    ws.app.state.ws_rate_limiter = limiter
+
+    override = getattr(ws.app.state, "ws_rate_limiter", None)
+    limiter: SessionRateLimiter
+    if callable(override):
+        limiter = override()
+    elif isinstance(override, SessionRateLimiter):
+        limiter = SessionRateLimiter(limit=override.limit, window=override.window)
+    else:
+        settings = load_settings()
+        burst = getattr(settings.rates_ip, "burst", 0)
+        sustain = getattr(settings.rates_ip, "sustain", 1.0) or 1.0
+        window = max(1.0, float(burst) / float(sustain)) if burst > 0 else 60.0
+        limiter = SessionRateLimiter(limit=int(burst), window=window)
+
+    scope["session_rate_limiter"] = limiter
     return limiter
+
+
+def _connection_tracker(ws: WebSocket) -> ParallelConnectionTracker:
+    tracker = getattr(ws.app.state, "ws_connection_tracker", None)
+    if isinstance(tracker, ParallelConnectionTracker):
+        return tracker
+    tracker = ParallelConnectionTracker()
+    ws.app.state.ws_connection_tracker = tracker
+    return tracker
 
 
 def _last_event_id(request: Request) -> int | None:
@@ -345,21 +399,59 @@ async def ws_stream(
     cfg = load_settings()
     key = ws.headers.get(cfg.auth_header_name)
     client_id = _client_identifier(ws)
-    try:
-        user = authenticate_ws(key)
-    except WebSocketAuthError as exc:
-        audit_event("ws_denied", f"{client_id} reason={exc.reason}")
-        await ws.close(code=exc.code, reason=exc.reason)
-        return
-
-    ws.scope["user"] = user
+    session_id = ws.scope.setdefault("ws_session_id", f"ws-{id(ws)}")
     limiter = _session_limiter(ws)
-
-    await ws.accept()
-    audit_event("ws_connect", f"{client_id} org={user.organization}")
-    default_delay = cfg.token_delay
+    tracker = _connection_tracker(ws)
+    user: WebSocketUser | None = None
+    connection_registered = False
+    accepted = False
     rate_limited = False
+    org_label = "unknown"
     try:
+        try:
+            user = authenticate_ws(key)
+        except WebSocketAuthError as exc:
+            audit_event("ws_denied", f"{client_id} reason={exc.reason}")
+            await ws.close(code=exc.code, reason=exc.reason)
+            return
+
+        org_label = user.organization_slug or "unknown"
+        ws.scope["user"] = user
+
+        max_parallel = int(getattr(cfg, "ws_max_sessions_per_key", 0) or 0)
+        allowed, active_count = tracker.acquire(user.api_key, max_parallel)
+        if not allowed:
+            reason = "Too many parallel connections"
+            audit_event(
+                "ws_parallel_limit",
+                f"{client_id} org={org_label} active={active_count} limit={max_parallel}",
+            )
+            logger.warning(
+                "ws_parallel_limit client=%s org=%s api_key=%s active=%d limit=%d",
+                client_id,
+                org_label,
+                user.api_key,
+                active_count,
+                max_parallel,
+            )
+            await ws.close(code=4429, reason=reason)
+            return
+
+        connection_registered = True
+
+        await ws.accept()
+        accepted = True
+        audit_event("ws_connect", f"{client_id} org={org_label} user={user.user_id}")
+        logger.info(
+            "ws_connect client=%s api_key=%s org=%s user=%s active=%d",
+            client_id,
+            user.api_key,
+            org_label,
+            user.user_id,
+            active_count,
+        )
+
+        default_delay = cfg.token_delay
         while True:
             message = await ws.receive_text()
             try:
@@ -379,12 +471,18 @@ async def ws_stream(
             chunk_size = payload.get("chunk_size")
             delay_override = payload.get("delay")
 
-            allowed, _remaining = limiter.allow(client_id)
+            allowed, _ = limiter.allow(session_id)
             if not allowed:
-                retry_after = limiter.retry_after(client_id)
+                retry_after = limiter.retry_after(session_id)
                 audit_event(
                     "ws_rate_limit",
-                    f"{client_id} org={user.organization} retry={retry_after}",
+                    f"{client_id} org={org_label} retry={retry_after}",
+                )
+                logger.warning(
+                    "ws_rate_limit client=%s org=%s retry_after=%s",
+                    client_id,
+                    org_label,
+                    retry_after,
                 )
                 error_payload: dict[str, Any] = {
                     "event": "error",
@@ -448,9 +546,25 @@ async def ws_stream(
     except WebSocketDisconnect:
         pass
     finally:
-        limiter.reset(client_id)
-        event = "ws_disconnect_rate_limited" if rate_limited else "ws_disconnect"
-        audit_event(event, f"{client_id} org={user.organization}")
+        limiter.reset(session_id)
+        remaining = 0
+        if connection_registered and user is not None:
+            remaining = tracker.release(user.api_key)
+        if accepted and user is not None:
+            event = "ws_disconnect_rate_limited" if rate_limited else "ws_disconnect"
+            audit_event(
+                event,
+                f"{client_id} org={org_label} user={user.user_id} remaining={remaining}",
+            )
+            logger.info(
+                "%s client=%s api_key=%s org=%s user=%s remaining=%d",
+                event,
+                client_id,
+                user.api_key,
+                org_label,
+                user.user_id,
+                remaining,
+            )
         # Restore a default loop so tests using get_event_loop() do not fail
         asyncio.set_event_loop(asyncio.new_event_loop())
 
