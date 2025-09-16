@@ -1,0 +1,5 @@
+# Ignore generated benchmark artifacts but keep documented thresholds.
+*
+!/.gitignore
+!/README.md
+!/thresholds.json

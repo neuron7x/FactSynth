@@ -115,6 +115,11 @@ async def api_stub():
 def _stub_external_api(httpx_mock) -> None:
     """Stub external HTTP calls so tests remain offline."""
 
+    if os.getenv("RUN_BENCHMARKS") == "1":
+        # Benchmark runs exercise in-process code paths only.
+        yield
+        return
+
     httpx_mock.add_callback(stub_handler)
 
 

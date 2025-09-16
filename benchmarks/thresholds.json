@@ -1,0 +1,6 @@
+{
+  "tests/benchmarks/test_retriever_benchmark.py::test_fixture_retriever_search_latency": {
+    "max_latency_ms": 4.0,
+    "min_throughput_rps": 250.0
+  }
+}

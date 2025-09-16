@@ -1,4 +1,4 @@
-.PHONY: install test lint api docker typing-coverage
+.PHONY: install test lint api docker typing-coverage bench
 
 install:
 	python -m venv .venv && . .venv/bin/activate && pip install -U pip && pip install --require-hashes -r requirements.lock && pip install -e .[dev,ops]
@@ -10,19 +10,28 @@ test:
 	. .venv/bin/activate && pytest
 
 lint:
-        . .venv/bin/activate && ruff check . && mypy src
+	. .venv/bin/activate && ruff check . && mypy src
 
 api:
-        . .venv/bin/activate && fsu-api
+	. .venv/bin/activate && fsu-api
 
 docker:
-        docker build -t factsynth-ultimate:2.0 . && docker run --rm -p 8000:8000 -e API_KEY=change-me factsynth-ultimate:2.0
+	docker build -t factsynth-ultimate:2.0 . && docker run --rm -p 8000:8000 -e API_KEY=change-me factsynth-ultimate:2.0
 
 typing-coverage:
-        python scripts/typing_coverage.py src/factsynth_ultimate
+	python scripts/typing_coverage.py src/factsynth_ultimate
 
 mutmut:
 	. .venv/bin/activate && mutmut run
+
+bench:
+	python -m venv .venv
+	. .venv/bin/activate && pip install -U pip
+	. .venv/bin/activate && pip install -r requirements-dev.txt
+	. .venv/bin/activate && pip install -e .[dev,ops]
+	. .venv/bin/activate && mkdir -p benchmarks/results
+	. .venv/bin/activate && RUN_BENCHMARKS=1 pytest --benchmark-only --benchmark-json=benchmarks/results/latest.json --benchmark-storage=none --no-cov
+	. .venv/bin/activate && python scripts/check_benchmark_thresholds.py --results benchmarks/results/latest.json --thresholds benchmarks/thresholds.json --summary benchmarks/results/summary.md
 
 # Added by Incubation Pack
 .PHONY: release sbom checksums test-contract
