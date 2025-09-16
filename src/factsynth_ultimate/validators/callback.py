@@ -25,21 +25,27 @@ def _reject(
 ) -> ProblemDetails:
     """Return a :class:`ProblemDetails` describing a rejection."""
 
-    if exc is None:
-        logger.warning("Rejecting callback URL %s: %s", url, detail)
-    else:  # pragma: no cover - defensive, depends on urllib internals
-        logger.warning("Rejecting callback URL %s: %s", url, detail, exc_info=exc)
-
     payload: dict[str, object] = {"reason": reason}
     if extras:
         payload.update(extras)
 
-    return ProblemDetails(
+    problem = ProblemDetails(
         title=title,
         detail=detail,
         status=int(HTTPStatus.BAD_REQUEST),
         extras=payload,
     )
+
+    log_payload = {
+        "problem_details": problem.model_dump(exclude_none=True),
+        "callback_url": url,
+    }
+    if exc is None:
+        logger.warning("Rejecting callback URL", extra=log_payload)
+    else:  # pragma: no cover - defensive, depends on urllib internals
+        logger.warning("Rejecting callback URL", extra=log_payload, exc_info=exc)
+
+    return problem
 
 
 def validate_callback_url(url: str, allowed_hosts: Collection[str]) -> ProblemDetails | None:
