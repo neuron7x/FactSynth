@@ -7,8 +7,6 @@ from functools import lru_cache
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 
 from facts import (
     AggregationError,
@@ -19,31 +17,12 @@ from facts import (
     SearchError,
 )
 from factsynth_ultimate.core.audit import audit_event
+from factsynth_ultimate.core.problem_details import ProblemDetails
 from factsynth_ultimate.schemas.requests import GenerateReq
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-class ProblemDetails(BaseModel):
-    """Representation of an RFC 9457 problem response."""
-
-    title: str
-    detail: str
-    status: int
-    type: str = "about:blank"
-    instance: str | None = None
-
-    def to_response(self) -> JSONResponse:
-        """Return a :class:`JSONResponse` configured for problem+json."""
-
-        return JSONResponse(
-            self.model_dump(exclude_none=True),
-            status_code=self.status,
-            media_type="application/problem+json",
-        )
-
 
 def _client_host(request: Request) -> str:
     """Best-effort retrieval of the requesting client's host."""

@@ -8,8 +8,17 @@ from typing import Any
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from factsynth_ultimate.config import ConfigError, load_config
+
 from .rate_limit import RateQuota
 from .secrets import read_api_key
+
+
+def _default_callback_allowed_hosts() -> list[str]:
+    try:
+        return load_config().CALLBACK_URL_ALLOWED_HOSTS
+    except ConfigError:
+        return []
 
 
 class Settings(BaseSettings):
@@ -36,7 +45,10 @@ class Settings(BaseSettings):
     skip_auth_paths: list[str] = Field(
         default_factory=lambda: ["/v1/healthz", "/metrics"], env="SKIP_AUTH_PATHS"
     )
-    callback_url_allowed_hosts: str = Field(default="", env="CALLBACK_URL_ALLOWED_HOSTS")
+    callback_url_allowed_hosts: list[str] = Field(
+        default_factory=_default_callback_allowed_hosts,
+        env="CALLBACK_URL_ALLOWED_HOSTS",
+    )
     rate_limit_redis_url: str = Field(
         default="redis://localhost:6379/0", env="RATE_LIMIT_REDIS_URL"
     )
@@ -55,6 +67,7 @@ class Settings(BaseSettings):
         "health_tcp_checks",
         "ip_allowlist",
         "allowed_api_keys",
+        "callback_url_allowed_hosts",
         mode="before",
     )
     @classmethod
