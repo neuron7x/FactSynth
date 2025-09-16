@@ -18,8 +18,6 @@ os.environ.setdefault("RATE_LIMIT_PER_ORG", "1000")
 
 from factsynth_ultimate.app import create_app
 
-API_KEY = os.getenv("API_KEY", "change-me")
-
 # Ensure a default event loop for tests that rely on get_event_loop()
 asyncio.set_event_loop(asyncio.new_event_loop())
 
@@ -44,9 +42,10 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def base_headers() -> dict[str, str]:
-    return {"x-api-key": API_KEY, "content-type": "application/json"}
+    api_key = os.getenv("API_KEY", "change-me")
+    return {"x-api-key": api_key, "content-type": "application/json"}
 
 
 @pytest.fixture()
