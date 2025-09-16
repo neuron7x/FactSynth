@@ -104,8 +104,16 @@ jobs:
       - name: Mypy
         if: hashFiles('pyproject.toml','requirements.txt') != ''
         run: |
-          pip install mypy
-          mypy .
+          pip install mypy lxml
+          mypy --strict src/factsynth_ultimate --html-report .mypy_html
+
+      - name: Upload mypy report
+        if: hashFiles('pyproject.toml','requirements.txt') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mypy-html-${{ matrix.python-version }}
+          path: .mypy_html
+          if-no-files-found: warn
 
       - name: Bandit
         if: hashFiles('pyproject.toml','requirements.txt') != ''
