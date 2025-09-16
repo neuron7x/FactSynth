@@ -80,6 +80,13 @@ def base_headers() -> dict[str, str]:
 
 
 @pytest.fixture()
+def assert_all_responses_were_requested() -> bool:
+    """Disable strict assertion on httpx mocks by default."""
+
+    return False
+
+
+@pytest.fixture()
 def time_travel():
     """Provide a controllable clock for tests."""
 
@@ -108,7 +115,7 @@ async def api_stub():
 def _stub_external_api(httpx_mock) -> None:
     """Stub external HTTP calls so tests remain offline."""
 
-    httpx_mock.add_callback(stub_handler, is_optional=True)
+    httpx_mock.add_callback(stub_handler)
 
 
 @pytest.fixture(autouse=True)
