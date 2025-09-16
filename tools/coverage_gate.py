@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 import sys
-import xml.etree.ElementTree as ET
+
+from defusedxml import ElementTree as ET
 
 
 def extract_coverage(path: str) -> float | None:
