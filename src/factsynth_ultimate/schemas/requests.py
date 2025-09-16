@@ -7,10 +7,10 @@ from datetime import date
 from typing import Annotated
 
 import pycountry
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 
-StrippedNonEmpty = Annotated[str, Field(strip_whitespace=True, min_length=1)]
-NonNegativeStr = Annotated[str, Field(strip_whitespace=True, min_length=0)]
+StrippedNonEmpty = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+NonNegativeStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=0)]
 LimitedInt = Annotated[int, Field(ge=1, le=1000)]
 LargeInt = Annotated[int, Field(ge=1, le=10000)]
 Percent = Annotated[float, Field(ge=0.0, le=1.0)]

@@ -6,7 +6,7 @@ import logging
 import os
 from contextlib import suppress
 
-from pythonjsonlogger import jsonlogger
+from pythonjsonlogger.json import JsonFormatter
 
 from .request_id import get_request_id
 
@@ -25,7 +25,7 @@ def setup_logging() -> None:
 
     level = os.getenv("LOG_LEVEL", "INFO").upper()
     handler = logging.StreamHandler()
-    handler.setFormatter(jsonlogger.JsonFormatter())
+    handler.setFormatter(JsonFormatter())
     handler.addFilter(RequestIdFilter())
 
     root = logging.getLogger()
@@ -39,7 +39,7 @@ def setup_logging() -> None:
         with suppress(Exception):
             existing.close()
     audit_handler = logging.FileHandler("audit.log", encoding="utf-8")
-    audit_handler.setFormatter(jsonlogger.JsonFormatter())
+    audit_handler.setFormatter(JsonFormatter())
     audit_handler.addFilter(RequestIdFilter())
     audit_logger.addHandler(audit_handler)
     audit_logger.setLevel(level)

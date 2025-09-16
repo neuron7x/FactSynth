@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 
 import fastapi.routing as fastapi_routing
 import fastapi.utils as fastapi_utils
@@ -80,7 +80,21 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
         raise RuntimeError("Invalid configuration") from exc
     setup_logging()
 
-    app = FastAPI(title="FactSynth Ultimate Pro API", version=VERSION)
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        try:
+            healthy = await check_health(settings.rate_limit_redis_url)
+        except Exception:  # pragma: no cover - defensive guard
+            logger.warning("Failed to run Redis health check", exc_info=True)
+        else:
+            if not healthy:
+                logger.warning(
+                    "Redis health check failed for rate limit backend",
+                    extra={"redis_url": settings.rate_limit_redis_url},
+                )
+        yield
+
+    app = FastAPI(title="FactSynth Ultimate Pro API", version=VERSION, lifespan=lifespan)
     install_handlers(app)
     try_enable_otel(app)
 
@@ -93,18 +107,6 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
     )
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-    @app.on_event("startup")
-    async def _verify_rate_limit_backend() -> None:
-        try:
-            healthy = await check_health(settings.rate_limit_redis_url)
-        except Exception:  # pragma: no cover - defensive guard
-            logger.warning("Failed to run Redis health check", exc_info=True)
-            return
-        if not healthy:
-            logger.warning(
-                "Redis health check failed for rate limit backend", extra={"redis_url": settings.rate_limit_redis_url}
-            )
 
     # core routes
     app.include_router(api)
