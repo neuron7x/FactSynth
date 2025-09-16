@@ -58,14 +58,19 @@ jobs:
           [ -f pyproject.toml ] && pip install -e .[dev] || true
 
       - name: Pre-commit
-        run: |
-          pip install pre-commit
-          pre-commit run --all-files --show-diff-on-failure
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files --show-diff-on-failure
 
-      - name: Verify dependency artifacts
+      - name: Verify dependency artifacts (pip-compile)
+        if: hashFiles('pyproject.toml','requirements.lock','requirements-dev.txt') != ''
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: pip-compile --files pyproject.toml requirements.lock
+
+      - name: Verify dependency artifacts (consistency)
         if: hashFiles('pyproject.toml','requirements.lock','requirements-dev.txt') != ''
         run: |
-          pre-commit run pip-compile --files pyproject.toml requirements.lock
           scripts/update_dev_requirements.sh
           git diff --exit-code
 
