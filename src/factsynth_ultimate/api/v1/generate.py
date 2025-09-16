@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 
 from factsynth_ultimate.core.audit import audit_event
 from factsynth_ultimate.core.problem_details import ProblemDetails
+from factsynth_ultimate.core.tracing import record_exception, set_span_attributes, start_span
 from factsynth_ultimate.schemas.requests import GenerateReq
 
 try:  # pragma: no cover - exercised indirectly when optional dependency is missing
@@ -153,42 +154,137 @@ def generate(
 ) -> JSONResponse | dict[str, dict[str, str]]:
     """Produce fact statements for ``req.text`` using the orchestrated pipeline."""
 
-    audit_event("generate", _client_host(request))
-    try:
-        text = pipeline.run(req.text)
-    except PipelineNotReadyError as exc:
-        logger.warning("Fact pipeline unavailable: %s", exc.reason)
-        return _problem(
-            HTTPStatus.SERVICE_UNAVAILABLE,
-            "Fact generation unavailable",
-            exc.reason,
-        ).to_response()
-    except EmptyQueryError as exc:
-        return _problem(HTTPStatus.BAD_REQUEST, "Invalid query", str(exc)).to_response()
-    except NoFactsFoundError as exc:
-        return _problem(HTTPStatus.NOT_FOUND, "Facts not found", str(exc)).to_response()
-    except SearchError as exc:
-        logger.warning("Fact search failed: %s", exc)
-        return _problem(HTTPStatus.BAD_GATEWAY, "Search failure", str(exc)).to_response()
-    except AggregationError as exc:
-        logger.warning("Fact aggregation failed: %s", exc)
-        return _problem(HTTPStatus.INTERNAL_SERVER_ERROR, "Aggregation failure", str(exc)).to_response()
-    except FactPipelineError as exc:
-        logger.warning("Fact pipeline error: %s", exc)
-        return _problem(HTTPStatus.INTERNAL_SERVER_ERROR, "Fact pipeline failure", str(exc)).to_response()
-    except Exception as exc:  # pragma: no cover - defensive
-        logger.exception("Unexpected fact generation error")
-        return _problem(
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-            "Internal server error",
-            "Failed to generate facts",
-        ).to_response()
+    with start_span("facts.generate") as span:
+        set_span_attributes(
+            span,
+            {
+                "factsynth.generate.request.length": len(req.text or ""),
+                "http.method": request.method,
+                "http.route": str(getattr(request.scope.get("route"), "path", "/v1/generate")),
+            },
+        )
 
-    if problem := _validate_generated_text(text):
-        logger.warning("Rejected pipeline output: %s", problem.detail)
-        return problem.to_response()
+        audit_event("generate", _client_host(request))
+        try:
+            text = pipeline.run(req.text)
+        except PipelineNotReadyError as exc:
+            logger.warning("Fact pipeline unavailable: %s", exc.reason)
+            record_exception(span, exc)
+            problem = _problem(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                "Fact generation unavailable",
+                exc.reason,
+            )
+            set_span_attributes(
+                span,
+                {
+                    "http.status_code": problem.status,
+                    "factsynth.generate.error": "pipeline_not_ready",
+                },
+            )
+            return problem.to_response()
+        except EmptyQueryError as exc:
+            record_exception(span, exc)
+            problem = _problem(HTTPStatus.BAD_REQUEST, "Invalid query", str(exc))
+            set_span_attributes(
+                span,
+                {
+                    "http.status_code": problem.status,
+                    "factsynth.generate.error": "empty_query",
+                },
+            )
+            return problem.to_response()
+        except NoFactsFoundError as exc:
+            record_exception(span, exc)
+            problem = _problem(HTTPStatus.NOT_FOUND, "Facts not found", str(exc))
+            set_span_attributes(
+                span,
+                {
+                    "http.status_code": problem.status,
+                    "factsynth.generate.error": "no_facts_found",
+                },
+            )
+            return problem.to_response()
+        except SearchError as exc:
+            logger.warning("Fact search failed: %s", exc)
+            record_exception(span, exc)
+            problem = _problem(HTTPStatus.BAD_GATEWAY, "Search failure", str(exc))
+            set_span_attributes(
+                span,
+                {
+                    "http.status_code": problem.status,
+                    "factsynth.generate.error": "search_failure",
+                },
+            )
+            return problem.to_response()
+        except AggregationError as exc:
+            logger.warning("Fact aggregation failed: %s", exc)
+            record_exception(span, exc)
+            problem = _problem(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "Aggregation failure",
+                str(exc),
+            )
+            set_span_attributes(
+                span,
+                {
+                    "http.status_code": problem.status,
+                    "factsynth.generate.error": "aggregation_failure",
+                },
+            )
+            return problem.to_response()
+        except FactPipelineError as exc:
+            logger.warning("Fact pipeline error: %s", exc)
+            record_exception(span, exc)
+            problem = _problem(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "Fact pipeline failure",
+                str(exc),
+            )
+            set_span_attributes(
+                span,
+                {
+                    "http.status_code": problem.status,
+                    "factsynth.generate.error": "pipeline_error",
+                },
+            )
+            return problem.to_response()
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.exception("Unexpected fact generation error")
+            record_exception(span, exc)
+            problem = _problem(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "Internal server error",
+                "Failed to generate facts",
+            )
+            set_span_attributes(
+                span,
+                {
+                    "http.status_code": problem.status,
+                    "factsynth.generate.error": "unexpected_error",
+                },
+            )
+            return problem.to_response()
 
-    return {"output": {"text": text}}
+        if problem := _validate_generated_text(text):
+            logger.warning("Rejected pipeline output: %s", problem.detail)
+            set_span_attributes(
+                span,
+                {
+                    "http.status_code": problem.status,
+                    "factsynth.generate.error": "invalid_output",
+                },
+            )
+            return problem.to_response()
+
+        set_span_attributes(
+            span,
+            {
+                "http.status_code": HTTPStatus.OK,
+                "factsynth.generate.response.length": len(text or ""),
+            },
+        )
+        return {"output": {"text": text}}
 
 
 __all__ = ["ProblemDetails", "PipelineNotReadyError", "get_fact_pipeline", "generate", "router"]

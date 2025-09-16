@@ -9,6 +9,8 @@ from dataclasses import dataclass
 
 from facts import FactPipeline
 
+from factsynth_ultimate.core.tracing import record_exception, set_span_attributes, start_span
+
 IsDisconnected = Callable[[], Awaitable[bool]]
 
 
@@ -64,21 +66,47 @@ async def stream_facts(
 
     start_index = max(0, int(start_at))
     sleep_delay = max(0.0, float(delay))
+    emitted = 0
 
-    chunks = _chunk_text(pipeline.run(query), limit=chunk_size)
-    if not chunks or start_index >= len(chunks):
-        return
+    with start_span("facts.stream_facts") as span:
+        set_span_attributes(
+            span,
+            {
+                "factsynth.stream.chunk_size": chunk_size,
+                "factsynth.stream.start_at": start_index,
+                "factsynth.stream.query.length": len(query or ""),
+            },
+        )
+        try:
+            result = pipeline.run(query)
+            chunks = _chunk_text(result, limit=chunk_size)
+            total_chunks = len(chunks)
+            set_span_attributes(
+                span,
+                {"factsynth.stream.total_chunks": total_chunks},
+            )
+            if not chunks or start_index >= total_chunks:
+                return
 
-    first_chunk = True
-    for index in range(start_index, len(chunks)):
-        if is_disconnected and await is_disconnected():
-            break
-        if not first_chunk and sleep_delay > 0:
-            await asyncio.sleep(sleep_delay)
-            if is_disconnected and await is_disconnected():
-                break
-        yield FactStreamChunk(index=index, text=chunks[index])
-        first_chunk = False
+            first_chunk = True
+            for index in range(start_index, total_chunks):
+                if is_disconnected and await is_disconnected():
+                    break
+                if not first_chunk and sleep_delay > 0:
+                    await asyncio.sleep(sleep_delay)
+                    if is_disconnected and await is_disconnected():
+                        break
+                yield FactStreamChunk(index=index, text=chunks[index])
+                emitted += 1
+                first_chunk = False
+        except Exception as exc:  # pragma: no cover - defensive guard
+            record_exception(span, exc)
+            raise
+        finally:
+            set_span_attributes(
+                span,
+                {"factsynth.stream.emitted": emitted},
+            )
 
 
 __all__ = ["FactStreamChunk", "stream_facts"]

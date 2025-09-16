@@ -8,6 +8,7 @@ import logging
 import math
 import random
 import time
+from contextlib import suppress
 from collections import deque
 from collections.abc import AsyncGenerator
 from functools import lru_cache
@@ -45,6 +46,7 @@ from ..core.metrics import (
 )
 from ..core.problem_details import ProblemDetails, bad_request
 from ..core.settings import load_settings
+from ..core.tracing import record_exception, set_span_attributes, start_span
 from ..validators.callback import validate_callback_url
 from ..schemas.callbacks import (
     CallbackAllowlistResponse,
@@ -199,24 +201,49 @@ def _persist_problem(detail: str) -> JSONResponse:
 def callback_allowlist_get() -> CallbackAllowlistResponse:
     """Return the configured callback host allowlist."""
 
-    return _allowlist_response()
+    with start_span("facts.callbacks.allowlist.get") as span:
+        response = _allowlist_response()
+        set_span_attributes(
+            span,
+            {
+                "factsynth.callbacks.host_count": len(response.hosts),
+                "http.status_code": HTTPStatus.OK,
+            },
+        )
+        return response
 
 
 @api.post("/v1/callbacks/allowlist", response_model=CallbackAllowlistResponse)
 def callback_allowlist_add(payload: CallbackHostRequest) -> CallbackAllowlistResponse | JSONResponse:
     """Add a hostname to the callback allowlist."""
 
-    try:
-        add_callback_host(payload.host)
-    except ConfigError as exc:
-        return _config_problem(str(exc))
-    except OSError as exc:  # pragma: no cover - filesystem failures
-        logger.error("Failed to persist callback allowlist", exc_info=exc)
-        return _persist_problem("Could not persist callback allowlist.")
+    with start_span("facts.callbacks.allowlist.add", host=payload.host) as span:
+        set_span_attributes(span, {"factsynth.callbacks.action": "add"})
+        try:
+            add_callback_host(payload.host)
+        except ConfigError as exc:
+            record_exception(span, exc)
+            response = _config_problem(str(exc))
+            set_span_attributes(span, {"http.status_code": response.status_code})
+            return response
+        except OSError as exc:  # pragma: no cover - filesystem failures
+            logger.error("Failed to persist callback allowlist", exc_info=exc)
+            record_exception(span, exc)
+            response = _persist_problem("Could not persist callback allowlist.")
+            set_span_attributes(span, {"http.status_code": response.status_code})
+            return response
 
-    reload_allowed_hosts()
-    logger.info("Callback host allowed", extra={"callback_host": payload.host})
-    return _allowlist_response()
+        reload_allowed_hosts()
+        logger.info("Callback host allowed", extra={"callback_host": payload.host})
+        response = _allowlist_response()
+        set_span_attributes(
+            span,
+            {
+                "http.status_code": HTTPStatus.OK,
+                "factsynth.callbacks.host_count": len(response.hosts),
+            },
+        )
+        return response
 
 
 @api.put("/v1/callbacks/allowlist", response_model=CallbackAllowlistResponse)
@@ -225,17 +252,33 @@ def callback_allowlist_replace(
 ) -> CallbackAllowlistResponse | JSONResponse:
     """Replace the callback allowlist."""
 
-    try:
-        set_callback_hosts(payload.hosts)
-    except ConfigError as exc:
-        return _config_problem(str(exc))
-    except OSError as exc:  # pragma: no cover - filesystem failures
-        logger.error("Failed to persist callback allowlist", exc_info=exc)
-        return _persist_problem("Could not persist callback allowlist.")
+    with start_span("facts.callbacks.allowlist.replace") as span:
+        set_span_attributes(span, {"factsynth.callbacks.action": "replace"})
+        try:
+            set_callback_hosts(payload.hosts)
+        except ConfigError as exc:
+            record_exception(span, exc)
+            response = _config_problem(str(exc))
+            set_span_attributes(span, {"http.status_code": response.status_code})
+            return response
+        except OSError as exc:  # pragma: no cover - filesystem failures
+            logger.error("Failed to persist callback allowlist", exc_info=exc)
+            record_exception(span, exc)
+            response = _persist_problem("Could not persist callback allowlist.")
+            set_span_attributes(span, {"http.status_code": response.status_code})
+            return response
 
-    reload_allowed_hosts()
-    logger.info("Callback allowlist replaced", extra={"callback_hosts": payload.hosts})
-    return _allowlist_response()
+        reload_allowed_hosts()
+        logger.info("Callback allowlist replaced", extra={"callback_hosts": payload.hosts})
+        response = _allowlist_response()
+        set_span_attributes(
+            span,
+            {
+                "http.status_code": HTTPStatus.OK,
+                "factsynth.callbacks.host_count": len(response.hosts),
+            },
+        )
+        return response
 
 
 @api.delete("/v1/callbacks/allowlist/{host}", response_model=CallbackAllowlistResponse)
@@ -243,20 +286,39 @@ def callback_allowlist_remove(host: str) -> CallbackAllowlistResponse | JSONResp
     """Remove a hostname from the callback allowlist."""
 
     normalized = host.strip().lower()
-    if not normalized:
-        return _config_problem("Host must not be empty")
 
-    try:
-        remove_callback_host(normalized)
-    except ConfigError as exc:
-        return _config_problem(str(exc))
-    except OSError as exc:  # pragma: no cover - filesystem failures
-        logger.error("Failed to persist callback allowlist", exc_info=exc)
-        return _persist_problem("Could not persist callback allowlist.")
+    with start_span("facts.callbacks.allowlist.remove", host=normalized or host) as span:
+        set_span_attributes(span, {"factsynth.callbacks.action": "remove"})
+        if not normalized:
+            response = _config_problem("Host must not be empty")
+            set_span_attributes(span, {"http.status_code": response.status_code})
+            return response
 
-    reload_allowed_hosts()
-    logger.info("Callback host removed", extra={"callback_host": normalized})
-    return _allowlist_response()
+        try:
+            remove_callback_host(normalized)
+        except ConfigError as exc:
+            record_exception(span, exc)
+            response = _config_problem(str(exc))
+            set_span_attributes(span, {"http.status_code": response.status_code})
+            return response
+        except OSError as exc:  # pragma: no cover - filesystem failures
+            logger.error("Failed to persist callback allowlist", exc_info=exc)
+            record_exception(span, exc)
+            response = _persist_problem("Could not persist callback allowlist.")
+            set_span_attributes(span, {"http.status_code": response.status_code})
+            return response
+
+        reload_allowed_hosts()
+        logger.info("Callback host removed", extra={"callback_host": normalized})
+        response = _allowlist_response()
+        set_span_attributes(
+            span,
+            {
+                "http.status_code": HTTPStatus.OK,
+                "factsynth.callbacks.host_count": len(response.hosts),
+            },
+        )
+        return response
 
 
 @api.get("/v1/version")
@@ -560,37 +622,94 @@ async def _post_callback(  # noqa: PLR0913
     """POST ``data`` to ``url`` using exponential backoff."""
 
     delay = base_delay
-    last_err = None
+    last_err: str | None = None
+    recorded_exc: BaseException | None = None
     start = time.monotonic()
     attempt_num = 0
-    async with httpx.AsyncClient(timeout=2.0) as client:
-        for i in range(1, attempts + 1):
-            elapsed = time.monotonic() - start
-            if elapsed >= max_elapsed:
-                break
-            attempt_num = i
-            try:
-                r = await client.post(url, json=data)
-                if HTTPStatus.OK <= r.status_code < HTTPStatus.MULTIPLE_CHOICES:
-                    return
-                last_err = f"HTTP {r.status_code}"
-            except Exception as e:  # noqa: BLE001
-                last_err = str(e)
-            logger.warning(
-                "Callback attempt %d/%d failed: %s",
-                i,
-                attempts,
-                last_err,
-                extra={"request_id": request_id},
-            )
-            if i < attempts:
+
+    with start_span("facts.callbacks.post", url=url) as span:
+        set_span_attributes(
+            span,
+            {
+                "factsynth.callback.max_attempts": attempts,
+                "factsynth.callback.base_delay": base_delay,
+                "factsynth.callback.max_delay": max_delay,
+                "factsynth.callback.max_elapsed": max_elapsed,
+            },
+        )
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            for i in range(1, attempts + 1):
                 elapsed = time.monotonic() - start
                 if elapsed >= max_elapsed:
                     break
-                jittered = delay * random.uniform(0.8, 1.2)
-                remaining = max_elapsed - elapsed
-                await _sleep(min(jittered, remaining))
-                delay = min(delay * 2, max_delay)
+                attempt_num = i
+                try:
+                    r = await client.post(url, json=data)
+                except Exception as exc:  # noqa: BLE001
+                    last_err = str(exc)
+                    recorded_exc = exc
+                    with suppress(Exception):
+                        span.add_event(
+                            "callback_exception",
+                            {"attempt": i, "message": last_err},
+                        )
+                else:
+                    if HTTPStatus.OK <= r.status_code < HTTPStatus.MULTIPLE_CHOICES:
+                        set_span_attributes(
+                            span,
+                            {
+                                "factsynth.callback.success": True,
+                                "factsynth.callback.attempts_used": i,
+                                "http.status_code": r.status_code,
+                            },
+                        )
+                        return
+                    last_err = f"HTTP {r.status_code}"
+                    set_span_attributes(
+                        span,
+                        {
+                            "factsynth.callback.last_status": r.status_code,
+                            "factsynth.callback.attempts_used": i,
+                        },
+                    )
+
+                logger.warning(
+                    "Callback attempt %d/%d failed: %s",
+                    i,
+                    attempts,
+                    last_err,
+                    extra={"request_id": request_id},
+                )
+                if i < attempts:
+                    elapsed = time.monotonic() - start
+                    if elapsed >= max_elapsed:
+                        break
+                    jittered = delay * random.uniform(0.8, 1.2)
+                    remaining = max_elapsed - elapsed
+                    await _sleep(min(jittered, remaining))
+                    delay = min(delay * 2, max_delay)
+        if last_err is not None:
+            if recorded_exc is not None:
+                record_exception(span, recorded_exc)
+            else:
+                record_exception(span, RuntimeError(last_err))
+            set_span_attributes(
+                span,
+                {
+                    "factsynth.callback.success": False,
+                    "factsynth.callback.attempts_used": attempt_num,
+                    "factsynth.callback.last_error": last_err,
+                },
+            )
+        else:
+            set_span_attributes(
+                span,
+                {
+                    "factsynth.callback.success": True,
+                    "factsynth.callback.attempts_used": attempt_num,
+                },
+            )
+
     if last_err is not None:
         logger.error(
             "Callback failed after %d attempts: %s",
