@@ -1,0 +1,48 @@
+name: Semantic Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  packages: write
+  id-token: write
+
+concurrency:
+  group: semantic-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semantic-release:
+    runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.release.outputs.new_release_published }}
+      version: ${{ steps.release.outputs.new_release_version }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: 'lts/*'
+      - name: Semantic Release
+        id: release
+        uses: cycjimmy/semantic-release-action@61680d0e9b02ff86f5648ade99e01be17f0260a4
+        with:
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  container-release:
+    needs: semantic-release
+    if: needs.semantic-release.outputs.published == 'true'
+    uses: ./.github/workflows/container-release.yml
+    secrets: inherit
+    with:
+      version: ${{ needs.semantic-release.outputs.version }}
