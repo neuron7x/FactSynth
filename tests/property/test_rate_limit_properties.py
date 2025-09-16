@@ -1,12 +1,8 @@
 import pytest
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 
 from factsynth_ultimate.core import rate_limit
-
-try:
-    from hypothesis import HealthCheck, given, settings
-    from hypothesis import strategies as st
-except ModuleNotFoundError:  # pragma: no cover - optional
-    pytest.skip("hypothesis not installed", allow_module_level=True)
 
 
 pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)

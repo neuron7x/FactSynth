@@ -129,8 +129,13 @@ jobs:
       - name: Unit tests (Python)
         if: hashFiles('tests/**','pyproject.toml','requirements.txt') != ''
         run: |
-          pip install pytest pytest-cov
-          pytest
+          pip install pytest pytest-cov hypothesis
+          pytest --ignore=tests/property --ignore=tests/test_tokenization.py
+
+      - name: Property tests
+        if: hashFiles('tests/property/**','tests/test_tokenization.py','pyproject.toml','requirements.txt') != ''
+        run: |
+          pytest tests/property tests/test_tokenization.py
 
       - name: Fairness tests
         if: hashFiles('fairness_tests/**','pyproject.toml','requirements.txt') != ''

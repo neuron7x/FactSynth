@@ -1,11 +1,7 @@
 import pytest
 import regex as re
-
-try:
-    from hypothesis import given
-    from hypothesis import strategies as st
-except ModuleNotFoundError:  # pragma: no cover - optional
-    pytest.skip("hypothesis not installed", allow_module_level=True)
+from hypothesis import given
+from hypothesis import strategies as st
 
 from factsynth_ultimate import tokenization
 

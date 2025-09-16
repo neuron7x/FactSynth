@@ -1,17 +1,17 @@
 import os
 import string
+from http import HTTPStatus
 from unittest.mock import patch
 
 import pytest
-from fastapi import HTTPException
+from hypothesis import given
+from hypothesis import strategies as st
 
-from factsynth_ultimate.api.routers import reload_allowed_hosts, validate_callback_url
-
-try:  # pragma: no cover - optional import
-    from hypothesis import given
-    from hypothesis import strategies as st
-except ModuleNotFoundError:  # pragma: no cover - optional
-    pytest.skip("hypothesis not installed", allow_module_level=True)
+from factsynth_ultimate.api.routers import (
+    get_allowed_hosts,
+    reload_allowed_hosts,
+    validate_callback_url,
+)
 
 pytestmark = pytest.mark.httpx_mock(assert_all_responses_were_requested=False)
 
@@ -38,7 +38,9 @@ def test_validate_callback_url_allows_allowed_hosts(
     env = {"CALLBACK_URL_ALLOWED_HOSTS": ",".join(ALLOWED_HOSTS)}
     with patch.dict(os.environ, env):
         reload_allowed_hosts()
-        validate_callback_url(url)
+        allowed = get_allowed_hosts()
+        problem = validate_callback_url(url, allowed)
+        assert problem is None
 
 
 @given(
@@ -57,8 +59,11 @@ def test_validate_callback_url_rejects_disallowed_host(
     env = {"CALLBACK_URL_ALLOWED_HOSTS": ",".join(ALLOWED_HOSTS)}
     with patch.dict(os.environ, env):
         reload_allowed_hosts()
-        with pytest.raises(HTTPException):
-            validate_callback_url(url)
+        allowed = get_allowed_hosts()
+        problem = validate_callback_url(url, allowed)
+        assert problem is not None
+        assert problem.status == HTTPStatus.BAD_REQUEST
+        assert problem.extras and problem.extras.get("reason") == "host_not_allowed"
 
 
 @given(
@@ -76,8 +81,11 @@ def test_validate_callback_url_rejects_scheme(
     env = {"CALLBACK_URL_ALLOWED_HOSTS": ",".join(ALLOWED_HOSTS)}
     with patch.dict(os.environ, env):
         reload_allowed_hosts()
-        with pytest.raises(HTTPException):
-            validate_callback_url(url)
+        allowed = get_allowed_hosts()
+        problem = validate_callback_url(url, allowed)
+        assert problem is not None
+        assert problem.status == HTTPStatus.BAD_REQUEST
+        assert problem.extras and problem.extras.get("reason") == "scheme_not_allowed"
 
 
 @pytest.mark.parametrize(
@@ -93,5 +101,8 @@ def test_validate_callback_url_bad_netloc(netloc: str) -> None:
     env = {"CALLBACK_URL_ALLOWED_HOSTS": "example.com"}
     with patch.dict(os.environ, env):
         reload_allowed_hosts()
-        with pytest.raises(HTTPException):
-            validate_callback_url(url)
+        allowed = get_allowed_hosts()
+        problem = validate_callback_url(url, allowed)
+        assert problem is not None
+        assert problem.status == HTTPStatus.BAD_REQUEST
+        assert problem.extras and problem.extras.get("reason") == "host_not_allowed"
