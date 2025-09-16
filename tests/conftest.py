@@ -37,6 +37,37 @@ def _get_event_loop():
 asyncio.get_event_loop = _get_event_loop
 
 
+def stub_handler(request):
+    path = request.url.path
+
+    if path.endswith("/v1/generate"):
+        content = request.content or b""
+        if isinstance(content, bytes):
+            content = content.decode()
+        payload = json.loads(content or "{}")
+        text = payload.get("text", "")
+        seed = payload.get("seed", 0)
+        rng = random.Random(seed)
+        alphabet = string.ascii_letters + string.digits + " "
+        out = "".join(rng.choice(alphabet) for _ in text)
+        return Response(200, json={"output": {"text": out}})
+
+    if path.endswith("/v1/score"):
+        return Response(200, json={"score": 0.0})
+
+    if path.endswith("/openapi.json"):
+        return Response(
+            200,
+            json={
+                "openapi": "3.1.0",
+                "info": {"title": "stub", "version": "0.1.0"},
+                "paths": {"/v1/score": {"post": {"responses": {"200": {"description": "OK"}}}}},
+            },
+        )
+
+    return Response(200, json={"stub": True})
+
+
 @pytest.fixture(scope="session")
 def anyio_backend() -> str:
     return "asyncio"
@@ -68,30 +99,7 @@ async def client():
 async def api_stub():
     """Async client that returns deterministic responses for external APIs."""
 
-    def handler(request):
-        path = request.url.path
-        if path == "/v1/generate":
-            payload = json.loads(request.content.decode() or "{}")
-            text = payload.get("text", "")
-            seed = payload.get("seed", 0)
-            rng = random.Random(seed)
-            alphabet = string.ascii_letters + string.digits + " "
-            out = "".join(rng.choice(alphabet) for _ in text)
-            return Response(200, json={"output": {"text": out}})
-        if path == "/v1/score":
-            return Response(200, json={"score": 0.0})
-        if path == "/openapi.json":
-            return Response(
-                200,
-                json={
-                    "openapi": "3.1.0",
-                    "info": {"title": "stub", "version": "0.1.0"},
-                    "paths": {"/v1/score": {"post": {"responses": {"200": {"description": "OK"}}}}},
-                },
-            )
-        return Response(404)
-
-    transport = MockTransport(handler)
+    transport = MockTransport(stub_handler)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
@@ -100,23 +108,7 @@ async def api_stub():
 def _stub_external_api(httpx_mock) -> None:
     """Stub external HTTP calls so tests remain offline."""
 
-    def handler(request):
-        path = request.url.path
-        if path.endswith("/v1/generate"):
-            payload = json.loads(request.content.decode() or "{}")
-            text = payload.get("text", "")
-            seed = payload.get("seed", 0)
-            rng = random.Random(seed)
-            alphabet = string.ascii_letters + string.digits + " "
-            out = "".join(rng.choice(alphabet) for _ in text)
-            return Response(200, json={"output": {"text": out}})
-        if path.endswith("/v1/score"):
-            return Response(200, json={"score": 0.0})
-        if path.endswith("/openapi.json"):
-            return Response(200, json={"openapi": "3.1.0", "paths": {}})
-        return Response(200, json={"stub": True})
-
-    httpx_mock.add_callback(handler, is_optional=True)
+    httpx_mock.add_callback(stub_handler, is_optional=True)
 
 
 @pytest.fixture(autouse=True)
