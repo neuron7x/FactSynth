@@ -31,14 +31,26 @@ from facts import FactPipeline, FactPipelineError
 from factsynth_ultimate.stream import stream_facts
 
 from ..auth.ws import WebSocketAuthError, authenticate_ws
+from ..config import (
+    ConfigError,
+    add_callback_host,
+    remove_callback_host,
+    set_callback_hosts,
+)
 from ..core.audit import audit_event
 from ..core.metrics import (
     CITATION_PRECISION,
     EXPLANATION_SATISFACTION,
     SSE_TOKENS,
 )
+from ..core.problem_details import ProblemDetails, bad_request
 from ..core.settings import load_settings
 from ..validators.callback import validate_callback_url
+from ..schemas.callbacks import (
+    CallbackAllowlistResponse,
+    CallbackAllowlistSetRequest,
+    CallbackHostRequest,
+)
 from ..schemas.requests import FeedbackReq, IntentReq, ScoreBatchReq, ScoreReq
 from ..services.runtime import reflect_intent, score_payload
 from .v1 import generate_router
@@ -162,8 +174,89 @@ def reload_allowed_hosts() -> None:
     """Clear the allowed hosts cache to reload settings."""
     get_allowed_hosts.cache_clear()
 
+
+def _allowlist_response() -> CallbackAllowlistResponse:
+    return CallbackAllowlistResponse(hosts=list(get_allowed_hosts()))
+
 api: APIRouter = APIRouter()
 api.include_router(generate_router)
+
+
+def _config_problem(detail: str) -> JSONResponse:
+    return bad_request("Invalid configuration", detail).to_response()
+
+
+def _persist_problem(detail: str) -> JSONResponse:
+    problem = ProblemDetails(
+        title="Failed to update configuration",
+        detail=detail,
+        status=int(HTTPStatus.INTERNAL_SERVER_ERROR),
+    )
+    return problem.to_response()
+
+
+@api.get("/v1/callbacks/allowlist", response_model=CallbackAllowlistResponse)
+def callback_allowlist_get() -> CallbackAllowlistResponse:
+    """Return the configured callback host allowlist."""
+
+    return _allowlist_response()
+
+
+@api.post("/v1/callbacks/allowlist", response_model=CallbackAllowlistResponse)
+def callback_allowlist_add(payload: CallbackHostRequest) -> CallbackAllowlistResponse | JSONResponse:
+    """Add a hostname to the callback allowlist."""
+
+    try:
+        add_callback_host(payload.host)
+    except ConfigError as exc:
+        return _config_problem(str(exc))
+    except OSError as exc:  # pragma: no cover - filesystem failures
+        logger.error("Failed to persist callback allowlist", exc_info=exc)
+        return _persist_problem("Could not persist callback allowlist.")
+
+    reload_allowed_hosts()
+    logger.info("Callback host allowed", extra={"callback_host": payload.host})
+    return _allowlist_response()
+
+
+@api.put("/v1/callbacks/allowlist", response_model=CallbackAllowlistResponse)
+def callback_allowlist_replace(
+    payload: CallbackAllowlistSetRequest,
+) -> CallbackAllowlistResponse | JSONResponse:
+    """Replace the callback allowlist."""
+
+    try:
+        set_callback_hosts(payload.hosts)
+    except ConfigError as exc:
+        return _config_problem(str(exc))
+    except OSError as exc:  # pragma: no cover - filesystem failures
+        logger.error("Failed to persist callback allowlist", exc_info=exc)
+        return _persist_problem("Could not persist callback allowlist.")
+
+    reload_allowed_hosts()
+    logger.info("Callback allowlist replaced", extra={"callback_hosts": payload.hosts})
+    return _allowlist_response()
+
+
+@api.delete("/v1/callbacks/allowlist/{host}", response_model=CallbackAllowlistResponse)
+def callback_allowlist_remove(host: str) -> CallbackAllowlistResponse | JSONResponse:
+    """Remove a hostname from the callback allowlist."""
+
+    normalized = host.strip().lower()
+    if not normalized:
+        return _config_problem("Host must not be empty")
+
+    try:
+        remove_callback_host(normalized)
+    except ConfigError as exc:
+        return _config_problem(str(exc))
+    except OSError as exc:  # pragma: no cover - filesystem failures
+        logger.error("Failed to persist callback allowlist", exc_info=exc)
+        return _persist_problem("Could not persist callback allowlist.")
+
+    reload_allowed_hosts()
+    logger.info("Callback host removed", extra={"callback_host": normalized})
+    return _allowlist_response()
 
 
 @api.get("/v1/version")

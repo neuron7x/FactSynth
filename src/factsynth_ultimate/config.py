@@ -85,6 +85,32 @@ def add_callback_host(host: str, path: Path | None = None) -> Config:
     return config
 
 
+def remove_callback_host(host: str, path: Path | None = None) -> Config:
+    """Remove ``host`` from the callback allowlist stored at ``path``."""
+
+    config = load_config(path)
+    if not config.CALLBACK_URL_ALLOWED_HOSTS:
+        return config
+
+    targets = set(_normalize_hosts([host]))
+    if not targets:
+        return config
+
+    remaining = [item for item in config.CALLBACK_URL_ALLOWED_HOSTS if item not in targets]
+    config.CALLBACK_URL_ALLOWED_HOSTS = _normalize_hosts(remaining)
+    save_config(config, path)
+    return config
+
+
+def set_callback_hosts(hosts: Iterable[Any], path: Path | None = None) -> Config:
+    """Replace the callback allowlist with ``hosts`` at ``path``."""
+
+    config = load_config(path)
+    config.CALLBACK_URL_ALLOWED_HOSTS = _normalize_hosts(hosts)
+    save_config(config, path)
+    return config
+
+
 def _normalize_hosts(hosts: Iterable[Any]) -> list[str]:
     """Return a sorted, deduplicated list of normalised hosts."""
 
@@ -106,6 +132,8 @@ __all__ = [
     "Config",
     "ConfigError",
     "add_callback_host",
+    "remove_callback_host",
+    "set_callback_hosts",
     "config_path",
     "load_config",
     "save_config",
