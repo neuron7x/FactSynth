@@ -113,6 +113,12 @@ jobs:
           pip install bandit
           bandit -r .
 
+      - name: Interrogate
+        if: hashFiles('pyproject.toml','src/**/*.py') != ''
+        run: |
+          pip install interrogate
+          interrogate -c pyproject.toml src
+
       - name: Safety (PR, fail on high/critical)
         if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
         run: |
