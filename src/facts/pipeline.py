@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Iterable, Sequence
+
+from cachetools import TTLCache
 
 from factsynth_ultimate.formatting import ensure_period, sanitize
 from factsynth_ultimate.services.retrievers.base import RetrievedDoc, Retriever
@@ -91,12 +93,52 @@ class FactPipeline:
     ranker: Ranker = default_ranker
     aggregator: Aggregator = default_aggregator
     formatter: Formatter = default_formatter
+    cache_size: int = 128
+    cache_ttl: float = 60.0
+    _search_cache: TTLCache[str, tuple[RetrievedDoc, ...]] = field(
+        init=False, repr=False
+    )
 
     def __post_init__(self) -> None:
         if self.retriever is None:
             self.retriever = create_fixture_retriever()
+        if self.cache_size <= 0:
+            raise ValueError("cache_size must be positive")
+        if self.cache_ttl <= 0:
+            raise ValueError("cache_ttl must be positive")
         if self.top_k <= 0:
             raise ValueError("top_k must be positive")
+        self._search_cache = TTLCache(maxsize=self.cache_size, ttl=self.cache_ttl)
+
+    def __setattr__(self, name: str, value) -> None:
+        if name == "top_k" and "_search_cache" in self.__dict__:
+            if value <= 0:
+                raise ValueError("top_k must be positive")
+            previous = self.__dict__.get("top_k")
+            object.__setattr__(self, name, value)
+            if previous is not None and previous != value:
+                self.invalidate_cache()
+            return
+        if name == "retriever" and "_search_cache" in self.__dict__:
+            previous = self.__dict__.get("retriever")
+            object.__setattr__(self, name, value)
+            if previous is not value:
+                self.invalidate_cache()
+            return
+        object.__setattr__(self, name, value)
+
+    def invalidate_cache(self) -> None:
+        """Clear cached search results."""
+
+        self._search_cache.clear()
+
+    def update_retriever(self, retriever: Retriever | None) -> None:
+        """Replace the active retriever and invalidate cached search results."""
+
+        if retriever is None:
+            retriever = create_fixture_retriever()
+        self.retriever = retriever
+        self.invalidate_cache()
 
     def run(self, query: str) -> str:
         """Execute the pipeline and return formatted supporting facts."""
@@ -105,12 +147,20 @@ class FactPipeline:
         if not prepared:
             raise EmptyQueryError("Query must not be empty")
 
-        try:
-            results = list(self.retriever.search(prepared, k=max(1, self.top_k)))
-        except FactPipelineError:
-            raise
-        except Exception as exc:  # pragma: no cover - defensive
-            raise SearchError("Search backend failed") from exc
+        cached = self._search_cache.get(prepared)
+        if cached is None:
+            try:
+                fetched = tuple(
+                    self.retriever.search(prepared, k=max(1, self.top_k))
+                )
+            except FactPipelineError:
+                raise
+            except Exception as exc:  # pragma: no cover - defensive
+                raise SearchError("Search backend failed") from exc
+            self._search_cache[prepared] = fetched
+            results = list(fetched)
+        else:
+            results = list(cached)
 
         if not results:
             raise NoFactsFoundError(f"No facts found for '{prepared}'")
