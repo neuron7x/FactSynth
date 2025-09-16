@@ -2,7 +2,7 @@
 .PHONY: release sbom checksums test-contract
 
 release:
-	bash scripts/release/make_release.sh
+	@echo "Releases are managed by semantic-release via GitHub Actions."
 
 sbom:
 	which syft && syft packages . -o spdx-json > release/SBOM.spdx.json || echo "syft not installed"

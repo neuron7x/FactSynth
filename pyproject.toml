@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "factsynth-ultimate-pro"
-version = "1.0.5"
+dynamic = ["version"]
 dependencies = [
     "fastapi==0.116.1",
     "uvicorn==0.35.0",
@@ -95,4 +95,8 @@ fail-under = 60
 ignore-init-module = true
 ignore-semiprivate = true
 style = "google"
+
+[tool.setuptools_scm]
+tag_regex = "^v(?P<version>\\d+\\.\\d+\\.\\d+)$"
+fallback_version = "0.0.0"
 
