@@ -18,9 +18,7 @@ from fastapi._compat import (
 )
 from fastapi import FastAPI, Request, Response
 from fastapi import exceptions as fastapi_exceptions
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
+from redis.asyncio import Redis
 from starlette.middleware.base import BaseHTTPMiddleware
 from typing import Any, Literal
 
@@ -31,11 +29,13 @@ from .core.errors import install_handlers
 from .core.ip_allowlist import IPAllowlistMiddleware
 from .core.logging import setup_logging
 from .core.metrics import LATENCY, REQUESTS, metrics_bytes, metrics_content_type
+from .core.rate_limit import RateLimitMiddleware
 from .core.request_id import RequestIDMiddleware
 from .core.security_headers import SecurityHeadersMiddleware
 from .core.settings import load_settings
 from .core.tracing import try_enable_otel
 from .store.redis import check_health
+from .store.memory import MemoryStore
 
 
 logger = logging.getLogger(__name__)
@@ -115,7 +115,7 @@ class _MetricsMiddleware(BaseHTTPMiddleware):
         return response
 
 
-def create_app(rate_limit_window: int | None = None) -> FastAPI:
+def create_app() -> FastAPI:
     """Application factory used by tests and ASGI server."""
 
     try:
@@ -124,10 +124,18 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
         raise RuntimeError("Invalid configuration") from exc
     setup_logging()
 
+    redis_url = settings.rate_limit_redis_url
+    close_redis = False
+    if redis_url.startswith("memory://"):
+        redis_client = MemoryStore()
+    else:
+        redis_client = Redis.from_url(redis_url)
+        close_redis = True
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         try:
-            healthy = await check_health(settings.rate_limit_redis_url)
+            healthy = await check_health(redis_client)
         except Exception:  # pragma: no cover - defensive guard
             logger.warning("Failed to run Redis health check", exc_info=True)
         else:
@@ -136,33 +144,27 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
                     "Redis health check failed for rate limit backend",
                     extra={"redis_url": settings.rate_limit_redis_url},
                 )
-        yield
+        try:
+            yield
+        finally:
+            if close_redis:
+                with suppress(Exception):
+                    await redis_client.aclose()
 
     app = FastAPI(title="FactSynth Ultimate Pro API", version=VERSION, lifespan=lifespan)
     install_handlers(app)
     try_enable_otel(app)
-
-    window = rate_limit_window or 60
-    limiter = Limiter(
-        key_func=lambda request: request.headers.get(settings.auth_header_name, ""),
-        default_limits=[f"{settings.rate_limit_per_key}/{window} second"],
-        storage_uri=settings.rate_limit_redis_url,
-        headers_enabled=True,
-    )
-    app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.state.rate_limit_redis = redis_client
 
     # core routes
     app.include_router(api)
 
-    @limiter.exempt
     @app.get("/v1/healthz")
     def healthz() -> dict[str, str]:
         """Simple liveness probe."""
 
         return {"status": "ok"}
 
-    @limiter.exempt
     @app.get("/metrics")
     def metrics() -> Response:
         """Expose Prometheus metrics."""
@@ -170,7 +172,7 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
         return Response(metrics_bytes(), media_type=metrics_content_type())
 
     # middleware stack (order matters: last added runs first)
-    # SlowAPIMiddleware is added last so rate limiting happens before auth
+    # RateLimitMiddleware is added last so rate limiting happens before auth
     app.add_middleware(SecurityHeadersMiddleware, hsts=settings.https_redirect)
     if settings.ip_allowlist:
         app.add_middleware(IPAllowlistMiddleware, cidrs=settings.ip_allowlist)
@@ -188,7 +190,17 @@ def create_app(rate_limit_window: int | None = None) -> FastAPI:
     )
     app.add_middleware(_MetricsMiddleware)
     app.add_middleware(RequestIDMiddleware)
-    app.add_middleware(SlowAPIMiddleware)
+    middleware_kwargs = {
+        "redis": redis_client,
+        "api": settings.rates_api,
+        "ip": settings.rates_ip,
+        "org": settings.rates_org,
+        "key_header": settings.auth_header_name,
+    }
+    if isinstance(redis_client, MemoryStore):
+        middleware_kwargs["memory_store"] = redis_client
+        middleware_kwargs["fallback_timeout"] = 0.0
+    app.add_middleware(RateLimitMiddleware, **middleware_kwargs)
 
     return app
 
