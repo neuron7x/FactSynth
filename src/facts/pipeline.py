@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Iterable, Sequence
+from typing import AsyncIterator, Callable, Iterable, Iterator, Sequence
 
 from factsynth_ultimate.formatting import ensure_period, sanitize
 from factsynth_ultimate.services.retrievers.base import RetrievedDoc, Retriever
@@ -98,8 +98,8 @@ class FactPipeline:
         if self.top_k <= 0:
             raise ValueError("top_k must be positive")
 
-    def run(self, query: str) -> str:
-        """Execute the pipeline and return formatted supporting facts."""
+    def _run_fragments(self, query: str) -> Iterator[str]:
+        """Execute the pipeline and yield formatted fragments."""
 
         prepared = query.strip()
         if not prepared:
@@ -139,7 +139,18 @@ class FactPipeline:
         if not formatted.strip():
             raise AggregationError("Formatted output is empty")
 
-        return formatted
+        yield formatted
+
+    def run(self, query: str) -> str:
+        """Execute the pipeline and return formatted supporting facts."""
+
+        return "".join(self._run_fragments(query))
+
+    async def arun(self, query: str) -> AsyncIterator[str]:
+        """Asynchronously yield formatted fragments for ``query``."""
+
+        for fragment in self._run_fragments(query):
+            yield fragment
 
 
 __all__ = [

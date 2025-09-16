@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import textwrap
+from collections import deque
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
 
@@ -62,23 +63,93 @@ async def stream_facts(
         :class:`FactStreamChunk` objects ordered by ``index``.
     """
 
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be positive")
+
     start_index = max(0, int(start_at))
     sleep_delay = max(0.0, float(delay))
 
-    chunks = _chunk_text(pipeline.run(query), limit=chunk_size)
-    if not chunks or start_index >= len(chunks):
-        return
+    pending_word = ""
+    current_chunk: list[str] = []
+    current_len = 0
+    next_index = 0
+    ready: deque[tuple[int, str]] = deque()
+    disconnected = False
+    first_emitted = False
 
-    first_chunk = True
-    for index in range(start_index, len(chunks)):
-        if is_disconnected and await is_disconnected():
-            break
-        if not first_chunk and sleep_delay > 0:
-            await asyncio.sleep(sleep_delay)
+    def queue_chunk(text: str) -> None:
+        nonlocal next_index
+        if text:
+            ready.append((next_index, text))
+            next_index += 1
+
+    def flush_current() -> None:
+        nonlocal current_chunk, current_len
+        if current_chunk:
+            queue_chunk(" ".join(current_chunk))
+            current_chunk = []
+            current_len = 0
+
+    def add_word(word: str) -> None:
+        nonlocal current_chunk, current_len
+        if not word:
+            return
+        if len(word) > chunk_size:
+            flush_current()
+            queue_chunk(word)
+            return
+        if not current_chunk:
+            current_chunk = [word]
+            current_len = len(word)
+            return
+        prospective = current_len + 1 + len(word)
+        if prospective <= chunk_size:
+            current_chunk.append(word)
+            current_len = prospective
+            return
+        flush_current()
+        current_chunk = [word]
+        current_len = len(word)
+
+    async def drain_ready() -> AsyncIterator[FactStreamChunk]:
+        nonlocal first_emitted, disconnected
+        while ready:
+            index, text = ready[0]
+            if index < start_index:
+                ready.popleft()
+                continue
             if is_disconnected and await is_disconnected():
-                break
-        yield FactStreamChunk(index=index, text=chunks[index])
-        first_chunk = False
+                disconnected = True
+                return
+            if first_emitted and sleep_delay > 0:
+                await asyncio.sleep(sleep_delay)
+                if is_disconnected and await is_disconnected():
+                    disconnected = True
+                    return
+            ready.popleft()
+            yield FactStreamChunk(index=index, text=text)
+            first_emitted = True
+
+    async for fragment in pipeline.arun(query):
+        for char in fragment:
+            if char.isspace():
+                if pending_word:
+                    add_word(pending_word)
+                    pending_word = ""
+            else:
+                pending_word += char
+        async for chunk in drain_ready():
+            yield chunk
+        if disconnected:
+            return
+
+    if pending_word:
+        add_word(pending_word)
+
+    flush_current()
+
+    async for chunk in drain_ready():
+        yield chunk
 
 
 __all__ = ["FactStreamChunk", "stream_facts"]
