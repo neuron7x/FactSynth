@@ -25,6 +25,13 @@ Run checks on staged files:
 pre-commit run --files <path/to/file.py>
 ```
 
+Before committing, refresh dependency artifacts:
+
+```bash
+pre-commit run pip-compile --files pyproject.toml requirements.lock
+scripts/update_dev_requirements.sh
+```
+
 ## Branch protection
 
 The `main` branch is protected to keep the codebase stable:
