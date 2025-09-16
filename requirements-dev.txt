@@ -6,7 +6,7 @@ requests==2.32.5
 pip-audit==2.9.0
 spectral==0.24
 fakeredis==2.23.1
-hypothesis==6.138.15
+hypothesis==6.138.16
 numpy==1.26.4
 jax==0.4.38
 jaxlib==0.4.38
