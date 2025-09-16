@@ -22,6 +22,14 @@ from ..store.memory import MemoryStore
 from .metrics import RATE_LIMIT_BLOCKS, REQUESTS
 
 
+def _load_rate_settings():
+    """Load application settings lazily to avoid circular imports."""
+
+    from .settings import load_settings  # Imported here to avoid cycles.
+
+    return load_settings()
+
+
 @dataclass(frozen=True)
 class RateQuota:
     """Configuration for a token bucket rate limit."""
@@ -79,14 +87,34 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         default_burst = burst if burst is not None else 60
         default_sustain = sustain if sustain is not None else 1.0
-        default_quota = api or RateQuota(default_burst, float(default_sustain))
+
+        def _default_quota() -> RateQuota:
+            return RateQuota(int(default_burst), float(default_sustain))
+
+        settings_obj = None
+
+        def _settings_quota(attr: str) -> RateQuota:
+            nonlocal settings_obj
+            if settings_obj is None:
+                settings_obj = _load_rate_settings()
+            quota_obj = getattr(settings_obj, attr)
+            return RateQuota(int(quota_obj.burst), float(quota_obj.sustain))
+
+        use_settings_defaults = burst is None and sustain is None
+
         self.redis = redis
         self.ttl = ttl
         self.key_header = key_header
         self.org_header = org_header
-        self.api_quota = default_quota
-        self.ip_quota = ip or default_quota
-        self.org_quota = org or default_quota
+        self.api_quota = api or (
+            _settings_quota("rates_api") if use_settings_defaults else _default_quota()
+        )
+        self.ip_quota = ip or (
+            _settings_quota("rates_ip") if use_settings_defaults else _default_quota()
+        )
+        self.org_quota = org or (
+            _settings_quota("rates_org") if use_settings_defaults else _default_quota()
+        )
         self._memory_store = memory_store or MemoryStore()
         self._fallback_timeout = max(0.0, float(fallback_timeout))
         self._fallback_until = 0.0
@@ -170,6 +198,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("X-RateLimit-Limit", str(limit))
         response.headers.setdefault("X-RateLimit-Remaining", str(max(0, int(remaining))))
 
+    @staticmethod
+    def _redis_key(prefix: str, identifier: str) -> str:
+        """Return a normalized Redis key for a specific identifier."""
+
+        ident = str(identifier).strip()
+        if not ident:
+            ident = "anon"
+        return f"{prefix}:{ident}"
+
     def _limits(self, api_key: str, ip: str, org: str) -> list[tuple[str, str, RateQuota]]:
         """Return Redis key and quota triples for the request."""
 
@@ -180,7 +217,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             ("org", org, self.org_quota),
         ):
             if quota.enabled:
-                triples.append((name, f"{name}:{ident}", quota))
+                triples.append((name, self._redis_key(name, ident), quota))
         return triples
 
     @staticmethod
@@ -230,6 +267,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             remaining_total = 0.0
             for idx, check in enumerate(checks):
                 _, remaining = await self._take(check.redis_key, check.quota, consume=True)
+                remaining = max(0.0, remaining)
                 remaining_total += remaining
                 checks[idx] = _RateCheck(check.name, check.redis_key, check.quota, True, remaining)
             response = await call_next(request)
