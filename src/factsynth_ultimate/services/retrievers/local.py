@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Local in-memory retriever used primarily for tests."""
+
+from __future__ import annotations
 
 import re
 from collections.abc import Iterable
