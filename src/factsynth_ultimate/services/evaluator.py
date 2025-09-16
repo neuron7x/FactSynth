@@ -28,14 +28,21 @@ def _load_retriever(name: str) -> Retriever:
         )
     except TypeError:
         eps = metadata.entry_points()
-        get_group = getattr(eps, "get", None)
-        if callable(get_group):
+        select = getattr(eps, "select", None)
+        if callable(select):
             candidates = cast(
                 Iterable[EntryPoint],
-                get_group("factsynth_ultimate.retrievers", ()),
+                select(group="factsynth_ultimate.retrievers"),
             )
         else:
-            candidates = ()
+            get_group = getattr(eps, "get", None)
+            if callable(get_group):
+                candidates = cast(
+                    Iterable[EntryPoint],
+                    get_group("factsynth_ultimate.retrievers", ()),
+                )
+            else:
+                candidates = ()
     for ep in candidates:
         if ep.name != name:
             continue

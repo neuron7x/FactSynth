@@ -45,6 +45,9 @@ class FakeRedis:
     async def expire(self, key: str, ttl: int) -> None:
         self._expiry[key] = self._now() + ttl
 
+    async def ping(self) -> bool:  # pragma: no cover - trivial behaviour
+        return True
+
     def keys(self) -> set[str]:
         for key in list(self._data):
             self._maybe_expire(key)
@@ -90,6 +93,7 @@ def _middleware(redis: FakeRedis, **kwargs) -> RateLimitMiddleware:
         lambda scope, receive, send: None,
         redis=redis,
         **kwargs,
+        health_check_interval=0.0,
     )
 
 

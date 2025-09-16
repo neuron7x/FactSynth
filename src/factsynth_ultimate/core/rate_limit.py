@@ -18,6 +18,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from ..i18n import choose_language, translate
+from ..store import check_health
 from ..store.memory import MemoryStore
 from .metrics import RATE_LIMIT_BLOCKS, REQUESTS
 
@@ -86,6 +87,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         ttl: int = 300,
         memory_store: MemoryStore | None = None,
         fallback_timeout: float = 30.0,
+        health_check_interval: float = 5.0,
     ) -> None:
         """Configure middleware with independent quotas for API/IP/org."""
 
@@ -125,6 +127,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._fallback_until = 0.0
         self._using_memory = False
         self._logger = logging.getLogger(__name__)
+        self._health_check_interval = max(0.0, float(health_check_interval))
+        self._next_health_check = 0.0
 
     def _should_use_redis(self) -> bool:
         if self._fallback_timeout <= 0:
@@ -133,16 +137,27 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return True
         return time.monotonic() >= self._fallback_until
 
-    def _activate_fallback(self, exc: Exception) -> None:
+    def _schedule_health_check(self, now: float) -> None:
+        if self._health_check_interval > 0:
+            self._next_health_check = now + self._health_check_interval
+
+    def _activate_fallback(self, reason: Exception | str) -> None:
         if self._fallback_timeout <= 0:
-            raise exc
+            if isinstance(reason, Exception):
+                raise reason
+            self._logger.error(
+                "Redis backend unhealthy and fallback disabled: %s",
+                reason,
+            )
+            return
         now = time.monotonic()
         self._fallback_until = now + self._fallback_timeout
+        self._schedule_health_check(now)
         if not self._using_memory:
             self._logger.warning(
                 "Redis backend unavailable, using in-memory fallback for %.1fs: %s",
                 self._fallback_timeout,
-                exc,
+                reason,
             )
         self._using_memory = True
 
@@ -152,7 +167,26 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             self._fallback_until = 0.0
             self._logger.info("Redis backend recovered; resuming primary store")
 
+    async def _maybe_check_health(self) -> None:
+        if self._health_check_interval <= 0:
+            return
+        now = time.monotonic()
+        if now < self._next_health_check:
+            return
+        self._schedule_health_check(now)
+        healthy = False
+        try:
+            healthy = await check_health(self.redis)
+        except Exception as exc:  # pragma: no cover - defensive guard
+            self._logger.warning("Redis health check raised unexpected error", exc_info=exc)
+        if healthy:
+            if self._using_memory:
+                self._on_redis_success()
+        else:
+            self._activate_fallback("health check failed")
+
     async def _call_store(self, method: str, *args: Any, **kwargs: Any) -> T:
+        await self._maybe_check_health()
         use_redis = self._should_use_redis()
         store = self.redis if use_redis else self._memory_store
         try:
