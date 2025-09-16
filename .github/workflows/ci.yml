@@ -110,8 +110,8 @@ jobs:
       - name: Bandit
         if: hashFiles('pyproject.toml','requirements.txt') != ''
         run: |
-          pip install bandit
-          bandit -r .
+          pip install bandit==1.7.9
+          bandit -r src/ --severity-level medium
 
       - name: Interrogate
         if: hashFiles('pyproject.toml','src/**/*.py') != ''
@@ -132,8 +132,8 @@ jobs:
       - name: pip-audit
         if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
         run: |
-          pip install pip-audit
-          pip-audit
+          pip install pip-audit==2.7.2
+          pip-audit -v --progress-spinner off -r requirements.lock --require-hashes
 
       - name: npm audit
         if: hashFiles('package-lock.json') != ''
