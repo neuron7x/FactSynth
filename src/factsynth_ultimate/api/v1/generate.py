@@ -70,7 +70,7 @@ class PipelineNotReadyError(FactPipelineError):
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router: APIRouter = APIRouter()
 
 def _client_host(request: Request) -> str:
     """Best-effort retrieval of the requesting client's host."""

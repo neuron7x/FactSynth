@@ -7,6 +7,7 @@ from typing import Awaitable, Callable
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+from starlette.types import ASGIApp
 
 
 def _defaults(hsts: bool) -> dict[str, str]:
@@ -34,7 +35,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Apply headers that enforce a secure-by-default policy."""
 
     def __init__(
-        self, app, headers: dict[str, str] | None = None, hsts: bool = False
+        self, app: ASGIApp, headers: dict[str, str] | None = None, hsts: bool = False
     ) -> None:
         """Merge custom headers with defaults."""
 

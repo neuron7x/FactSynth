@@ -11,6 +11,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+from starlette.types import ASGIApp
 
 from ..i18n import choose_language, translate
 
@@ -22,7 +23,7 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self,
-        app,
+        app: ASGIApp,
         api_keys: Iterable[str] | str,
         header_name: str = "x-api-key",
         skip: Iterable[str] = ("/v1/healthz", "/metrics"),

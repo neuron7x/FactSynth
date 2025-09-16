@@ -9,7 +9,7 @@ from typing import Awaitable, Callable
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
-
+from starlette.types import ASGIApp
 
 _request_id_ctx: ContextVar[str | None] = ContextVar("request_id", default=None)
 
@@ -23,7 +23,7 @@ def get_request_id() -> str | None:
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Attach a unique ID to each request and response."""
 
-    def __init__(self, app, header_name: str = "x-request-id") -> None:
+    def __init__(self, app: ASGIApp, header_name: str = "x-request-id") -> None:
         """Configure the header name used for request IDs."""
 
         super().__init__(app)

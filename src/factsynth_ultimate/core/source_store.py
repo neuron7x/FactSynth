@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
-from typing import Protocol
+from typing import Any, Protocol, cast
 from uuid import uuid4
 
 import redis
@@ -107,7 +108,9 @@ class MemorySourceStore:
 class RedisSourceStore:
     """Redis-backed store relying on Redis for TTL and trust management."""
 
-    def __init__(self, redis_client, ttl: int | None = None, min_trust: float = 0.0):
+    def __init__(
+        self, redis_client: redis.Redis[Any], ttl: int | None = None, min_trust: float = 0.0
+    ) -> None:
         self.redis = redis_client
         self.ttl = ttl
         self.min_trust = min_trust
@@ -143,8 +146,12 @@ class RedisSourceStore:
             trust=trust,
             expires_at=exp_dt.isoformat() if exp_dt else None,
         )
-        mapping = {k: v for k, v in metadata.__dict__.items() if v is not None}
-        self.redis.hset(source_id, mapping=mapping)
+        mapping = {k: str(v) for k, v in metadata.__dict__.items() if v is not None}
+        redis_mapping = cast(
+            Mapping[str | bytes, bytes | float | int | str],
+            mapping,
+        )
+        self.redis.hset(source_id, mapping=redis_mapping)
         if exp_dt:
             ttl_seconds = int((exp_dt - now).total_seconds())
             if ttl_seconds > 0:

@@ -10,6 +10,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+from starlette.types import ASGIApp
 
 from ..i18n import choose_language, translate
 
@@ -21,7 +22,7 @@ class IPAllowlistMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self,
-        app,
+        app: ASGIApp,
         cidrs: list[str] | None = None,
         skip: tuple[str, ...] = ("/v1/healthz", "/metrics"),
     ) -> None:
