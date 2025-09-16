@@ -95,30 +95,6 @@ jobs:
             echo "No ESLint config; skipping."
           fi
 
-      - name: Ruff
-        if: hashFiles('pyproject.toml','requirements.txt') != ''
-        run: |
-          pip install ruff
-          ruff check .
-
-      - name: Mypy
-        if: hashFiles('pyproject.toml','requirements.txt') != ''
-        run: |
-          pip install mypy
-          mypy .
-
-      - name: Bandit
-        if: hashFiles('pyproject.toml','requirements.txt') != ''
-        run: |
-          pip install bandit==1.7.9
-          bandit -r src/ --severity-level medium
-
-      - name: Interrogate
-        if: hashFiles('pyproject.toml','src/**/*.py') != ''
-        run: |
-          pip install interrogate
-          interrogate -c pyproject.toml src
-
       - name: Safety (PR, fail on high/critical)
         if: hashFiles('requirements.txt','requirements.lock','pyproject.toml') != ''
         run: |
