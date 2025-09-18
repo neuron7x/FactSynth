@@ -5,7 +5,34 @@ on:
 permissions: { contents: read }
 concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }
 jobs:
+  spectral-lint:
+    name: Spectral Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Spectral lint
+        run: |
+          mkdir -p artifacts
+          npm install --global @stoplight/spectral-cli
+          npx spectral lint openapi/openapi.yaml --format sarif --output artifacts/spectral-report.sarif
+
+      - name: Upload Spectral report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: spectral-report
+          path: artifacts/spectral-report.sarif
+          if-no-files-found: ignore
+
   build-test:
+    needs: spectral-lint
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:
